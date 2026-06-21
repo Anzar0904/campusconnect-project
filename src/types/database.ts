@@ -2397,7 +2397,7 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       toggle_post_like: {
-        Args: { p_post_id: string; p_user_id: string }
+        Args: { p_post_id: string }
         Returns: Json
       }
     }

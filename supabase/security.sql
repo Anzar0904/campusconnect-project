@@ -160,21 +160,29 @@ create policy "Announcements: same college read"
 -- Replace or create the safe increment function
 -- ============================================================
 
-create or replace function public.toggle_post_like(p_post_id uuid, p_user_id uuid)
+create or replace function public.toggle_post_like(
+  p_post_id uuid
+)
 returns jsonb language plpgsql security definer as $$
 declare
   v_already_liked boolean;
+  
   v_new_count int;
 begin
+  if auth.uid() is null then
+  raise exception 'Authentication required';
+end if;
   -- Check if already liked
   select exists(
     select 1 from public.post_likes
-    where post_id = p_post_id and user_id = p_user_id
+    where post_id = p_post_id and user_id = auth.uid()
   ) into v_already_liked;
 
   if v_already_liked then
     -- Unlike
-    delete from public.post_likes where post_id = p_post_id and user_id = p_user_id;
+    delete from public.post_likes
+where post_id = p_post_id
+and user_id = auth.uid();
     update public.posts
       set likes_count = greatest(0, likes_count - 1)
       where id = p_post_id
@@ -183,7 +191,7 @@ begin
   else
     -- Like (ignore if somehow duplicate — belt and suspenders)
     insert into public.post_likes (post_id, user_id)
-    values (p_post_id, p_user_id)
+    values (p_post_id, auth.uid())
     on conflict (post_id, user_id) do nothing;
 
     update public.posts

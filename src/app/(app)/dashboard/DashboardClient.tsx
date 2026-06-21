@@ -359,9 +359,8 @@ export default function DashboardClient({
 
   const handleLike = async (postId: string) => {
     const { data } = await supabase.rpc('toggle_post_like', {
-      p_post_id: postId,
-      p_user_id: currentUserId,
-    })
+  p_post_id: postId,
+})
     if (data) {
       setPosts(prev => prev.map(p =>
         p.id === postId ? { ...p, likes_count: (data as any).likes_count } : p
