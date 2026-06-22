@@ -28,6 +28,11 @@ on conflict (email_domain) do nothing;
 -- PROFILES
 -- ============================================================
 create table if not exists public.profiles (
+  dating_verified boolean not null default false,
+dating_verified_at timestamptz,
+dating_terms_accepted boolean not null default false,
+dating_safety_accepted boolean not null default false,
+date_of_birth date,
   id           uuid primary key references auth.users(id) on delete cascade,
   email        text not null,
   full_name    text not null default '',
@@ -651,6 +656,41 @@ create table if not exists public.dating_matches (
   matched_at timestamptz not null default now(),
   unique(user1_id, user2_id)
 );
+ (
+  id uuid primary key default uuid_generate_v4(),
+
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  college_id uuid not null references public.colleges(id),
+
+  full_name text not null,
+  email text not null,
+  branch text,
+  year text,
+  roll_number text,
+
+  id_card_url text not null,
+
+  status text not null dcreate table if not exists public.dating_verification_requestsefault 'pending'
+    check (status in ('pending','approved','rejected','more_info')),
+
+  reviewed_by uuid references public.profiles(id),
+  reviewed_at timestamptz,
+
+  rejection_reason text,
+
+  created_at timestamptz not null default now()
+);
+alter table public.dating_verification_requests enable row level security;
+create policy "Dating verification own read"
+on public.dating_verification_requests
+for select
+using (auth.uid() = user_id);
+
+create policy "Dating verification own insert"
+on public.dating_verification_requests
+for insert
+with check (auth.uid() = user_id);
+
 alter table public.dating_matches enable row level security;
 create policy "Dating matches: own"
   on public.dating_matches for select

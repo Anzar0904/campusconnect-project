@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  const { data: posts } = await supabase
+  const { data: posts } = await (supabase as any)
     .from('posts')
     .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
     .order('created_at', { ascending: false })
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
 
   // Seed liked post IDs from post_likes table — so the like button renders
   // correctly (filled/unfilled) on first load without a separate client query.
-  const postIds = (posts ?? []).map(p => p.id)
+  const postIds = (posts ?? []).map((p: any) => p.id)
   const { data: myLikes } = postIds.length > 0
     ? await supabase
         .from('post_likes')

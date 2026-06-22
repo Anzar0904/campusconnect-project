@@ -8,21 +8,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/auth/login')
 
   const { data: profile } = await supabase
+  
     .from('profiles')
     .select('full_name, avatar_url, branch, year, is_verified, role, colleges(name, city)')
     .eq('id', user.id)
     .single()
 
-  const college = (profile?.colleges as any)
+  const profileData = profile as any
+const college = profileData?.colleges
   const collegeName = college ? `${college.name}${college.city ? ' · ' + college.city : ''}` : 'IILM University · Greater Noida'
+  
 
   return (
     <AppShell
       collegeName={collegeName}
-      userName={profile?.full_name}
-      userAvatar={profile?.avatar_url}
-      isVerified={profile?.is_verified}
-      userRole={profile?.role}
+      userName={profileData?.full_name}
+      userAvatar={profileData?.avatar_url}
+      isVerified={profileData?.is_verified}
+      userRole={profileData?.role}
       userId={user.id}
     >
       {children}

@@ -4,6 +4,10 @@ import Image from 'next/image'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { motion } from 'framer-motion'
+import { clsx } from 'clsx'
+import Link from 'next/link'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 const BRANCHES = ['BBA', 'MBA', 'BCA', 'MCA', 'B.Com', 'BA (H)', 'B.Sc', 'Law', 'B.Tech', 'Other']
 const HOSTELS = ['Boys Hostel A', 'Boys Hostel B', 'Girls Hostel A', 'Girls Hostel B', 'Day Scholar']
@@ -24,7 +28,7 @@ interface Profile {
 }
 
 export default function ProfileClient({ profile, userId }: { profile: Profile | null; userId: string }) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [editing, setEditing] = useState(!profile?.full_name || profile.full_name === profile?.email?.split('@')[0])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -43,8 +47,6 @@ export default function ProfileClient({ profile, userId }: { profile: Profile | 
     phone: profile?.phone || '',
   })
 
-  const avatarUrl = currentAvatarUrl ||
-    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(profile?.full_name || 'U')}&backgroundColor=4f46e5&textColor=ffffff`
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -95,8 +97,10 @@ export default function ProfileClient({ profile, userId }: { profile: Profile | 
   }
 
   const handleSave = async () => {
+  try {
     setSaving(true)
-    const { error } = await supabase
+
+    const { data, error } = await supabase
       .from('profiles')
       .update({
         full_name: form.full_name,
@@ -110,13 +114,29 @@ export default function ProfileClient({ profile, userId }: { profile: Profile | 
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
-    setSaving(false)
-    if (!error) {
-      setEditing(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      .select()
+
+    console.log('PROFILE UPDATE:', { data, error })
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+
+    toast.success('Profile updated successfully')
+    window.location.reload()
+
+    setEditing(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+
+  } catch (err) {
+    console.error(err)
+    toast.error('Unexpected error while saving profile')
+  } finally {
+    setSaving(false)
   }
+}
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -157,7 +177,13 @@ export default function ProfileClient({ profile, userId }: { profile: Profile | 
         <div className="flex items-start gap-6">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
-            <Image src={avatarUrl} alt="Avatar" width={96} height={96} className="w-24 h-24 rounded-2xl avatar-ring object-cover" />
+            <GlobalAvatar
+              avatarUrl={currentAvatarUrl}
+              fullName={profile?.full_name}
+              username={profile?.username}
+              size="custom"
+              className="w-24 h-24 rounded-2xl avatar-ring"
+            />
             {editing && (
               <button 
                 onClick={() => fileInputRef.current?.click()}

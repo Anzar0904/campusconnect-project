@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface Community {
   id: string
@@ -25,24 +26,31 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 const IILM_COMMUNITIES: Community[] = [
-  { id: 'mock_placements', name: 'IILM Placements 2025', category: 'Career', description: 'Latest placement news, company visits and prep resources for IILM students.', member_count: 0, is_private: false, banner_url: null, icon_url: null },
-  { id: 'mock_bba2026', name: 'BBA Batch 2023–26', category: 'Academic', description: 'Official group for the BBA 2023 batch. Notes, assignments and updates.', member_count: 0, is_private: false, banner_url: null, icon_url: null },
-  { id: 'mock_finance', name: 'MBA Finance Hub', category: 'Academic', description: 'Finance specialisation discussions, case studies and guest lecture updates.', member_count: 0, is_private: false, banner_url: null, icon_url: null },
-  { id: 'mock_confessions', name: 'Campus Confessions', category: 'Social', description: 'Anonymous confessions from the IILM campus. Keep it civil! 🤫', member_count: 0, is_private: false, banner_url: null, icon_url: null },
-  { id: 'mock_startups', name: 'IILM Startups & Entrepreneurship', category: 'Career', description: 'For aspiring founders. Share ideas, find co-founders, pitch practice.', member_count: 0, is_private: false, banner_url: null, icon_url: null },
-  { id: 'mock_fitness', name: 'Sports & Fitness', category: 'Sports', description: 'Gym routines, match updates, team selections and sports events.', member_count: 0, is_private: false, banner_url: null, icon_url: null },
+  {
+    id: 'campus_confessions',
+    name: 'Campus Confessions',
+    category: 'Social',
+    description:
+      'Anonymous confessions from the IILM campus. Only Super Admins can view author identities.',
+    member_count: 0,
+    is_private: false,
+    banner_url: null,
+    icon_url: null,
+  },
 ]
 
 export default function CommunitiesClient({
   communities: initial,
   myMemberships,
   currentUserId,
-}: {
+}:
+ {
   communities: Community[]
   myMemberships: string[]
   currentUserId: string
 }) {
-  const supabase = createClient()
+ const supabase: any = createClient()
+const router = useRouter()
   const [communities, setCommunities] = useState<Community[]>(
     initial.length > 0 ? initial : IILM_COMMUNITIES
   )
@@ -65,8 +73,10 @@ export default function CommunitiesClient({
     if (data) {
       setCommunities(prev => {
         const existingIds = new Set(prev.map(c => c.id))
-        const newComms = data.filter(c => !existingIds.has(c.id))
-        return [...prev, ...newComms as Community[]]
+        const newComms = (data as Community[]).filter(
+  c => !existingIds.has(c.id)
+)
+        return [...prev, ...newComms]
       })
       setPage(nextPage)
       if (data.length < 10) setHasMore(false)
@@ -91,36 +101,146 @@ export default function CommunitiesClient({
   })
 
   const joinCommunity = async (id: string) => {
-    setJoined(j => [...j, id])
-    if (id.includes('-')) { // real uuid
-      await supabase.from('community_members').insert({ community_id: id, user_id: currentUserId })
-      await supabase.from('communities').update({ member_count: communities.find(c => c.id === id)!.member_count + 1 }).eq('id', id)
+  try {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      alert('Please login first')
+      return
     }
+
+    const { error } = await supabase
+      .from('community_members')
+      .insert({
+        community_id: id,
+        user_id: user.id,
+        role: 'member'
+      })
+
+    if (error) {
+      console.error(error)
+      alert(error.message)
+      return
+    }
+
+    setJoined(j => [...j, id])
+
+    setCommunities(prev =>
+      prev.map(c =>
+        c.id === id
+          ? { ...c, member_count: c.member_count + 1 }
+          : c
+      )
+    )
+
+    await supabase
+      .from('communities')
+      .update({
+        member_count:
+          (communities.find(c => c.id === id)?.member_count || 0) + 1
+      })
+      .eq('id', id)
+
+  } catch (err) {
+    console.error(err)
   }
+}
+    
 
   const leaveCommunity = async (id: string) => {
-    setJoined(j => j.filter(x => x !== id))
-    if (id.includes('-')) {
-      await supabase.from('community_members').delete().eq('community_id', id).eq('user_id', currentUserId)
-    }
-  }
+  try {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
 
-  const createCommunity = async () => {
-    if (!newName.trim()) return
-    setSaving(true)
-    const { data } = await supabase
+    if (!user) return
+
+    const { error } = await supabase
+      .from('community_members')
+      .delete()
+      .eq('community_id', id)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error(error)
+      alert(error.message)
+      return
+    }
+
+    setJoined(j => j.filter(x => x !== id))
+
+    setCommunities(prev =>
+      prev.map(c =>
+        c.id === id
+          ? { ...c, member_count: Math.max(0, c.member_count - 1) }
+          : c
+      )
+    )
+
+    await supabase
       .from('communities')
-      .insert({ name: newName.trim(), description: newDesc.trim() || null, category: newCat, created_by: currentUserId, member_count: 1 })
-      .select()
-      .single()
+      .update({
+        member_count: Math.max(
+          0,
+          (communities.find(c => c.id === id)?.member_count || 1) - 1
+        )
+      })
+      .eq('id', id)
+
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+ const createCommunity = async () => {
+  if (!newName.trim()) return
+
+  try {
+    setSaving(true)
+
+   const { data, error } = await supabase
+  .from('communities')
+  .insert({
+    name: newName.trim(),
+    description: newDesc.trim() || null,
+    category: newCat,
+    created_by: currentUserId,
+    member_count: 1
+  })
+  .select()
+  .single()
+
+console.log('COMMUNITY DATA:', data)
+console.log('COMMUNITY ERROR:', error)
+
+if (error) {
+  alert(error.message)
+  return
+}
+
+    console.log('CREATE COMMUNITY', { data, error })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
     if (data) {
       setCommunities(c => [data, ...c])
       setJoined(j => [...j, data.id])
     }
-    setSaving(false)
+
     setCreating(false)
-    setNewName(''); setNewDesc(''); setNewCat('General')
+    setNewName('')
+    setNewDesc('')
+    setNewCat('General')
+
+  } finally {
+    setSaving(false)
   }
+}
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -192,27 +312,57 @@ export default function CommunitiesClient({
       </div>
 
       {/* Joined communities */}
-      {joined.length > 0 && (
-        <div>
-          <p className="section-label mb-3">YOUR COMMUNITIES</p>
-          <div className="grid grid-cols-2 gap-3">
-            {communities.filter(c => joined.includes(c.id)).map(c => (
-              <div key={c.id} className="glass-card rounded-xl p-4 flex items-center gap-3"
-                style={{ border: '1px solid rgba(76,215,246,0.15)' }}>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(76,215,246,0.15)', border: '1px solid rgba(76,215,246,0.3)' }}>
-                  <span className="text-tertiary font-display font-bold text-base">{c.name[0]}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-display font-semibold text-on-surface truncate">{c.name}</p>
-                  <p className="text-xs text-on-surface-variant font-mono">{c.member_count} members</p>
-                </div>
-                <button onClick={() => leaveCommunity(c.id)} className="text-xs text-on-surface-variant hover:text-error transition-colors font-mono">Leave</button>
-              </div>
-            ))}
+     {/* Joined communities */}
+{joined.length > 0 && (
+  <div>
+    <p className="section-label mb-3">YOUR COMMUNITIES</p>
+
+    <div className="grid grid-cols-2 gap-3">
+      {communities
+        .filter(c => joined.includes(c.id))
+        .map(c => (
+          <div
+            key={c.id}
+            onClick={() => router.push(`/community/${c.id}`)}
+            className="glass-card rounded-xl p-4 flex items-center gap-3 cursor-pointer"
+            style={{ border: '1px solid rgba(76,215,246,0.15)' }}
+          >
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'rgba(76,215,246,0.15)',
+                border: '1px solid rgba(76,215,246,0.3)'
+              }}
+            >
+              <span className="text-tertiary font-display font-bold text-base">
+                {c.name[0]}
+              </span>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-semibold text-on-surface truncate">
+                {c.name}
+              </p>
+
+              <p className="text-xs text-on-surface-variant font-mono">
+                {c.member_count || 0} members
+              </p>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                leaveCommunity(c.id)
+              }}
+              className="text-xs text-on-surface-variant hover:text-error transition-colors font-mono"
+            >
+              Leave
+            </button>
           </div>
-        </div>
-      )}
+        ))}
+    </div>
+  </div>
+)}
 
       {/* All communities */}
       <div>
@@ -221,7 +371,11 @@ export default function CommunitiesClient({
           {filtered.filter(c => !joined.includes(c.id)).map(c => {
             const color = CATEGORY_COLORS[c.category] || '#c7c4d8'
             return (
-              <div key={c.id} className="glass-card rounded-xl overflow-hidden">
+             <div
+  key={c.id}
+  onClick={() => router.push(`/communities/${c.id}`)}
+  className="glass-card rounded-xl overflow-hidden cursor-pointer"
+>
                 {/* Banner */}
                 <div className="h-16 relative flex items-end px-4 pb-0"
                   style={{ background: `linear-gradient(135deg, rgba(79,70,229,0.3), rgba(76,215,246,0.15))` }}>
@@ -249,11 +403,14 @@ export default function CommunitiesClient({
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-xs font-mono text-on-surface-variant">{c.member_count} members</span>
                     <button
-                      onClick={() => joinCommunity(c.id)}
-                      className="btn-primary text-xs px-3 py-1.5"
-                    >
-                      + Join
-                    </button>
+  onClick={(e) => {
+    e.stopPropagation()
+    joinCommunity(c.id)
+  }}
+  className="btn-primary text-xs px-3 py-1.5"
+>
+  + Join
+</button>
                   </div>
                 </div>
               </div>

@@ -49,6 +49,7 @@ export default function PlacementsClient({ userId, profile, dbDrives, dbOffers, 
   async function register(id: string, company: string) {
     const toastId = toast.loading(`Registering for ${company}...`)
     try {
+      const supabase: any = createClient()
       const { error } = await supabase.from('placement_registrations').insert({
         user_id: userId, drive_id: id, company: company, status: 'registered'
       })

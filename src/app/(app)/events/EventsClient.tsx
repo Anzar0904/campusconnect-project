@@ -38,7 +38,7 @@ export default function EventsClient({
   currentUserId: string;
   initialRSVPs?: string[];
 }) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const events = dbEvents
   const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming')
   const [cat, setCat] = useState('All')

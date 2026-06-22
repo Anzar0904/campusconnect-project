@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 interface FriendProfile {
   id: string
@@ -25,15 +25,6 @@ interface Friendship {
   addressee?: FriendProfile
 }
 
-function Avatar({ profile }: { profile: FriendProfile }) {
-  const url = profile.avatar_url ||
-    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(profile.full_name)}&backgroundColor=4f46e5&textColor=ffffff`
-  return (
-    <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-white/10 shrink-0 shadow-lg">
-      <Image src={url} alt={profile.full_name} width={48} height={48} className="object-cover w-full h-full" />
-    </div>
-  )
-}
 
 export default function FriendsClient({
   friends,
@@ -44,7 +35,7 @@ export default function FriendsClient({
   pending: Friendship[]
   currentUserId: string
 }) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [tab, setTab] = useState<'friends' | 'pending'>('friends')
   const [actionIds, setActionIds] = useState<string[]>([])
 
@@ -119,7 +110,7 @@ export default function FriendsClient({
                   return (
                     <div key={f.id} className="card-premium p-4 flex items-center justify-between group">
                       <div className="flex items-center gap-4 min-w-0">
-                        <Avatar profile={p} />
+                        <GlobalAvatar profile={p} size="lg" />
                         <div className="min-w-0">
                           <p className="sub-heading text-base truncate">{p.full_name}</p>
                           <div className="flex items-center gap-2 mt-1">
@@ -152,7 +143,7 @@ export default function FriendsClient({
                   return (
                     <div key={f.id} className="card-premium p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                       <div className="flex items-center gap-4 min-w-0">
-                        <Avatar profile={p} />
+                        <GlobalAvatar profile={p} size="lg" />
                         <div className="min-w-0">
                           <p className="sub-heading text-lg leading-none">{p.full_name}</p>
                           <p className="text-xs text-zinc-500 mt-2 font-mono uppercase tracking-tighter">

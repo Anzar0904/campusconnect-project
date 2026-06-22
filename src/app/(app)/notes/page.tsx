@@ -17,5 +17,11 @@ export default async function NotesPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
-  return <NotesClient notes={notes ?? []} userId={user.id} userBranch={profile?.branch} />
+  return (
+  <NotesClient
+    notes={notes ?? []}
+    userId={user.id}
+    userBranch={(profile as any)?.branch}
+  />
+)
 }

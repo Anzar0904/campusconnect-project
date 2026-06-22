@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import Image from 'next/image'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import toast from 'react-hot-toast'
 
 const MESS_MENU: Record<string, Record<string, string[]>> = {
@@ -148,15 +148,7 @@ export default function HostelClient({ profile, seekingRoommates, userId }: any)
               {seekingRoommates.map((room:any)=>(
                 <div key={room.id} className="glass-card rounded-xl p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
-                      <Image 
-                        src={room.occupant?.avatar_url||`https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(room.occupant?.full_name||'U')}&backgroundColor=4f46e5&textColor=ffffff`} 
-                        alt={room.occupant?.full_name || ''} 
-                        width={40} 
-                        height={40} 
-                        className="object-cover w-full h-full" 
-                      />
-                    </div>
+                    <GlobalAvatar profile={room.occupant} size="md" />
                     <div>
                       <p className="font-display font-semibold text-on-surface text-sm">{room.occupant?.full_name}</p>
                       <p className="text-xs text-on-surface-variant font-mono">{room.occupant?.branch} · Y{room.occupant?.year}</p>

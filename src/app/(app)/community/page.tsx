@@ -14,7 +14,7 @@ export default async function CommunitiesPage() {
     .select('*')
     .order('member_count', { ascending: false })
 
-  const { data: myMemberships } = await supabase
+  const { data: myMemberships } = await (supabase as any)
     .from('community_members')
     .select('community_id')
     .eq('user_id', user.id)
@@ -22,7 +22,9 @@ export default async function CommunitiesPage() {
   return (
     <CommunitiesClient
       communities={communities || []}
-      myMemberships={(myMemberships || []).map(m => m.community_id)}
+     myMemberships={(myMemberships || []).map(
+  (m: any) => m.community_id
+)}
       currentUserId={user.id}
     />
   )

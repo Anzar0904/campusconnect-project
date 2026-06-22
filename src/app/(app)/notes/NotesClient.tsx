@@ -18,7 +18,7 @@ export default function NotesClient({ notes, userId }: any) {
   const [uploading, setUploading] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const [uploadForm, setUploadForm] = useState({ title:'', subject:'', course_code:'', description:'', year:'' })
-  const supabase = createClient()
+  const supabase: any = createClient()
 
   const filtered = allNotes
     .filter((n:any) => {

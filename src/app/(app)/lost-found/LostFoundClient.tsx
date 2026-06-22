@@ -14,7 +14,7 @@ export default function LostFoundClient({ items, userId }: any) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ type:'lost', title:'', category:'Electronics', description:'', location:'', date_occurred:'' })
   const [posting, setPosting] = useState(false)
-  const supabase = createClient()
+  const supabase: any = createClient()
 
   const filtered = allItems.filter((item:any) => {
     const matchType = typeFilter === 'all' || item.type === typeFilter
@@ -26,7 +26,7 @@ export default function LostFoundClient({ items, userId }: any) {
   async function postItem() {
     if (!form.title || !form.category) { toast.error('Fill required fields'); return }
     setPosting(true)
-    const { error } = await supabase.from('lost_found').insert({ ...form, reporter_id: userId })
+    const { error } = await (supabase as any).from('lost_found').insert({ ...form, reporter_id: userId })
     setPosting(false)
     if (error) { toast.error('Failed to post'); return }
     toast.success('Post added!')

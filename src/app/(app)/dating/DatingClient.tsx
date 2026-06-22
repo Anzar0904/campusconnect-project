@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 const INTERESTS = ['Music','Photography','Coding','Travel','Movies','Fitness','Gaming','Books','Art','Cricket','Cooking','Hiking','Dance','Coffee','Startups','Anime']
 
@@ -36,7 +37,7 @@ export default function DatingClient({
   const [matches, setMatches] = useState<any[]>(initialMatches || [])
   const [swipeDir, setSwipeDir] = useState<'left'|'right'|null>(null)
   const [activeTab, setActiveTab] = useState<'browse'|'matches'|'settings'>('browse')
-  const supabase = createClient()
+  const supabase: any = createClient()
 
   const current = discoverable[cardIdx]
 
@@ -258,10 +259,11 @@ export default function DatingClient({
                   {/* Pseudo-avatar banner */}
                   <div className="h-56 flex items-center justify-center relative"
                     style={{background:`linear-gradient(135deg, ${AVATAR_COLORS[cardIdx % 5]}40, ${AVATAR_COLORS[(cardIdx+2)%5]}40)`}}>
-                    <div className="w-28 h-28 rounded-2xl flex items-center justify-center font-display font-bold text-4xl"
-                      style={{background:AVATAR_COLORS[cardIdx % 5]+'40',border:`2px solid ${AVATAR_COLORS[cardIdx % 5]}60`,color:'white'}}>
-                      {current.profiles.full_name.split(' ').map((n:any)=>n[0]).join('')}
-                    </div>
+                    <GlobalAvatar
+                      profile={current.profiles}
+                      size="custom"
+                      className="w-28 h-28 rounded-2xl text-4xl font-display font-bold ring-2 ring-white/10"
+                    />
                   </div>
                   <div className="p-5">
                     <h3 className="font-display font-bold text-on-surface text-lg">{current.profiles.full_name}</h3>
@@ -317,10 +319,14 @@ export default function DatingClient({
                 const display = getMatchDisplay(m)
                 return (
                   <div key={m.id} className="glass-card rounded-xl p-5 flex flex-col items-center text-center gap-3">
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display font-bold text-2xl"
-                      style={{background:AVATAR_COLORS[display.id.length%5]+'30',color:'white',border:`2px solid ${AVATAR_COLORS[display.id.length%5]}50`}}>
-                      {display.avatar}
-                    </div>
+                    <GlobalAvatar
+                      profile={{
+                        avatar_url: display.avatar_url,
+                        full_name: display.name,
+                      }}
+                      size="custom"
+                      className="w-16 h-16 rounded-2xl font-display font-bold text-2xl border border-white/[0.08]"
+                    />
                     <div>
                       <p className="font-display font-semibold text-on-surface">{display.name}</p>
                       <p className="text-xs font-mono text-on-surface-variant">{display.branch} · Y{display.year}</p>

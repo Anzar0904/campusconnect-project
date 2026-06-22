@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 const CATEGORIES = ['All','Books','Electronics','Clothing','Furniture','Cycles','Stationery','Sports','Other']
 const CONDITIONS = ['new','like_new','good','fair']
@@ -55,7 +56,7 @@ export default function MarketplaceClient({ items, userId }: any) {
         imageUrls.push(fnData.url)
       }
 
-      const { error } = await supabase.from('marketplace_items').insert({
+      const { error } = await (supabase as any).from('marketplace_items').insert({
         title: sellForm.title, description: sellForm.description,
         price: parseFloat(sellForm.price), category: sellForm.category,
         condition: sellForm.condition, seller_id: userId,
@@ -239,13 +240,11 @@ export default function MarketplaceClient({ items, userId }: any) {
 
                   <div className="flex items-center justify-between pt-4 border-t border-white/[0.04]">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-zinc-800 border border-white/[0.08] flex items-center justify-center text-[12px] text-zinc-500 font-bold uppercase overflow-hidden ring-1 ring-white/5">
-                        {item.seller?.avatar_url ? (
-                          <Image src={item.seller.avatar_url} alt={item.seller.full_name} width={28} height={28} className="object-cover w-full h-full" />
-                        ) : (
-                          item.seller?.full_name?.charAt(0) || 'U'
-                        )}
-                      </div>
+                      <GlobalAvatar
+                        profile={item.seller}
+                        size="custom"
+                        className="w-7 h-7 rounded-full text-[12px] ring-1 ring-white/5 border border-white/[0.08]"
+                      />
                       <div className="min-w-0">
                         <p className="text-[11px] font-medium text-zinc-300 truncate max-w-[100px]">{item.seller?.full_name}</p>
                         <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-tighter">{item.seller?.hostel || 'Campus'}</p>
@@ -312,13 +311,11 @@ export default function MarketplaceClient({ items, userId }: any) {
                 )}
 
                 <div className="flex items-center gap-4 py-2">
-                   <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-white/[0.08] flex items-center justify-center text-lg text-zinc-400 font-bold overflow-hidden ring-1 ring-white/10 shadow-lg">
-                      {selectedItem.seller?.avatar_url ? (
-                        <Image src={selectedItem.seller.avatar_url} alt={selectedItem.seller.full_name} width={48} height={48} className="object-cover" />
-                      ) : (
-                        selectedItem.seller?.full_name?.charAt(0)
-                      )}
-                   </div>
+                    <GlobalAvatar
+                      profile={selectedItem.seller}
+                      size="lg"
+                      className="border border-white/[0.08]"
+                    />
                    <div className="min-w-0">
                       <p className="section-label mb-0.5">SELLER</p>
                       <p className="sub-heading text-base leading-none">{selectedItem.seller?.full_name}</p>

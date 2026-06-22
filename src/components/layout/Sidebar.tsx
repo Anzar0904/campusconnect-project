@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 interface NavItem { label: string; href: string; icon: string; badge?: number; phase?: number }
 interface NavSection { label: string; items: NavItem[] }
@@ -18,7 +19,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Home Feed',    href: '/dashboard', icon: 'home' },
       { label: 'Friends',      href: '/friends',   icon: 'group' },
       { label: 'Discover',     href: '/discover',  icon: 'travel_explore' },
-      { label: 'Messages',     href: '/messages',  icon: 'chat_bubble', badge: 3 },
+      { label: 'Messages', href: '/messages', icon: 'chat_bubble' },
       { label: 'My Profile',   href: '/profile',   icon: 'person' },
     ],
   },
@@ -66,6 +67,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Elections',     href: '/elections',    icon: 'how_to_vote' },
       { label: 'AI Assistant',  href: '/ai',           icon: 'smart_toy' },
       { label: 'Rewards',       href: '/rewards',      icon: 'emoji_events' },
+      { label: 'Super Admin', href: '/super-admin', icon: 'admin_panel_settings' },
     ],
   },
 ]
@@ -91,8 +93,6 @@ export function Sidebar({
   const router = useRouter()
   const supabase = createClient()
 
-  const avatarUrl = userAvatar ||
-    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userName || 'U')}&backgroundColor=4f46e5&textColor=ffffff`
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -102,7 +102,9 @@ export function Sidebar({
   const filteredNavSections = NAV_SECTIONS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (item.label === 'Dating' && !isVerified) return false;
+      if (item.label === 'Dating' && !isVerified && userRole !== 'SUPER_ADMIN') return false;
+      if (item.label === 'Super Admin' && userRole !== 'SUPER_ADMIN')
+  return false;
       return true;
     }).map(item => {
       // Inject live notification count for Messages
@@ -176,12 +178,11 @@ export function Sidebar({
         <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.02] border border-white/[0.03] shadow-premium">
           <div className="relative group shrink-0">
             <div className="absolute -inset-1 bg-gradient-to-tr from-brand-500 to-cyan-400 rounded-full blur opacity-25 group-hover:opacity-50 transition-opacity" />
-            <Image 
-              src={avatarUrl} 
-              alt={userName || 'You'} 
-              width={32} 
-              height={32} 
-              className="relative w-8 h-8 rounded-full object-cover ring-1 ring-white/10" 
+            <GlobalAvatar 
+              avatarUrl={userAvatar}
+              fullName={userName}
+              size="sm"
+              className="relative w-8 h-8 rounded-full ring-1 ring-white/10"
             />
           </div>
           <div className="flex-1 min-w-0">

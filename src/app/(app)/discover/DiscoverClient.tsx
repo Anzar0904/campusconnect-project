@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { createClient, checkRateLimit } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 interface Student {
   id: string
@@ -35,7 +35,7 @@ export default function DiscoverClient({
   currentUserId: string
   myFriendships: Friendship[]
 }) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [search, setSearch] = useState('')
   const [branch, setBranch] = useState('')
   const [year, setYear] = useState('')
@@ -59,12 +59,22 @@ export default function DiscoverClient({
       return
     }
 
-    setSent(s => [...s, toId])
-    await supabase.from('friendships').insert({
+    const { error } = await supabase
+  .from('friendships')
+  .insert([
+    {
       requester_id: currentUserId,
       addressee_id: toId,
       status: 'pending',
-    })
+    }
+  ])
+
+if (error) {
+  toast.error(error.message)
+  return
+}
+
+window.location.reload()
   }
 
   const filtered = students.filter(s => {
@@ -93,7 +103,15 @@ export default function DiscoverClient({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by name, username or bio…"
-            className="input-pro pl-11"
+            className="
+input-pro
+pl-11
+bg-white/5
+border-white/10
+focus:border-violet-500
+focus:ring-2
+focus:ring-violet-500/20
+"
           />
         </div>
         <div className="flex gap-3">
@@ -116,15 +134,28 @@ export default function DiscoverClient({
           action={{
             label: "Reset Filters",
             onClick: () => { setSearch(''); setBranch(''); setYear('') }
-          }}
+          }}className="
+card-premium
+p-6
+flex
+flex-col
+items-center
+text-center
+space-y-5
+group
+hover:border-brand-500/30
+hover:-translate-y-1
+hover:shadow-[0_0_40px_rgba(124,58,237,0.15)]
+transition-all
+duration-300
+"
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence mode="popLayout">
             {filtered.map(s => {
-              const relation = sent.includes(s.id) ? 'sent' : getRelation(s.id)
-              const avatarUrl = s.avatar_url ||
-                `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(s.full_name)}&backgroundColor=4f46e5&textColor=ffffff`
+              const relation = getRelation(s.id)
+              
               return (
                 <motion.div 
                   layout
@@ -133,9 +164,12 @@ export default function DiscoverClient({
                   key={s.id} 
                   className="card-premium p-6 flex flex-col items-center text-center space-y-5 group hover:border-brand-500/30 transition-all duration-300 shadow-lg"
                 >
-                  <div className="relative w-20 h-20 rounded-3xl overflow-hidden ring-2 ring-white/5 group-hover:ring-brand-500/20 transition-all duration-500 shadow-2xl">
-                    <Image src={avatarUrl} alt={s.full_name} width={80} height={80} className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110" />
-                  </div>
+                  <GlobalAvatar
+                    profile={s}
+                    size="xl"
+                    className="ring-2 ring-white/5 group-hover:ring-brand-500/20 transition-all duration-500 shadow-2xl"
+                    imageClassName="transition-transform duration-700 group-hover:scale-110"
+                  />
                   
                   <div className="space-y-1">
                     <h3 className="sub-heading text-lg tracking-tight group-hover:text-brand-400 transition-colors">{s.full_name}</h3>
@@ -158,22 +192,39 @@ export default function DiscoverClient({
 
                   <div className="w-full pt-2">
                     {relation === 'none' && (
-                      <button onClick={() => sendRequest(s.id)} className="btn-premium w-full text-xs py-2.5">
-                        <span className="material-symbols-outlined text-[16px]">person_add</span>
-                        Connect
-                      </button>
+                     <button
+  onClick={() => sendRequest(s.id)}
+  className="btn-premium w-full text-xs py-2.5 flex items-center justify-center gap-2"
+>
+  <span className="material-symbols-outlined text-[16px] leading-none">
+    person_add
+  </span>
+  <span className="leading-none">
+    Connect
+  </span>
+</button>
                     )}
                     {relation === 'sent' && (
-                      <button disabled className="btn-ghost-pro w-full text-xs py-2.5 opacity-60">
+                      <button
+  disabled
+  className="btn-ghost-pro w-full text-xs py-2.5 opacity-60 flex items-center justify-center gap-2"
+>
                         <span className="material-symbols-outlined text-[16px]">schedule</span>
                         Pending
                       </button>
                     )}
                     {relation === 'friends' && (
-                      <button disabled className="btn-ghost-pro w-full text-xs py-2.5 opacity-60 border-brand-500/20 text-brand-400">
-                        <span className="material-symbols-outlined text-[16px]">verified</span>
-                        Connected
-                      </button>
+                      <button
+  disabled
+  className="btn-ghost-pro w-full text-xs py-2.5 opacity-60 border-brand-500/20 text-brand-400 flex items-center justify-center gap-2"
+>
+  <span className="material-symbols-outlined text-[16px] leading-none">
+    verified
+  </span>
+  <span className="leading-none">
+    Connected
+  </span>
+</button>
                     )}
                     {relation === 'received' && (
                       <Link href="/friends" className="btn-premium w-full text-xs py-2.5">

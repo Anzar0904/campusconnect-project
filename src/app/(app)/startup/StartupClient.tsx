@@ -28,7 +28,7 @@ const RESOURCES = [
 const stageColor: Record<string,string> = { 'Idea':'#c3c0ff', 'MVP':'#4cd7f6', 'Pre-Revenue':'#fbbf24', 'Revenue':'#86efac' }
 
 export default function StartupClient({ userId }: any) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [tab, setTab] = useState<'startups'|'events'|'resources'|'pitch'>('startups')
   const [selected, setSelected] = useState<any>(null)
   const [pitchForm, setPitchForm] = useState({ name:'', sector:'', stage:'Idea', problem:'', solution:'', traction:'', team:'', ask:'' })

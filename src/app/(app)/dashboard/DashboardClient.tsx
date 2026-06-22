@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 interface Profile {
   id: string
@@ -38,29 +39,6 @@ interface Event {
   start_time: string
   venue: string | null
   category: string
-}
-
-function Avatar({ profile, size = 'md' }: { profile: Profile | null; size?: 'sm' | 'md' | 'lg' }) {
-  const s = size === 'sm' ? 'w-8 h-8' : size === 'lg' ? 'w-12 h-12' : 'w-10 h-10'
-  const name = profile?.full_name || 'Anonymous'
-  const url = profile?.avatar_url ||
-    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=4f46e5&textColor=ffffff`
-  const pixelSize = size === 'sm' ? 32 : size === 'lg' ? 48 : 40
-
-  return (
-    <div className={clsx(
-      "relative rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0 shadow-sm",
-      s
-    )}>
-      <Image 
-        src={url} 
-        alt={name} 
-        width={pixelSize} 
-        height={pixelSize} 
-        className="object-cover w-full h-full"
-      />
-    </div>
-  )
 }
 
 function PostCard({
@@ -103,7 +81,7 @@ function PostCard({
               <span className="material-symbols-outlined text-zinc-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>person_off</span>
             </div>
           ) : (
-            <Avatar profile={author} />
+            <GlobalAvatar profile={author} />
           )}
           <div className="min-w-0">
             <h4 className="font-display font-semibold text-zinc-100 text-sm tracking-tight truncate">
@@ -205,16 +183,19 @@ function CreatePost({ profile, onPost }: { profile: Profile | null; onPost: (p: 
       return
     }
 
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({
-        content: content.trim(),
-        author_id: profile!.id,
-        post_type: postType,
-        is_anonymous: anon,
-      })
-      .select('*, author:profiles!posts_author_id_fkey(id,full_name,avatar_url,branch,year,username)')
-      .single()
+    const { data, error } = await (supabase as any)
+  .from('posts')
+  .insert([
+    {
+      content: content.trim(),
+      author_id: profile!.id,
+      post_type: postType,
+      is_anonymous: anon,
+      // keep the rest of your fields
+    }
+  ])
+  .select('*, author:profiles!posts_author_id_fkey(id,full_name,avatar_url,branch,year,username)')
+  .single()
     if (data) {
       onPost(data as any)
       setContent('')
@@ -233,7 +214,7 @@ function CreatePost({ profile, onPost }: { profile: Profile | null; onPost: (p: 
     <div className="card-premium p-4 transition-all duration-300">
       {!open ? (
         <div className="flex items-center gap-3">
-          <Avatar profile={profile} size="sm" />
+          <GlobalAvatar profile={profile} size="sm" />
           <button
             onClick={() => setOpen(true)}
             className="flex-1 text-left px-4 py-2.5 rounded-xl text-sm text-zinc-500 bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all"
@@ -263,7 +244,7 @@ function CreatePost({ profile, onPost }: { profile: Profile | null; onPost: (p: 
           </div>
 
           <div className="flex items-start gap-3">
-            <Avatar profile={anon ? null : profile} size="sm" />
+            <GlobalAvatar profile={anon ? null : profile} size="sm" />
             <textarea
               autoFocus
               value={content}
@@ -349,11 +330,14 @@ export default function DashboardClient({
   currentUserId: string
   initialLikedIds?: string[]
 }) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const firstName = profile?.full_name?.split(' ')[0] || 'there'
+  const firstName =
+  profile?.username?.trim() ||
+  profile?.full_name?.trim() ||
+  'there'
 
   const handleNewPost = (post: Post) => setPosts(p => [post, ...p])
 
@@ -532,7 +516,7 @@ export default function DashboardClient({
               {['Anika Mehra', 'Rohan Gupta', 'Sakshi Jain'].map((name, i) => (
                 <div key={name} className="flex items-center justify-between group p-1 -m-1 rounded-xl transition-all">
                   <div className="flex items-center gap-3">
-                    <Avatar profile={{ 
+                    <GlobalAvatar profile={{ 
                       id: i.toString(),
                       full_name: name,
                       avatar_url: null,

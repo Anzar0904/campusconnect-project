@@ -19,7 +19,7 @@ export default async function EventsPage() {
     .select('event_id')
     .eq('user_id', user.id)
 
-  const rsvpIds = (myRSVPs || []).map(r => r.event_id)
+  const rsvpIds = (myRSVPs || []).map((r: any) => r.event_id)
 
   return <EventsClient events={events || []} currentUserId={user.id} initialRSVPs={rsvpIds} />
 }

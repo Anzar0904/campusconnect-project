@@ -18,11 +18,11 @@ export async function checkRateLimit(
   limit: number = 10,
   window: string = '1 hour'
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('check_rate_limit', {
-    p_action: action,
-    p_limit: limit,
-    p_window: window
-  })
+  const { data, error } = await (supabase as any).rpc('check_rate_limit', {
+  p_action: action,
+  p_limit: limit,
+  p_window: window,
+})
 
   if (error) {
     console.error('Rate limit check failed:', error)

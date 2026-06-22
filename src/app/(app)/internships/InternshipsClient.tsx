@@ -27,7 +27,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
   const [selectedInternship, setSelectedInternship] = useState<any>(null)
   const [applying, setApplying] = useState(false)
   const [tab, setTab] = useState<'browse'|'applied'>('browse')
-  const supabase = createClient()
+  const supabase: any = createClient()
 
   const filtered = INTERNSHIPS.filter(i => {
     const matchType = typeFilter === 'All' || i.type === typeFilter

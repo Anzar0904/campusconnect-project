@@ -14,7 +14,7 @@ const RESOURCES = [
 const POMODORO_MINS = [25, 30, 45, 60]
 
 export default function StudyClient({ userId, profile, initialGroups }: any) {
-  const supabase = createClient()
+  const supabase: any = createClient()
   const [groups, setGroups] = useState<any[]>(initialGroups || [])
   const [groupForm, setGroupForm] = useState({ subject:'', venue:'', time:'', max_members: 4 })
   const [showCreate, setShowCreate] = useState(false)

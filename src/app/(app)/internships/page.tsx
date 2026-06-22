@@ -15,8 +15,9 @@ export default async function InternshipsPage() {
     .eq('id', user.id)
     .single()
 
-  const { data: applications } = await supabase
-    .from('internship_applications')
+  const { data: applications } = await (supabase as any)
+  .from('internship_applications')
+
     .select('internship_id, status')
     .eq('user_id', user.id)
 

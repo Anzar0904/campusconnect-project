@@ -10,11 +10,12 @@ export default async function DiscoverPage() {
   if (!user) redirect('/auth/login')
 
   const { data: students } = await supabase
-    .from('profiles')
-    .select('id, full_name, username, avatar_url, branch, year, bio, hostel')
-    .neq('id', user.id)
-    .not('full_name', 'is', null)
-    .limit(50)
+  .from('profiles')
+  .select('id, full_name, username, avatar_url, branch, year, bio, hostel')
+  .eq('is_verified', true)
+  .neq('id', user.id)
+  .not('full_name', 'is', null)
+  .limit(50)
 
   const { data: myFriendships } = await supabase
     .from('friendships')

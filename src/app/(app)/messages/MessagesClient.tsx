@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { format } from 'date-fns'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 
 interface Profile {
   id: string
@@ -31,15 +32,6 @@ interface Message {
   content: string
   created_at: string
   read: boolean
-}
-
-function Avatar({ p }: { p: Profile }) {
-  const url = p.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(p.full_name)}&backgroundColor=4f46e5&textColor=ffffff`
-  return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden ring-1 ring-white/10">
-      <Image src={url} alt={p.full_name} width={40} height={40} className="object-cover w-full h-full" />
-    </div>
-  )
 }
 
 export default function MessagesClient({
@@ -77,18 +69,49 @@ export default function MessagesClient({
 
     // Realtime subscription
     const channel = supabase
-      .channel(`messages-${selectedId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `receiver_id=eq.${currentUserId}`,
-      }, payload => {
-        if (payload.new.sender_id === selectedId) {
-          setMessages(m => [...m, payload.new as Message])
-        }
-      })
-      .subscribe()
+  .channel(`messages-${selectedId}`)
+
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `receiver_id=eq.${currentUserId}`,
+    },
+    payload => {
+      const msg = payload.new as Message
+
+      if (
+        msg.sender_id === selectedId ||
+        msg.receiver_id === selectedId
+      ) {
+        setMessages(m => [...m, msg])
+      }
+    }
+  )
+
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `sender_id=eq.${currentUserId}`,
+    },
+    payload => {
+      const msg = payload.new as Message
+
+      if (
+        msg.sender_id === currentUserId &&
+        msg.receiver_id === selectedId
+      ) {
+        setMessages(m => [...m, msg])
+      }
+    }
+  )
+
+  .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [selectedId, currentUserId, supabase])
@@ -113,7 +136,9 @@ export default function MessagesClient({
     const msg = { sender_id: currentUserId, receiver_id: selectedId, content: input.trim(), read: false }
     setMessages(m => [...m, { ...msg, id: Date.now().toString(), created_at: new Date().toISOString() }])
     setInput('')
-    await supabase.from('messages').insert(msg)
+    await (supabase as any)
+  .from('messages')
+  .insert([msg])
     setSending(false)
   }
 
@@ -155,7 +180,7 @@ export default function MessagesClient({
                 )}
               >
                 <div className="w-11 h-11 shrink-0">
-                  <Avatar p={f} />
+                  <GlobalAvatar profile={f} size="custom" className="w-full h-full" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className={clsx(
@@ -197,7 +222,7 @@ export default function MessagesClient({
                   <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 </button>
                 <div className="w-10 h-10">
-                  <Avatar p={selectedFriend!} />
+                  <GlobalAvatar profile={selectedFriend!} size="custom" className="w-full h-full" />
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-50 tracking-tight">{selectedFriend?.full_name}</p>

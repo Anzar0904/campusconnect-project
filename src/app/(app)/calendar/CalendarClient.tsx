@@ -11,7 +11,13 @@ export default function CalendarClient({ events, userId }: any) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<Date|null>(null)
   const [showAddEvent, setShowAddEvent] = useState(false)
-  const [newEvent, setNewEvent] = useState({ title:'', start_time:'', venue:'', category:'Academic', description:'' })
+  const [newEvent, setNewEvent] = useState({
+  title: '',
+  start_time: '',
+  venue: '',
+  category: 'Academic',
+  description: ''
+})
   const supabase = createClient()
 
   const monthStart = startOfMonth(currentMonth)
@@ -30,7 +36,18 @@ export default function CalendarClient({ events, userId }: any) {
 
   async function addEvent() {
     if (!newEvent.title || !newEvent.start_time) { toast.error('Fill title and date'); return }
-    const { error } = await supabase.from('events').insert({ ...newEvent, organizer_id: userId })
+   const eventData = {
+  title: newEvent.title,
+  start_time: newEvent.start_time,
+  venue: newEvent.venue,
+  category: newEvent.category,
+  description: newEvent.description,
+  organizer_id: userId,
+}
+
+const { error } = await (supabase as any)
+  .from('events')
+  .insert([eventData])
     if (error) { toast.error('Failed to add event'); return }
     toast.success('Event added!')
     setShowAddEvent(false)

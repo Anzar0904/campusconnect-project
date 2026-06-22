@@ -6,7 +6,9 @@ import { format } from 'date-fns'
 
 export default function SuperAdminClient({ userId, ownerEmail }: { userId: string, ownerEmail: string }) {
   const supabase = useMemo(() => createClient(), [])
-  const [activeTab, setActiveTab] = useState<'overview'|'users'|'colleges'|'admins'|'moderation'|'audit'>('overview')
+  const [activeTab, setActiveTab] = useState<
+  'overview'|'users'|'colleges'|'admins'|'moderation'|'dating'|'audit'
+>('overview')
 
   // Data states
   const [metrics, setMetrics] = useState<any>(null)
@@ -15,6 +17,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   const [logs, setLogs] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
   const [invites, setInvites] = useState<any[]>([])
+  const [datingRequests, setDatingRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
@@ -42,11 +45,17 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       const { data: reportData } = await supabase.from('abuse_reports').select('*, reporter:profiles!abuse_reports_reporter_id_fkey(full_name)').order('created_at', { ascending: false }).limit(30)
       const { data: inviteData } = await supabase.from('admin_invitations').select('*, inviter:profiles!admin_invitations_invited_by_fkey(full_name), college:colleges(name)').order('created_at', { ascending: false })
 
+      const { data: datingRequests } = await supabase
+  .from('dating_verification_requests')
+  .select('*')
+  .eq('status', 'pending')
+
       setUsers(userData || [])
       setColleges(collegeData || [])
       setLogs(logData || [])
       setReports(reportData || [])
       setInvites(inviteData || [])
+      setDatingRequests(datingRequests || [])
 
     } catch (err) {
       toast.error('Failed to load admin data')
@@ -62,15 +71,22 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   // --- ACTIONS ---
 
   async function handleVerifyUser(targetId: string, verify: boolean) {
-    const { error } = await supabase.from('profiles').update({ is_verified: verify }).eq('id', targetId)
-    if (error) { toast.error(error.message); return }
-    toast.success(verify ? 'User verified' : 'Verification revoked')
-    fetchData()
+   const { error } = await (supabase as any)
+  .from('profiles')
+  .update({
+    is_verified: verify
+  })
+  .eq('id', targetId)
   }
 
   async function handleSuspendUser(targetId: string, suspend: boolean) {
     if (!confirm(`Are you sure you want to ${suspend ? 'suspend' : 'reactivate'} this user?`)) return
-    const { error } = await supabase.from('profiles').update({ is_suspended: suspend }).eq('id', targetId)
+    const { error } = await (supabase as any)
+  .from('profiles')
+  .update({
+    is_suspended: suspend
+  })
+  .eq('id', targetId)
     if (error) { toast.error(error.message); return }
     toast.success(suspend ? 'User suspended' : 'User reactivated')
     fetchData()
@@ -78,14 +94,24 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
   async function handleUpdateRole(targetId: string, newRole: string) {
     if (!confirm(`Are you sure you want to promote this user to ${newRole}?`)) return
-    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', targetId)
+    const { error } = await (supabase as any)
+  .from('profiles')
+  .update({
+    role: newRole
+  })
+  .eq('id', targetId)
     if (error) { toast.error(error.message); return }
     toast.success('Role updated successfully')
     fetchData()
   }
 
   async function handleToggleCollege(id: string, currentStatus: boolean) {
-    const { error } = await supabase.from('colleges').update({ is_active: !currentStatus }).eq('id', id)
+    const { error } = await (supabase as any)
+  .from('colleges')
+  .update({
+    is_active: !currentStatus
+  })
+  .eq('id', id)
     if (error) { toast.error(error.message); return }
     toast.success(!currentStatus ? 'College activated' : 'College disabled')
     fetchData()
@@ -97,7 +123,9 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
   async function handleInviteAdmin() {
     if (!inviteForm.email) return toast.error('Email is required')
-    const { error } = await supabase.from('admin_invitations').insert({
+    const { error } = await (supabase as any)
+  .from('admin_invitations')
+  .insert({
       email: inviteForm.email,
       role: inviteForm.role,
       college_id: inviteForm.role === 'COLLEGE_ADMIN' ? inviteForm.college_id : null,
@@ -111,15 +139,62 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
   async function handleCreateCollege() {
     if (!collegeForm.name || !collegeForm.email_domain) return toast.error('Name and domain are required')
-    const { error } = await supabase.from('colleges').insert(collegeForm)
+    const { error } = await (supabase as any)
+  .from('colleges')
+  .insert([collegeForm])
     if (error) { toast.error(error.message); return }
     toast.success('College added!')
     setCollegeForm({ name: '', city: '', email_domain: '' })
     fetchData()
   }
+  async function handleApproveDatingRequest(
+  requestId: string,
+  userId: string
+  
+) {
+  const { error: profileError } = await (supabase as any)
+  .from('profiles')
+  .update({
+    dating_verified: true
+  })
+  .eq('id', userId)
+
+  if (profileError) {
+    toast.error(profileError.message)
+    return
+  }
+
+  const {
+  data: { user }
+} = await supabase.auth.getUser()
+
+  const { error: requestError } = await supabase
+    .from('dating_verification_requests')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: user?.id
+    })
+    .eq('id', requestId)
+
+  if (requestError) {
+    toast.error(requestError.message)
+    return
+  }
+
+  toast.success('Dating verification approved')
+  fetchData()
+}
 
   async function handleUpdateReportStatus(id: string, newStatus: string) {
-    const { error } = await supabase.from('abuse_reports').update({ status: newStatus, reviewed_at: new Date().toISOString(), reviewed_by: userId }).eq('id', id)
+    const { error } = await (supabase as any)
+  .from('abuse_reports')
+  .update({
+    status: newStatus,
+    reviewed_at: new Date().toISOString(),
+    reviewed_by: userId
+  })
+  .eq('id', id)
     if (error) { toast.error(error.message); return }
     toast.success('Report ' + newStatus)
     fetchData()
@@ -136,7 +211,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2">
-        {(['overview','users','colleges','admins','moderation','audit'] as const).map(t => (
+        {(['overview','users','colleges','admins','moderation','dating','audit'] as const).map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`px-4 py-2 rounded-xl text-sm font-mono transition-all capitalize ${activeTab === t ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface border border-white/5 text-on-surface-variant hover:text-on-surface hover:bg-white/5'}`}>
             {t}
@@ -289,6 +364,62 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       )}
 
       {/* Audit Tab */}
+      {activeTab === 'dating' && (
+  <div className="space-y-4">
+    <h2 className="text-2xl font-bold">
+      Dating Verification Requests
+    </h2>
+
+    {datingRequests.length === 0 ? (
+      <div className="glass-card rounded-2xl p-6">
+        No pending requests
+      </div>
+    ) : (
+      datingRequests.map((request) => (
+        <div
+          key={request.id}
+          className="glass-card rounded-2xl p-6"
+        >
+          <div className="space-y-2">
+            <p><strong>Name:</strong> {request.full_name}</p>
+            <p><strong>Email:</strong> {request.email}</p>
+            <p><strong>Branch:</strong> {request.branch}</p>
+            <p><strong>Year:</strong> {request.year}</p>
+            <p><strong>Roll No:</strong> {request.roll_number}</p>
+            <p><strong>Status:</strong> {request.status}</p>
+
+            <button
+  onClick={() => {
+    const { data } = supabase.storage
+      .from('dating-verification')
+      .getPublicUrl(request.id_card_url)
+
+    window.open(data.publicUrl, '_blank')
+  }}
+  className="text-primary underline"
+>
+  View ID Card
+</button>
+
+            <div className="pt-4">
+              <button
+                onClick={() =>
+                  handleApproveDatingRequest(
+                    request.id,
+                    request.user_id
+                  )
+                }
+                className="px-4 py-2 bg-green-600 rounded-xl"
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+)}
       {activeTab === 'audit' && (
         <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
           <div className="overflow-x-auto">

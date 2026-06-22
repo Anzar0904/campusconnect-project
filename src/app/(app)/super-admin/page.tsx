@@ -18,13 +18,19 @@ export default async function SuperAdminPage() {
     .select('role')
     .eq('id', user.id)
     .single()
+    const profileData = profile as any
 
-  if (profile?.role !== 'SUPER_ADMIN') {
+  if (profileData?.role !== 'SUPER_ADMIN') {
     redirect('/dashboard')
   }
 
   // Fetch dynamic owner email as the single source of truth
   const { data: ownerEmailData } = await supabase.rpc('owner_email')
   
-  return <SuperAdminClient userId={user.id} ownerEmail={ownerEmailData as string} />
+  return (
+  <SuperAdminClient
+    userId={user.id}
+    ownerEmail={ownerEmailData ?? ''}
+  />
+)
 }

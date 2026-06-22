@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       abuse_reports: {
@@ -97,47 +72,6 @@ export type Database = {
           {
             foreignKeyName: "abuse_reports_reviewed_by_fkey"
             columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string | null
-          title: string
-          content: string | null
-          type: string
-          link: string | null
-          read: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          title: string
-          content?: string | null
-          type: string
-          link?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          title?: string
-          content?: string | null
-          type?: string
-          link?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -844,6 +778,79 @@ export type Database = {
           {
             foreignKeyName: "dating_swipes_swiper_id_fkey"
             columns: ["swiper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dating_verification_requests: {
+        Row: {
+          branch: string | null
+          college_id: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          id_card_url: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          roll_number: string | null
+          status: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          branch?: string | null
+          college_id: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          id_card_url: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          roll_number?: string | null
+          status?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          branch?: string | null
+          college_id?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          id_card_url?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          roll_number?: string | null
+          status?: string
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dating_verification_requests_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dating_verification_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dating_verification_requests_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1617,6 +1624,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       placement_registrations: {
         Row: {
           company: string | null
@@ -1927,6 +1975,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accepted_terms_at: string | null
           avatar_url: string | null
           bio: string | null
           branch: string | null
@@ -1939,6 +1988,7 @@ export type Database = {
           is_suspended: boolean
           is_verified: boolean
           phone: string | null
+          policy_version: string | null
           role: string
           roll_number: string | null
           updated_at: string
@@ -1946,6 +1996,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           bio?: string | null
           branch?: string | null
@@ -1958,6 +2009,7 @@ export type Database = {
           is_suspended?: boolean
           is_verified?: boolean
           phone?: string | null
+          policy_version?: string | null
           role?: string
           roll_number?: string | null
           updated_at?: string
@@ -1965,6 +2017,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          accepted_terms_at?: string | null
           avatar_url?: string | null
           bio?: string | null
           branch?: string | null
@@ -1977,6 +2030,7 @@ export type Database = {
           is_suspended?: boolean
           is_verified?: boolean
           phone?: string | null
+          policy_version?: string | null
           role?: string
           roll_number?: string | null
           updated_at?: string
@@ -2300,6 +2354,39 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          accepted: boolean
+          accepted_at: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          policy_version: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accepted: boolean
+          accepted_at?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          policy_version: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accepted?: boolean
+          accepted_at?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          policy_version?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           college_id: string | null
@@ -2397,7 +2484,7 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       toggle_post_like: {
-        Args: { p_post_id: string }
+        Args: { p_post_id: string; p_user_id: string }
         Returns: Json
       }
     }
@@ -2528,9 +2615,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
