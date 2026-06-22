@@ -29,8 +29,6 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Communities',  href: '/community',  icon: 'diversity_3' },
       { label: 'Clubs',        href: '/clubs',      icon: 'sports_esports' },
       { label: 'Events',       href: '/events',     icon: 'event' },
-      { label: 'Campus Pulse', href: '/pulse',      icon: 'campaign' },
-      { label: 'Hostel Hub',   href: '/hostel',     icon: 'apartment' },
     ],
   },
   {
@@ -46,7 +44,6 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Marketplace',
     items: [
       { label: 'Buy & Sell',   href: '/marketplace', icon: 'storefront' },
-      { label: 'Lost & Found', href: '/lost-found',  icon: 'search' },
     ],
   },
   {
@@ -55,7 +52,6 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Internships',  href: '/internships', icon: 'work_outline' },
       { label: 'Placements',   href: '/placements',  icon: 'business_center' },
       { label: 'Mentorship',   href: '/mentorship',  icon: 'support_agent' },
-      { label: 'Alumni',       href: '/alumni',      icon: 'school' },
     ],
   },
   {
@@ -64,7 +60,6 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Dating',        href: '/dating',       icon: 'favorite' },
       { label: 'Coding Arena',  href: '/coding-arena', icon: 'code' },
       { label: 'Startup Cell',  href: '/startup',      icon: 'rocket_launch' },
-      { label: 'Elections',     href: '/elections',    icon: 'how_to_vote' },
       { label: 'AI Assistant',  href: '/ai',           icon: 'smart_toy' },
       { label: 'Rewards',       href: '/rewards',      icon: 'emoji_events' },
       { label: 'Super Admin', href: '/super-admin', icon: 'admin_panel_settings' },
