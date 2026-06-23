@@ -17,6 +17,7 @@ export interface GlobalAvatarProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'custom'
   className?: string
   imageClassName?: string
+  status?: 'online' | 'offline' | 'typing'
 }
 
 const GRADIENTS = [
@@ -35,6 +36,7 @@ export function GlobalAvatar({
   size = 'md',
   className,
   imageClassName,
+  status,
 }: GlobalAvatarProps) {
   const [imgError, setImgError] = useState(false)
 
@@ -112,6 +114,13 @@ export function GlobalAvatar({
         >
           {initial}
         </div>
+      )}
+      {status && (
+        <span className={cn(
+          "absolute bottom-0 right-0 block rounded-full ring-1.5 ring-zinc-950",
+          status === 'online' ? 'bg-emerald-400 neon-ring-active w-2 h-2' :
+          status === 'typing' ? 'bg-sky-400 w-2 h-2 animate-pulse' : 'bg-neutral-500 w-2 h-2'
+        )} />
       )}
     </div>
   )

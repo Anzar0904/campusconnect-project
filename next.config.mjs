@@ -4,6 +4,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: 'api.dicebear.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
 
@@ -45,7 +46,7 @@ const nextConfig = {
               // Fonts
               "font-src 'self' https://fonts.gstatic.com",
               // Images
-              "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com",
+              "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com https://images.unsplash.com",
               // API connections
               [
                 "connect-src 'self'",
