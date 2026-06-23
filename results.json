@@ -1,0 +1,102 @@
+{
+  "1": {
+    "status": "PASS",
+    "details": "Users created via SQL injection bypass. IDs: {\"student1\":\"870109e6-7e6e-420a-ad82-dbfe98e1b679\",\"student2\":\"dbbc131e-c5f8-494f-ab85-7dcada0dbb30\",\"admin\":\"97eb78b5-cb3b-426b-9152-e8a3795de2ba\",\"super_admin\":\"8cc578e5-b235-4899-bbd4-2988f620e871\"}"
+  },
+  "2": {
+    "status": "PASS",
+    "details": ""
+  },
+  "3": {
+    "status": "PASS",
+    "details": "Updated profile bio: Just another coder student"
+  },
+  "4": {
+    "status": "PASS",
+    "details": "Uploaded to 870109e6-7e6e-420a-ad82-dbfe98e1b679/avatar_1782253293543.png"
+  },
+  "5": {
+    "status": "PASS",
+    "details": "Friend request ID: 45cf7324-c483-4303-b305-4d0ff32f81de"
+  },
+  "6": {
+    "status": "PASS",
+    "details": "Status updated to: accepted"
+  },
+  "7": {
+    "status": "PASS",
+    "details": "Community ID: 67a92458-86c3-41af-9ecc-48cc167c3afc"
+  },
+  "8": {
+    "status": "PASS",
+    "details": "Joined community member ID: dbbc131e-c5f8-494f-ab85-7dcada0dbb30"
+  },
+  "9": {
+    "status": "PASS",
+    "details": "Post ID: db698864-cb4e-4477-9db5-c173ba4c3d4b"
+  },
+  "10": {
+    "status": "PASS",
+    "details": "Study Group ID: 77ef6a31-7c6c-4882-ab36-881ac458f8e8"
+  },
+  "11": {
+    "status": "PASS",
+    "details": "Joined member ID: dbbc131e-c5f8-494f-ab85-7dcada0dbb30"
+  },
+  "12": {
+    "status": "PASS",
+    "details": "Message ID: 7cd0a1ae-cad6-45df-b991-02ee52d17407"
+  },
+  "13": {
+    "status": "PASS",
+    "details": "Found notifications for: message, friend_request"
+  },
+  "14": {
+    "status": "PASS",
+    "details": "Internship ID: f341f4a5-d57d-48fc-8c62-a56443b7b592"
+  },
+  "15": {
+    "status": "PASS",
+    "details": "Application ID: 38374792-4f66-40b8-888b-5783ac31f650"
+  },
+  "16": {
+    "status": "PASS",
+    "details": "Event ID: 15b0f3af-7354-4408-b033-7dd74dd22100"
+  },
+  "17": {
+    "status": "PASS",
+    "details": "Attendee registered: 870109e6-7e6e-420a-ad82-dbfe98e1b679"
+  },
+  "18": {
+    "status": "PASS",
+    "details": "Paper ID: 1f55ec86-c7fa-46a4-9d39-45f6a505a06c"
+  },
+  "19": {
+    "status": "PASS",
+    "details": "Downloaded. Total downloads: 1"
+  },
+  "20": {
+    "status": "PASS",
+    "details": "Listing ID: 506a30b6-abb1-4b63-bb32-8417707df756"
+  },
+  "21": {
+    "status": "PASS",
+    "details": "Inquiry Message ID: 2afa69eb-90a2-4c34-81e2-aa2b00197c46"
+  },
+  "22": {
+    "status": "PASS",
+    "details": "Mutual match created: 1e9f4640-04f0-4772-b548-39f8e1e8cb76"
+  },
+  "23": {
+    "status": "PASS",
+    "details": "Friendship status accepted verified: accepted"
+  },
+  "24": {
+    "status": "PASS",
+    "details": "Post deleted successfully by college admin"
+  },
+  "25": {
+    "status": "PASS",
+    "details": "Super admin controls verified. Suspension & reactivation successful."
+  }
+}
