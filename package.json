@@ -18,7 +18,7 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.383.0",
-    "next": "14.2.3",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
@@ -36,13 +36,21 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.2.3",
+    "eslint-config-next": "14.2.35",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "postcss": "^8",
+    "postcss": "^8.5.15",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5"
+  },
+  "overrides": {
+    "next": "14.2.35",
+    "postcss": "^8.5.15",
+    "minimatch": "^9.0.8",
+    "js-yaml": "^4.1.2",
+    "glob": "^10.5.0",
+    "form-data": "^4.0.6"
   }
 }
