@@ -9,15 +9,20 @@ export default async function CommunitiesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: communities } = await supabase
-    .from('communities')
-    .select('*')
-    .order('member_count', { ascending: false })
+  // Fetch communities and user memberships in parallel
+  const [communitiesResult, membershipsResult] = await Promise.all([
+    supabase
+      .from('communities')
+      .select('*')
+      .order('member_count', { ascending: false }),
+    (supabase as any)
+      .from('community_members')
+      .select('community_id')
+      .eq('user_id', user.id)
+  ])
 
-  const { data: myMemberships } = await (supabase as any)
-    .from('community_members')
-    .select('community_id')
-    .eq('user_id', user.id)
+  const communities = communitiesResult.data
+  const myMemberships = membershipsResult.data
 
   return (
     <CommunitiesClient

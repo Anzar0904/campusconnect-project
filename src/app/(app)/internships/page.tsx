@@ -9,17 +9,21 @@ export default async function InternshipsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('branch, year, skills, resume_url')
-    .eq('id', user.id)
-    .single()
+  // Fetch profile and internship applications concurrently
+  const [profileResult, applicationsResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('branch, year, skills, resume_url')
+      .eq('id', user.id)
+      .single(),
+    (supabase as any)
+      .from('internship_applications')
+      .select('internship_id, status')
+      .eq('user_id', user.id)
+  ])
 
-  const { data: applications } = await (supabase as any)
-  .from('internship_applications')
-
-    .select('internship_id, status')
-    .eq('user_id', user.id)
+  const profile = profileResult.data
+  const applications = applicationsResult.data
 
   const appliedMap: Record<string, string> = {}
   for (const a of applications ?? []) appliedMap[a.internship_id] = a.status

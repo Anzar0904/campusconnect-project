@@ -9,15 +9,20 @@ export default async function EventsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .order('start_time', { ascending: true })
+  // Fetch events and RSVPs in parallel
+  const [eventsResult, rsvpsResult] = await Promise.all([
+    supabase
+      .from('events')
+      .select('*')
+      .order('start_time', { ascending: true }),
+    supabase
+      .from('event_attendees')
+      .select('event_id')
+      .eq('user_id', user.id)
+  ])
 
-  const { data: myRSVPs } = await supabase
-    .from('event_attendees')
-    .select('event_id')
-    .eq('user_id', user.id)
+  const events = eventsResult.data
+  const myRSVPs = rsvpsResult.data
 
   const rsvpIds = (myRSVPs || []).map((r: any) => r.event_id)
 

@@ -20,28 +20,35 @@ export default async function CommunityPage({
     redirect('/auth/login')
   }
 
-  const { data: community, error: communityError } = await supabase
-    .from('communities')
-    .select('*')
-    .eq('id', id)
-    .single()
+  // Fetch community info, membership status, and community posts concurrently
+  const [communityResult, membershipResult, postsResult] = await Promise.all([
+    supabase
+      .from('communities')
+      .select('*')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('community_members')
+      .select('*')
+      .eq('community_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('posts')
+      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
+      .eq('community_id', id)
+      .order('created_at', { ascending: false })
+  ])
+
+  const community = communityResult.data
+  const communityError = communityResult.error
+  const membership = membershipResult.data
+  const posts = postsResult.data
+  const postsError = postsResult.error
 
   if (communityError || !community) {
     notFound()
   }
-
-  const { data: membership } = await supabase
-    .from('community_members')
-    .select('*')
-    .eq('community_id', id)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  const { data: posts, error: postsError } = await supabase
-  .from('posts')
-  .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
-  .eq('community_id', community.id)
-  .order('created_at', { ascending: false })
 
 console.log('COMMUNITY ID:', community.id)
 console.log('POSTS:', posts)

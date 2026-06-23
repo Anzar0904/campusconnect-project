@@ -45,18 +45,85 @@ function PostCard({
   post,
   currentUserId,
   onLike,
-  initialLiked = false,
+  liked = false,
+  currentUserProfile,
+  onCommentAdded,
 }: {
   post: Post
   currentUserId: string
   onLike: (id: string) => void
-  initialLiked?: boolean
+  liked?: boolean
+  currentUserProfile: Profile | null
+  onCommentAdded: (postId: string) => void
 }) {
-  const [liked, setLiked] = useState(initialLiked)
   const author = post.author
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState<any[]>([])
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const supabase = createClient()
+
+  const fetchComments = async () => {
+    setLoadingComments(true)
+    const { data, error } = await supabase
+      .from('comments')
+      .select('id, content, created_at, author_id, author:profiles(id, full_name, avatar_url, username)')
+      .eq('post_id', post.id)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching comments:', error)
+      toast.error('Failed to load comments')
+    } else {
+      setComments(data || [])
+    }
+    setLoadingComments(false)
+  }
+
+  const handleCommentsToggle = () => {
+    const nextShow = !showComments
+    setShowComments(nextShow)
+    if (nextShow) {
+      fetchComments()
+    }
+  }
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newComment.trim() || submitting) return
+    setSubmitting(true)
+
+    const allowed = await checkRateLimit(supabase, 'post', 15, '1 minute')
+    if (!allowed) {
+      toast.error('Slow down! You are commenting too frequently.')
+      setSubmitting(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        post_id: post.id,
+        author_id: currentUserId,
+        content: newComment.trim(),
+      })
+      .select('id, content, created_at, author_id, author:profiles(id, full_name, avatar_url, username)')
+      .single()
+
+    if (error) {
+      console.error('Error submitting comment:', error)
+      toast.error('Failed to submit comment')
+    } else if (data) {
+      setComments(prev => [...prev, data])
+      setNewComment('')
+      onCommentAdded(post.id)
+      toast.success('Comment posted!')
+    }
+    setSubmitting(false)
+  }
 
   const handleLike = () => {
-    setLiked(l => !l)
     onLike(post.id)
   }
 
@@ -124,11 +191,19 @@ function PostCard({
           >
             favorite
           </motion.span>
-          <span className="font-mono">{post.likes_count + (liked ? 1 : 0)}</span>
+          <span className="font-mono">{post.likes_count}</span>
         </button>
 
-        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05] transition-all duration-200">
-          <span className="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+        <button 
+          onClick={handleCommentsToggle}
+          className={clsx(
+            "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+            showComments ? "bg-brand-500/10 text-brand-400" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.05]"
+          )}
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {showComments ? 'chat_bubble' : 'chat_bubble_outline'}
+          </span>
           <span className="font-mono">{post.comments_count}</span>
         </button>
 
@@ -138,6 +213,69 @@ function PostCard({
           </button>
         </div>
       </div>
+
+      {showComments && (
+        <div className="mt-4 pt-4 border-t border-white/[0.05] space-y-4">
+          {/* Comments list */}
+          {loadingComments ? (
+            <div className="flex justify-center py-4">
+              <span className="w-5 h-5 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin" />
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-[11px] text-zinc-500 text-center py-4 font-mono">
+              No comments yet. Start the conversation!
+            </p>
+          ) : (
+            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 animate-fade-in">
+              {comments.map(comment => (
+                <div key={comment.id} className="flex items-start gap-2.5 text-xs text-zinc-300">
+                  <div className="shrink-0 mt-0.5">
+                    <GlobalAvatar profile={comment.author} size="sm" />
+                  </div>
+                  <div className="flex-1 bg-white/[0.02] border border-white/[0.04] rounded-xl p-2.5 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-zinc-200">
+                        {comment.author?.full_name || 'IILM Student'}
+                      </span>
+                      <span className="text-[9px] font-mono text-zinc-500">
+                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-zinc-300 whitespace-pre-wrap">{comment.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add comment form */}
+          <div className="flex items-center gap-2.5 pt-2 border-t border-white/[0.03]">
+            <div className="shrink-0">
+              <GlobalAvatar profile={currentUserProfile} size="sm" />
+            </div>
+            <form onSubmit={handleCommentSubmit} className="flex-1 flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                className="flex-1 bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] focus:bg-white/[0.06] focus:border-brand-500/30 transition-all rounded-xl px-3 py-1.5 text-xs outline-none text-zinc-200 placeholder:text-zinc-600"
+              />
+              <button
+                type="submit"
+                disabled={!newComment.trim() || submitting}
+                className="btn-premium !py-1 px-4 text-xs font-mono uppercase tracking-wider shrink-0"
+              >
+                {submitting ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Send'
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </motion.article>
   )
 }
@@ -332,6 +470,7 @@ export default function DashboardClient({
 }) {
   const supabase: any = createClient()
   const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [likedPostIds, setLikedPostIds] = useState<string[]>(initialLikedIds)
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const firstName =
@@ -342,14 +481,40 @@ export default function DashboardClient({
   const handleNewPost = (post: Post) => setPosts(p => [post, ...p])
 
   const handleLike = async (postId: string) => {
-    const { data } = await supabase.rpc('toggle_post_like', {
-  p_post_id: postId,
-})
-    if (data) {
+    const isLiked = likedPostIds.includes(postId)
+    setLikedPostIds(prev =>
+      isLiked ? prev.filter(id => id !== postId) : [...prev, postId]
+    )
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, likes_count: p.likes_count + (isLiked ? -1 : 1) } : p
+    ))
+
+    const { data, error } = await supabase.rpc('toggle_post_like', {
+      p_post_id: postId,
+    })
+
+    if (error || !data) {
+      console.error('Error toggling like:', error)
+      toast.error('Failed to update like')
+      // Revert state
+      setLikedPostIds(prev =>
+        isLiked ? [...prev, postId] : prev.filter(id => id !== postId)
+      )
+      setPosts(prev => prev.map(p =>
+        p.id === postId ? { ...p, likes_count: p.likes_count + (isLiked ? 1 : -1) } : p
+      ))
+    } else {
+      // Sync with exact server count
       setPosts(prev => prev.map(p =>
         p.id === postId ? { ...p, likes_count: (data as any).likes_count } : p
       ))
     }
+  }
+
+  const handleCommentAdded = (postId: string) => {
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p
+    ))
   }
 
   const formatEventDate = (ts: string) => {
@@ -430,7 +595,9 @@ export default function DashboardClient({
                     post={p} 
                     currentUserId={currentUserId} 
                     onLike={handleLike} 
-                    initialLiked={initialLikedIds.includes(p.id)} 
+                    liked={likedPostIds.includes(p.id)}
+                    currentUserProfile={profile}
+                    onCommentAdded={handleCommentAdded}
                   />
                 ))}
               </AnimatePresence>

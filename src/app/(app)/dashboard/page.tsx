@@ -9,24 +9,29 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_url, username, branch, year, is_verified')
-    .eq('id', user.id)
-    .single()
+  // Run initial queries concurrently to prevent waterfalls
+  const [profileResult, postsResult, eventsResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url, username, branch, year, is_verified')
+      .eq('id', user.id)
+      .single(),
+    (supabase as any)
+      .from('posts')
+      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
+      .order('created_at', { ascending: false })
+      .limit(30),
+    supabase
+      .from('events')
+      .select('*')
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(3)
+  ])
 
-  const { data: posts } = await (supabase as any)
-    .from('posts')
-    .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
-    .order('created_at', { ascending: false })
-    .limit(30)
-
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .gte('start_time', new Date().toISOString())
-    .order('start_time', { ascending: true })
-    .limit(3)
+  const profile = profileResult.data
+  const posts = postsResult.data
+  const events = eventsResult.data
 
   // Seed liked post IDs from post_likes table — so the like button renders
   // correctly (filled/unfilled) on first load without a separate client query.

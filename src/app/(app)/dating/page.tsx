@@ -76,21 +76,30 @@ if (!isAdmin && !profile?.dating_verified)
     )
   }
 
-  const { data: myDatingProfile } = await supabase
-    .from('dating_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  // Fetch dating profile, swiped IDs, and matches in parallel to avoid a waterfall
+  const [datingProfileResult, swipedIdsResult, matchesResult] = await Promise.all([
+    supabase
+      .from('dating_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('dating_swipes')
+      .select('swiped_id')
+      .eq('swiper_id', user.id),
+    supabase
+      .from('dating_matches')
+      .select('*, user1:profiles!dating_matches_user1_id_fkey(id, full_name, branch, year, avatar_url), user2:profiles!dating_matches_user2_id_fkey(id, full_name, branch, year, avatar_url)')
+      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+  ])
 
-  // Fetch already swiped user IDs
-  const { data: swipedIds } = await supabase
-    .from('dating_swipes')
-    .select('swiped_id')
-    .eq('swiper_id', user.id)
-  
+  const myDatingProfile = datingProfileResult.data
+  const swipedIds = swipedIdsResult.data
+  const dbMatches = matchesResult.data
+
   const excludeIds = (swipedIds || [])
-  .map((s: any) => s.swiped_id)
-  .concat(user.id)
+    .map((s: any) => s.swiped_id)
+    .concat(user.id)
 
   // Fetch discoverable profiles (same college, active, not swiped)
   const { data: discoverable } = await supabase
@@ -99,12 +108,6 @@ if (!isAdmin && !profile?.dating_verified)
     .eq('is_active', true)
     .not('user_id', 'in', `(${excludeIds.join(',')})`)
     .limit(20)
-
-  // Fetch actual matches
-  const { data: dbMatches } = await supabase
-    .from('dating_matches')
-    .select('*, user1:profiles!dating_matches_user1_id_fkey(id, full_name, branch, year, avatar_url), user2:profiles!dating_matches_user2_id_fkey(id, full_name, branch, year, avatar_url)')
-    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
 
   return <DatingClient 
     userId={user.id} 
