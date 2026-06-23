@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+  const safeNext = (next.startsWith('/') && !next.startsWith('//')) ? next : '/dashboard'
 
   // If no code is present the link is malformed or already consumed.
   if (!code) {
@@ -60,6 +61,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Successful exchange — redirect into the app.
-  // `next` allows future deep-linking (e.g. /auth/callback?next=/profile).
-  return NextResponse.redirect(new URL(next, requestUrl.origin))
+  return NextResponse.redirect(new URL(safeNext, requestUrl.origin))
 }

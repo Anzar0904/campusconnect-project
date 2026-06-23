@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom'
 
+if (typeof global.Request === 'undefined') {
+  // @ts-ignore
+  global.Request = globalThis.Request
+  // @ts-ignore
+  global.Response = globalThis.Response
+  // @ts-ignore
+  global.Headers = globalThis.Headers
+}
+
 // ── Mock next/navigation ─────────────────────────────────────
 jest.mock('next/navigation', () => ({
   useRouter:       () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),

@@ -1,4 +1,6 @@
 /**
+ * @jest-environment node
+ *
  * Tests for /auth/callback route handler
  * Covers: PKCE code exchange, missing code, exchange errors, safe redirect
  */

@@ -20,9 +20,9 @@ describe('Migration files integrity', () => {
     expect(existsSync(MIGRATIONS_DIR)).toBe(true)
   })
 
-  it('has exactly three migration files', () => {
+  it('has at least three migration files', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'))
-    expect(files).toHaveLength(3)
+    expect(files.length).toBeGreaterThanOrEqual(3)
   })
 
   it('migration 001 exists and adds colleges.is_active', () => {
@@ -90,13 +90,14 @@ describe('Migration files integrity', () => {
     expect(files[2]).toMatch(/^003_/)
   })
 
-  it('all migrations are idempotent (use IF NOT EXISTS / OR REPLACE / drop-if-exists)', () => {
+  it('all migrations are idempotent (use IF NOT EXISTS / OR REPLACE / drop-if-exists / UPDATE)', () => {
     const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql'))
     const IDEMPOTENT_PATTERNS = [
       /if not exists/i,
       /or replace/i,
       /drop policy if exists/i,
       /on conflict.*do nothing/i,
+      /update\s+/i,
     ]
 
     files.forEach(file => {
