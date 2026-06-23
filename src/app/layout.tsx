@@ -27,14 +27,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${hanken.variable} dark`}>
-  <head>
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-    />
-  </head>
-
-  <body className="bg-surface text-on-surface antialiased font-body">
+      <body className="bg-surface text-on-surface antialiased font-body">
         {children}
         <ToastProvider />
       </body>
