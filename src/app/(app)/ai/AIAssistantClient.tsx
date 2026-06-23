@@ -1,4 +1,6 @@
 'use client'
+import { Bot } from 'lucide-react'
+
 
 import { motion } from 'framer-motion'
 
@@ -15,7 +17,7 @@ export default function AIAssistantClient() {
 
         <div className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center relative z-10 shadow-2xl"
           style={{background:'linear-gradient(135deg,#6366f1,#22d3ee)',boxShadow:'0 0 40px rgba(99,102,241,0.3)'}}>
-          <span className="material-symbols-outlined text-[40px] text-white" style={{fontVariationSettings:"'FILL' 1"}}>smart_toy</span>
+          <Bot className="text-white" style={{fontVariationSettings:"'FILL' 1"}} size={40} />
         </div>
         
         <div className="relative z-10 space-y-2">

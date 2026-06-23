@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SuperAdminClient from './SuperAdminClient'
 
+import { getCachedProfile } from '@/lib/profile'
+
 export const metadata = { title: 'Platform Admin — IILM Connect' }
 
 export default async function SuperAdminPage() {
@@ -12,15 +14,12 @@ export default async function SuperAdminPage() {
     redirect('/auth/login')
   }
 
-  // Double-verify the role from the database explicitly
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-    const profileData = profile as any
+  // Double-verify the role from the cached profile utility
+  const profile = await getCachedProfile(user.id)
+  const profileData = profile as any
 
-  if (profileData?.role !== 'SUPER_ADMIN') {
+  const userRole = (profileData?.role || '').toUpperCase()
+  if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
     redirect('/dashboard')
   }
 

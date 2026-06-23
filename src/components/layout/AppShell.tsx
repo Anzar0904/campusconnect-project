@@ -2,8 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
-import { Sidebar } from './Sidebar'
-import { BottomNav } from './BottomNav'
+import { Navbar } from './Navbar'
 import { useNotifications } from '@/hooks/useNotifications'
 
 interface AppShellProps {
@@ -14,6 +13,9 @@ interface AppShellProps {
   isVerified?: boolean
   userRole?: string
   userId: string
+  username?: string | null
+  branch?: string | null
+  year?: number | null
 }
 
 export function AppShell({ 
@@ -23,23 +25,28 @@ export function AppShell({
   userAvatar, 
   isVerified, 
   userRole,
-  userId
+  userId,
+  username,
+  branch,
+  year
 }: AppShellProps) {
   const pathname = usePathname()
   const { unreadCount } = useNotifications(userId)
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <Sidebar
-        collegeName={collegeName}
-        userName={userName}
-        userAvatar={userAvatar}
-        isVerified={isVerified}
-        userRole={userRole}
-        notificationCount={unreadCount}
+    <div className="flex flex-col min-h-screen bg-[#030712] text-neutral-100 font-sans antialiased selection:bg-blue-500/30 selection:text-white">
+      <Navbar
+        profile={{
+          avatar_url: userAvatar,
+          full_name: userName,
+          username: username,
+          branch: branch,
+          year: year,
+          role: userRole
+        }}
       />
       
-      <main className="flex-1 md:ml-64 min-h-screen relative">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-20 py-8 relative">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}
@@ -52,14 +59,12 @@ export function AppShell({
               stiffness: 170,
               damping: 26 
             }}
-            className="max-w-6xl mx-auto px-4 md:px-8 py-6 pb-32 md:pb-8"
+            className="pb-32 md:pb-8"
           >
             {children}
           </motion.div>
         </AnimatePresence>
       </main>
-
-      <BottomNav />
     </div>
   )
 }

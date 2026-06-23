@@ -1,4 +1,7 @@
 'use client'
+import { Flame } from 'lucide-react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
+
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -87,7 +90,7 @@ export default function RewardsClient({ userId, profile }: any) {
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
               style={{background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.25)'}}>
-              <span className="material-symbols-outlined text-[16px]" style={{color:'#f97316',fontVariationSettings:"'FILL' 1"}}>local_fire_department</span>
+              <Flame style={{color:'#f97316',fontVariationSettings:"'FILL' 1"}} size={16} />
               <span className="text-sm font-mono" style={{color:'#f97316'}}>{USER_STATS.streak} day streak</span>
             </div>
           </div>
@@ -115,7 +118,7 @@ export default function RewardsClient({ userId, profile }: any) {
                 <div key={i} className="glass-card rounded-xl px-4 py-3 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{background:`${a.color}18`,border:`1px solid ${a.color}30`}}>
-                    <span className="material-symbols-outlined text-[16px]" style={{color:a.color,fontVariationSettings:"'FILL' 1"}}>{a.icon}</span>
+                    <DynamicIcon name={a.icon} size={16} style={{color:a.color}} />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-on-surface">{a.label}</p>
@@ -135,7 +138,7 @@ export default function RewardsClient({ userId, profile }: any) {
                 <div key={badge.id} className="glass-card rounded-xl p-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{background:`${badge.color}18`,border:`1px solid ${badge.color}30`}}>
-                    <span className="material-symbols-outlined text-[22px]" style={{color:badge.color,fontVariationSettings:"'FILL' 1"}}>{badge.icon}</span>
+                    <DynamicIcon name={badge.icon} size={22} style={{color:badge.color}} />
                   </div>
                   <div>
                     <p className="font-display font-semibold text-on-surface text-xs">{badge.name}</p>
@@ -155,7 +158,7 @@ export default function RewardsClient({ userId, profile }: any) {
               style={!badge.earned?{opacity:0.45,filter:'grayscale(0.6)'}:{}}>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
                 style={{background:`${badge.color}${badge.earned?'25':'10'}`,border:`2px solid ${badge.color}${badge.earned?'45':'20'}`}}>
-                <span className="material-symbols-outlined text-[32px]" style={{color:badge.color,fontVariationSettings:`'FILL' ${badge.earned?1:0}`}}>{badge.icon}</span>
+                <DynamicIcon name={badge.icon} size={32} style={{color:badge.color}} />
               </div>
               <div>
                 <p className="font-display font-semibold text-on-surface text-sm">{badge.name}</p>
@@ -208,7 +211,7 @@ export default function RewardsClient({ userId, profile }: any) {
             <div key={item.action} className="glass-card rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{background:`${item.color}18`,border:`1px solid ${item.color}30`}}>
-                <span className="material-symbols-outlined text-[20px]" style={{color:item.color,fontVariationSettings:"'FILL' 1"}}>{item.icon}</span>
+                <DynamicIcon name={item.icon} size={20} style={{color:item.color}} />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-display font-semibold text-on-surface">{item.action}</p>

@@ -1,4 +1,6 @@
 'use client'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
@@ -62,7 +64,7 @@ const { error } = await (supabase as any)
           <p className="text-sm text-on-surface-variant mt-0.5">Events, exams, fests and important dates</p>
         </div>
         <button onClick={()=>setShowAddEvent(!showAddEvent)} className="btn-primary text-sm">
-          <span className="material-symbols-outlined text-[16px]">add</span>
+          <Plus size={16} />
           Add Event
         </button>
       </div>
@@ -94,11 +96,11 @@ const { error } = await (supabase as any)
           {/* Month nav */}
           <div className="flex items-center justify-between mb-5">
             <button onClick={()=>setCurrentMonth(subMonths(currentMonth,1))} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors">
-              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+              <ChevronLeft size={20} />
             </button>
             <h2 className="font-display font-bold text-on-surface">{format(currentMonth,'MMMM yyyy')}</h2>
             <button onClick={()=>setCurrentMonth(addMonths(currentMonth,1))} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors">
-              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+              <ChevronRight size={20} />
             </button>
           </div>
           {/* Day labels */}

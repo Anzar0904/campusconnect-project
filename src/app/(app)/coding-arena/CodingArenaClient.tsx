@@ -1,4 +1,6 @@
 'use client'
+import { Code2 } from 'lucide-react'
+
 
 import { motion } from 'framer-motion'
 
@@ -15,7 +17,7 @@ export default function CodingArenaClient() {
 
         <div className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center relative z-10 shadow-2xl"
           style={{background:'linear-gradient(135deg,#059669,#10b981)',boxShadow:'0 0 40px rgba(16,185,129,0.3)'}}>
-          <span className="material-symbols-outlined text-[40px] text-white" style={{fontVariationSettings:"'FILL' 1"}}>code</span>
+          <Code2 className="text-white" style={{fontVariationSettings:"'FILL' 1"}} size={40} />
         </div>
         
         <div className="relative z-10 space-y-2">

@@ -1,4 +1,6 @@
 'use client'
+import { MailCheck, Network, RefreshCw, Send } from 'lucide-react'
+
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -75,9 +77,7 @@ export default function LoginPage() {
         <div className="glass-elevated rounded-2xl p-10 max-w-sm w-full text-center space-y-5">
           <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'rgba(76,215,246,0.15)', border: '1px solid rgba(76,215,246,0.3)' }}>
-            <span className="material-symbols-outlined text-[32px]" style={{ color: '#4cd7f6', fontVariationSettings: "'FILL' 1" }}>
-              mark_email_read
-            </span>
+            <MailCheck style={{ color: '#4cd7f6', fontVariationSettings: "'FILL' 1" }} size={32} />
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-on-surface">Check your inbox</h2>
@@ -109,7 +109,7 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4"
             style={{ background: 'linear-gradient(135deg,#4f46e5,#571bc1)', boxShadow: '0 0 30px rgba(79,70,229,0.4)' }}>
-            <span className="material-symbols-outlined text-[28px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
+            <Network className="text-white" style={{ fontVariationSettings: "'FILL' 1" }} size={28} />
           </div>
           <h1 className="font-display text-2xl font-bold text-on-surface">CampusConnect</h1>
           <p className="text-sm text-on-surface-variant mt-1">Sign in with your college email</p>
@@ -161,8 +161,8 @@ export default function LoginPage() {
 
           <button type="submit" disabled={loading || !email.trim() || !accepted} className="btn-primary w-full justify-center disabled:opacity-50">
             {loading
-              ? <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Verifying…</>
-              : <><span className="material-symbols-outlined text-[16px]">send</span> Send Magic Link</>
+              ? <><RefreshCw className="animate-spin" size={16} /> Verifying…</>
+              : <><Send size={16} /> Send Magic Link</>
             }
           </button>
         </form>

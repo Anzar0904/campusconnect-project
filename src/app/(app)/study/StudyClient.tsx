@@ -1,4 +1,6 @@
 'use client'
+import { ExternalLink, UserPlus, Users } from 'lucide-react'
+
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -115,7 +117,7 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-display font-semibold text-on-surface">Active Study Groups</h2>
               <button onClick={()=>setShowCreate(!showCreate)} className="btn-primary text-sm">
-                <span className="material-symbols-outlined text-[16px]">group_add</span>
+                <UserPlus size={16} />
                 Create Group
               </button>
             </div>
@@ -151,7 +153,7 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
                   return (
                     <div key={g.id} className="glass-card rounded-xl p-4 flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(195,192,255,0.12)',border:'1px solid rgba(195,192,255,0.2)'}}>
-                        <span className="material-symbols-outlined text-[20px] text-primary" style={{fontVariationSettings:"'FILL' 1"}}>groups</span>
+                        <Users className="text-primary" style={{fontVariationSettings:"'FILL' 1"}} size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-display font-semibold text-on-surface text-sm">{g.subject}</h3>
@@ -184,7 +186,7 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
               {RESOURCES.map(r=>(
                 <a key={r.title} href={r.url} target="_blank" rel="noopener noreferrer" className="glass-card rounded-xl p-4 flex items-center gap-3 no-underline">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:`${r.color}18`,border:`1px solid ${r.color}30`}}>
-                    <span className="material-symbols-outlined text-[20px]" style={{color:r.color}}>open_in_new</span>
+                    <ExternalLink style={{color:r.color}} size={20} />
                   </div>
                   <div>
                     <p className="text-sm font-display font-semibold text-on-surface">{r.title}</p>

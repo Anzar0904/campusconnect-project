@@ -1,4 +1,6 @@
 'use client'
+import { CheckCircle, X } from 'lucide-react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -78,7 +80,7 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
               "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-widest transition-all",
               filter === c ? "bg-white/[0.08] text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
             )}>
-            {c !== 'All' && <span className="material-symbols-outlined text-[16px]" style={{ color: filter === c ? 'white' : CAT_COLORS[c] }}>{CAT_ICONS[c]}</span>}
+            {c !== 'All' && <DynamicIcon name={CAT_ICONS[c]} size={16} style={{ color: filter === c ? 'white' : CAT_COLORS[c] }} />}
             {c}
           </button>
         ))}
@@ -103,12 +105,12 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
                     <div className="flex items-start gap-5 mb-5">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ring-1 ring-white/5 group-hover:scale-110 transition-transform duration-500"
                         style={{background: `${color}15`, border: `1px solid ${color}25`}}>
-                        <span className="material-symbols-outlined text-[28px]" style={{ color, fontVariationSettings: "'FILL' 1" }}>{CAT_ICONS[club.category]}</span>
+                        <DynamicIcon name={CAT_ICONS[club.category]} size={28} style={{ color }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="sub-heading text-lg group-hover:text-brand-400 transition-colors tracking-tight">{club.name}</h3>
-                          <span className="material-symbols-outlined text-brand-400 text-[18px]">verified</span>
+                          <CheckCircle className="text-brand-400" size={18} />
                         </div>
                         <p className="text-xs text-zinc-500 font-mono uppercase tracking-tighter">{club.member_count} Members · {club.category}</p>
                       </div>
@@ -153,7 +155,7 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
                     <div className="flex items-start gap-4 mb-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-zinc-900 border border-white/[0.05] shadow-inner group-hover:bg-white/[0.03] transition-colors"
                         style={{ color }}>
-                        <span className="material-symbols-outlined text-[22px]">{CAT_ICONS[club.category]}</span>
+                        <DynamicIcon name={CAT_ICONS[club.category]} size={22} />
                       </div>
                       <div className="min-w-0">
                         <h3 className="sub-heading text-base leading-tight tracking-tight group-hover:text-brand-400 transition-colors truncate">{club.name}</h3>
@@ -179,19 +181,17 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
             >
               <div className="h-32 relative bg-gradient-to-br from-brand-500/20 to-cyan-500/20">
                 <button onClick={() => setSelected(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-all">
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <X size={20} />
                 </button>
               </div>
               <div className="p-8">
                 <div className="flex items-end gap-5 -mt-14 mb-6">
                   <div className="w-20 h-20 rounded-3xl border-4 border-zinc-950 flex items-center justify-center shadow-2xl ring-1 ring-white/5"
                     style={{ background: 'linear-gradient(135deg, #18181b, #09090b)' }}>
-                    <span className="material-symbols-outlined text-[36px]" style={{ color: CAT_COLORS[selected.category], fontVariationSettings: "'FILL' 1" }}>
-                      {CAT_ICONS[selected.category]}
-                    </span>
+                    <DynamicIcon name={CAT_ICONS[selected.category]} size={36} style={{ color: CAT_COLORS[selected.category] }} />
                   </div>
                   <div className="pb-1 min-w-0">
-                    {selected.is_official && <span className="chip-pro text-[9px] bg-brand-500/10 border-brand-500/20 text-brand-400 mb-1.5 flex items-center gap-1 w-fit"><span className="material-symbols-outlined text-[12px]">verified</span> OFFICIAL</span>}
+                    {selected.is_official && <span className="chip-pro text-[9px] bg-brand-500/10 border-brand-500/20 text-brand-400 mb-1.5 flex items-center gap-1 w-fit"><CheckCircle size={12} /> OFFICIAL</span>}
                     <h2 className="display-heading text-2xl tracking-tight leading-none truncate">{selected.name}</h2>
                   </div>
                 </div>

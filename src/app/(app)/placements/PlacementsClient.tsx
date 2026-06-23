@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -83,7 +84,7 @@ export default function PlacementsClient({ userId, profile, dbDrives, dbOffers, 
         ].map(s => (
           <div key={s.label} className="card-premium p-4 flex items-center gap-4 group">
             <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/[0.03] shrink-0 shadow-inner", s.color)}>
-              <span className="material-symbols-outlined text-[20px]" style={{fontVariationSettings:"'FILL' 1"}}>{s.icon}</span>
+              <DynamicIcon name={s.icon} size={20} />
             </div>
             <div>
               <p className="text-xl font-display font-bold text-zinc-50 leading-none">{s.val}</p>
@@ -193,7 +194,7 @@ export default function PlacementsClient({ userId, profile, dbDrives, dbOffers, 
                   <a key={r.title} href={r.url} target="_blank" rel="noopener noreferrer"
                     className="card-premium p-6 flex items-center gap-5 group transition-all">
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-zinc-900 border border-white/[0.03] shrink-0 shadow-inner group-hover:bg-brand-500/10 transition-colors">
-                      <span className="material-symbols-outlined text-[28px] text-zinc-500 group-hover:text-brand-400 transition-colors">{r.icon}</span>
+                      <DynamicIcon name={r.icon} size={28} className="text-zinc-500 group-hover:text-brand-400 transition-colors" />
                     </div>
                     <div className="min-w-0">
                       <p className="sub-heading text-lg tracking-tight group-hover:text-brand-400 transition-colors">{r.title}</p>

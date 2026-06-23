@@ -1,4 +1,6 @@
 'use client'
+import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X } from 'lucide-react'
+
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -85,7 +87,7 @@ export default function MarketplaceClient({ items, userId }: any) {
           <p className="body-pro text-sm">Buy and sell within your campus community securely.</p>
         </div>
         <button onClick={()=>setShowSell(!showSell)} className="btn-premium px-8">
-          <span className="material-symbols-outlined text-[20px]">add_circle</span>
+          <PlusCircle size={20} />
           Create Listing
         </button>
       </header>
@@ -101,7 +103,7 @@ export default function MarketplaceClient({ items, userId }: any) {
           >
             <div className="card-premium p-6 space-y-6">
               <h2 className="sub-heading text-lg flex items-center gap-2">
-                <span className="material-symbols-outlined text-brand-400">sell</span>
+                <Tag className="text-brand-400" size={18} />
                 List an Item
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,9 +138,9 @@ export default function MarketplaceClient({ items, userId }: any) {
                     }} />
                   <div onClick={() => photoInputRef.current?.click()} className="input-pro cursor-pointer flex items-center gap-2 group hover:border-brand-500/50 transition-all">
                     {selectedPhotos.length > 0 ? (
-                      <><span className="material-symbols-outlined text-[18px] text-brand-400">photo_library</span><span className="text-xs text-brand-400 font-medium">{selectedPhotos.length} photo{selectedPhotos.length > 1 ? 's' : ''} selected</span></>
+                      <><ImageIcon className="text-brand-400" size={18} /><span className="text-xs text-brand-400 font-medium">{selectedPhotos.length} photo{selectedPhotos.length > 1 ? 's' : ''} selected</span></>
                     ) : (
-                      <><span className="material-symbols-outlined text-[18px] text-zinc-500 group-hover:text-brand-400 transition-colors">add_photo_alternate</span><span className="text-sm text-zinc-500">Add photos (max 5)</span></>
+                      <><ImagePlus className="text-zinc-500 group-hover:text-brand-400 transition-colors" size={18} /><span className="text-sm text-zinc-500">Add photos (max 5)</span></>
                     )}
                   </div>
                 </div>
@@ -161,7 +163,7 @@ export default function MarketplaceClient({ items, userId }: any) {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-[18px]">search</span>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input className="input-pro pl-11" placeholder="Search items…" value={search} onChange={e=>setSearch(e.target.value)} />
         </div>
         <div className="flex gap-4">
@@ -214,7 +216,7 @@ export default function MarketplaceClient({ items, userId }: any) {
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-2 opacity-20 group-hover:opacity-40 transition-opacity">
-                      <span className="material-symbols-outlined text-[48px]">storefront</span>
+                      <Store size={48} />
                       <p className="text-[10px] font-mono tracking-widest uppercase">No Image</p>
                     </div>
                   )}
@@ -283,14 +285,14 @@ export default function MarketplaceClient({ items, userId }: any) {
                   <Image src={selectedItem.images[0]} alt={selectedItem.title} fill className="object-contain" />
                 ) : (
                   <div className="h-full flex items-center justify-center opacity-20">
-                    <span className="material-symbols-outlined text-[80px]">storefront</span>
+                    <Store size={80} />
                   </div>
                 )}
                 <button 
                   onClick={() => setSelectedItem(null)}
                   className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-black/60 transition-all"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <X size={20} />
                 </button>
               </div>
 
@@ -325,11 +327,11 @@ export default function MarketplaceClient({ items, userId }: any) {
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <button className="btn-ghost-pro py-3">
-                    <span className="material-symbols-outlined text-[18px]">bookmark</span>
+                    <Bookmark size={18} />
                     Save Item
                   </button>
                   <Link href={`/messages?user=${selectedItem.seller_id}`} className="btn-premium py-3 justify-center">
-                    <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+                    <MessageSquare size={18} />
                     Message Seller
                   </Link>
                 </div>

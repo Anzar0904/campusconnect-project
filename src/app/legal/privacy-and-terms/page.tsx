@@ -1,3 +1,4 @@
+import { Download, Scale } from 'lucide-react'
 import { format } from 'date-fns'
 
 export const metadata = { title: 'Privacy & Terms — IILM Connect' }
@@ -51,7 +52,7 @@ export default function LegalPage() {
         <header className="space-y-4 border-b border-white/[0.06] pb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-white">gavel</span>
+              <Scale className="text-white" size={18} />
             </div>
             <h1 className="font-display text-4xl font-bold tracking-tight">Legal & Compliance</h1>
           </div>
@@ -97,7 +98,7 @@ export default function LegalPage() {
             © 2026 IILM Connect · Unified University Network
           </p>
           <button className="btn-ghost text-xs flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">download</span>
+            <Download size={16} />
             Download PDF
           </button>
         </footer>

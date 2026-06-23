@@ -1,4 +1,6 @@
 'use client'
+import { CheckCircle, Clock, Search, UserPlus } from 'lucide-react'
+
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -98,7 +100,7 @@ window.location.reload()
 
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-[18px]">search</span>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -196,9 +198,7 @@ duration-300
   onClick={() => sendRequest(s.id)}
   className="btn-premium w-full text-xs py-2.5 flex items-center justify-center gap-2"
 >
-  <span className="material-symbols-outlined text-[16px] leading-none">
-    person_add
-  </span>
+  <UserPlus className="leading-none" size={16} />
   <span className="leading-none">
     Connect
   </span>
@@ -209,7 +209,7 @@ duration-300
   disabled
   className="btn-ghost-pro w-full text-xs py-2.5 opacity-60 flex items-center justify-center gap-2"
 >
-                        <span className="material-symbols-outlined text-[16px]">schedule</span>
+                        <Clock size={16} />
                         Pending
                       </button>
                     )}
@@ -218,9 +218,7 @@ duration-300
   disabled
   className="btn-ghost-pro w-full text-xs py-2.5 opacity-60 border-brand-500/20 text-brand-400 flex items-center justify-center gap-2"
 >
-  <span className="material-symbols-outlined text-[16px] leading-none">
-    verified
-  </span>
+  <CheckCircle className="leading-none" size={16} />
   <span className="leading-none">
     Connected
   </span>

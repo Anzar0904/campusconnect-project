@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { clsx } from 'clsx'
 import { motion } from 'framer-motion'
+import { Home, Compass, MessageSquare, User } from 'lucide-react'
 
 const MOBILE_NAV_ITEMS = [
-  { label: 'Home', href: '/dashboard', icon: 'home' },
-  { label: 'Discover', href: '/discover', icon: 'travel_explore' },
-  { label: 'Messages', href: '/messages', icon: 'chat_bubble' },
-  { label: 'Profile', href: '/profile', icon: 'person' },
+  { label: 'Home', href: '/dashboard', icon: Home },
+  { label: 'Discover', href: '/discover', icon: Compass },
+  { label: 'Messages', href: '/messages', icon: MessageSquare },
+  { label: 'Profile', href: '/profile', icon: User },
 ]
 
 export function BottomNav() {
@@ -20,6 +21,7 @@ export function BottomNav() {
       <div className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-white/[0.08] bg-zinc-900/80 backdrop-blur-xl shadow-premium">
         {MOBILE_NAV_ITEMS.map((item) => {
           const active = pathname === item.href
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
@@ -36,10 +38,7 @@ export function BottomNav() {
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
-              <span className="material-symbols-outlined text-[24px] relative z-10"
-                style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>
-                {item.icon}
-              </span>
+              <Icon size={24} className="relative z-10" />
               <span className="text-[10px] font-mono font-medium uppercase tracking-tighter relative z-10">
                 {item.label}
               </span>

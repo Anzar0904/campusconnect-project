@@ -1,4 +1,6 @@
 'use client'
+import { ArrowLeft, Hand, Send, UserPlus } from 'lucide-react'
+
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Image from 'next/image'
@@ -164,7 +166,7 @@ export default function MessagesClient({
           {friends.length === 0 ? (
             <div className="p-8 text-center space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center mx-auto text-zinc-600 border border-white/[0.03]">
-                <span className="material-symbols-outlined">person_add</span>
+                <UserPlus size={18} />
               </div>
               <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest leading-loose">No friends yet</p>
               <a href="/discover" className="btn-premium px-4 py-2 text-xs w-full justify-center">Find Connections</a>
@@ -219,7 +221,7 @@ export default function MessagesClient({
                   onClick={() => setSelectedId(null)} 
                   className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-200 transition-colors bg-white/[0.03] rounded-lg border border-white/[0.05]"
                 >
-                  <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                  <ArrowLeft size={20} />
                 </button>
                 <div className="w-10 h-10">
                   <GlobalAvatar profile={selectedFriend!} size="custom" className="w-full h-full" />
@@ -238,7 +240,7 @@ export default function MessagesClient({
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-transparent to-zinc-900/10">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-3">
-                  <span className="material-symbols-outlined text-4xl">waving_hand</span>
+                  <Hand className="text-4xl" size={18} />
                   <p className="text-xs font-mono uppercase tracking-[0.2em]">Start the conversation</p>
                 </div>
               ) : (
@@ -297,7 +299,7 @@ export default function MessagesClient({
                   disabled={!input.trim() || sending}
                   className="btn-premium p-3.5 min-w-0 rounded-xl disabled:opacity-50 shadow-brand-500/10 active:scale-90"
                 >
-                  <span className="material-symbols-outlined text-[18px]">send</span>
+                  <Send size={18} />
                 </button>
               </div>
             </footer>

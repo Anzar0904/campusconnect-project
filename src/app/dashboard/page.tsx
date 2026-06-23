@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const [profileResult, postsResult, eventsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, username, branch, year, is_verified')
+      .select('id, full_name, avatar_url, username, branch, year, is_verified, college_id')
       .eq('id', user.id)
       .single(),
     (supabase as any)

@@ -1,6 +1,8 @@
+import { CheckCircle, ShieldAlert } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DatingClient from './DatingClient'
+import { getCachedProfile } from '@/lib/profile'
 
 export const metadata = { title: 'Campus Dating — IILM Connect' }
 
@@ -8,21 +10,8 @@ export default async function DatingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
-const { data: profile } = await (supabase as any)
-  .from('profiles')
-  .select(`
-  id,
-  full_name,
-  avatar_url,
-  branch,
-  year,
-  bio,
-  is_verified,
-  dating_verified,
-  role
-`)
-  .eq('id', user.id)
-  .single()
+
+  const profile: any = await getCachedProfile(user.id)
 
   const isAdmin =
   profile?.role?.toUpperCase() === 'ADMIN' ||
@@ -34,7 +23,7 @@ if (!isAdmin && !profile?.dating_verified)
       <div className="flex items-center justify-center min-h-[70vh] px-4">
         <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center space-y-6">
           <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style={{background:'rgba(255,180,171,0.12)',border:'2px solid rgba(255,180,171,0.3)'}}>
-            <span className="material-symbols-outlined text-[32px] text-error">gpp_maybe</span>
+            <ShieldAlert className="text-error" size={32} />
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-on-surface">
@@ -47,23 +36,17 @@ if (!isAdmin && !profile?.dating_verified)
           <div className="p-4 rounded-xl text-left text-sm" style={{background:'rgba(255,255,255,0.03)'}}>
             <ul className="space-y-2 text-on-surface-variant">
              <li className="flex gap-2 items-start">
-  <span className="material-symbols-outlined text-[16px] text-primary">
-    check_circle
-  </span>
+  <CheckCircle className="text-primary" size={16} />
   Verified college account
 </li>
 
 <li className="flex gap-2 items-start">
-  <span className="material-symbols-outlined text-[16px] text-primary">
-    check_circle
-  </span>
+  <CheckCircle className="text-primary" size={16} />
   Age 18 or above
 </li>
 
 <li className="flex gap-2 items-start">
-  <span className="material-symbols-outlined text-[16px] text-primary">
-    check_circle
-  </span>
+  <CheckCircle className="text-primary" size={16} />
   Super Admin dating approval
 </li>
             </ul>

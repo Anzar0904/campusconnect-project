@@ -1,4 +1,6 @@
 'use client'
+import { CheckCircle, Download, FileText, Heart, Search, Upload, UploadCloud } from 'lucide-react'
+
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
@@ -101,7 +103,7 @@ export default function NotesClient({ notes, userId }: any) {
           <p className="body-pro text-sm">Access and share lecture notes, study guides, and campus resources.</p>
         </div>
         <button onClick={() => setShowUpload(!showUpload)} className="btn-premium px-8">
-          <span className="material-symbols-outlined text-[20px]">upload</span>
+          <Upload size={20} />
           Share Notes
         </button>
       </header>
@@ -133,9 +135,9 @@ export default function NotesClient({ notes, userId }: any) {
                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={handleFileSelect} />
                    <div onClick={() => fileInputRef.current?.click()} className="input-pro cursor-pointer flex items-center gap-3">
                       {selectedFile ? (
-                        <><span className="material-symbols-outlined text-brand-400">check_circle</span><span className="text-xs text-brand-400 font-mono truncate">{selectedFile.name}</span></>
+                        <><CheckCircle className="text-brand-400" size={18} /><span className="text-xs text-brand-400 font-mono truncate">{selectedFile.name}</span></>
                       ) : (
-                        <><span className="material-symbols-outlined text-zinc-500">upload_file</span><span className="text-sm text-zinc-500">Choose File</span></>
+                        <><UploadCloud className="text-zinc-500" size={18} /><span className="text-sm text-zinc-500">Choose File</span></>
                       )}
                    </div>
                 </div>
@@ -161,7 +163,7 @@ export default function NotesClient({ notes, userId }: any) {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-[18px]">search</span>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input className="input-pro pl-11" placeholder="Search title, subject or code…" value={search} onChange={e=>setSearch(e.target.value)} />
         </div>
         <div className="flex gap-3">
@@ -216,7 +218,7 @@ export default function NotesClient({ notes, userId }: any) {
                     </div>
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ring-1 ring-white/5 shadow-lg group-hover:scale-110 transition-transform duration-500"
                       style={{background:`${color}15`, color}}>
-                      <span className="material-symbols-outlined text-[24px]">description</span>
+                      <FileText size={24} />
                     </div>
                   </div>
 
@@ -228,11 +230,11 @@ export default function NotesClient({ notes, userId }: any) {
 
                   <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between">
                     <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
-                       <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] opacity-40">download</span>{note.downloads||0}</span>
-                       <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] opacity-40">favorite</span>{note.likes||0}</span>
+                       <span className="flex items-center gap-1.5"><Download className="opacity-40" size={16} />{note.downloads||0}</span>
+                       <span className="flex items-center gap-1.5"><Heart className="opacity-40" size={16} />{note.likes||0}</span>
                     </div>
                     <a href={note.file_url} target="_blank" rel="noopener noreferrer" className="btn-premium py-1.5 px-5 text-xs">
-                      <span className="material-symbols-outlined text-[16px]">download</span>
+                      <Download size={16} />
                       Download
                     </a>
                   </div>

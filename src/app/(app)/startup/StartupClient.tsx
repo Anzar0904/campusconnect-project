@@ -1,4 +1,7 @@
 'use client'
+import { Rocket, UserPlus, X } from 'lucide-react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
+
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -55,7 +58,7 @@ export default function StartupClient({ userId }: any) {
           <p className="text-sm text-on-surface-variant mt-0.5">Build, discover, and collaborate on campus startups</p>
         </div>
         <button onClick={()=>setTab('pitch')} className="btn-primary text-sm">
-          <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
+          <Rocket size={16} />
           Pitch Your Idea
         </button>
       </div>
@@ -70,7 +73,7 @@ export default function StartupClient({ userId }: any) {
         ].map(s=>(
           <div key={s.l} className="glass-card rounded-xl p-4 flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background:`${s.color}18`,border:`1px solid ${s.color}30`}}>
-              <span className="material-symbols-outlined text-[18px]" style={{color:s.color,fontVariationSettings:"'FILL' 1"}}>{s.icon}</span>
+              <DynamicIcon name={s.icon} size={18} style={{color:s.color}} />
             </div>
             <div>
               <p className="font-display font-bold text-on-surface">{s.v}</p>
@@ -128,9 +131,11 @@ export default function StartupClient({ userId }: any) {
             <div key={i} className="glass-card rounded-xl p-5 flex gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{background:`${typeColor[ev.type]}15`,border:`1px solid ${typeColor[ev.type]}25`}}>
-                <span className="material-symbols-outlined text-[22px]" style={{color:typeColor[ev.type],fontVariationSettings:"'FILL' 1"}}>
-                  {ev.type==='Pitch'?'mic':ev.type==='Fireside'?'local_fire_department':ev.type==='Workshop'?'build':'event'}
-                </span>
+                <DynamicIcon 
+                  name={ev.type==='Pitch'?'mic':ev.type==='Fireside'?'local_fire_department':ev.type==='Workshop'?'build':'event'} 
+                  size={22} 
+                  style={{color:typeColor[ev.type]}} 
+                />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -151,7 +156,7 @@ export default function StartupClient({ userId }: any) {
           {RESOURCES.map(r=>(
             <a key={r.title} href={r.url} target="_blank" rel="noopener noreferrer" className="glass-card rounded-xl p-5 flex items-center gap-3 no-underline">
               <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(195,192,255,0.12)',border:'1px solid rgba(195,192,255,0.2)'}}>
-                <span className="material-symbols-outlined text-[22px] text-primary">{r.icon}</span>
+                <DynamicIcon name={r.icon} size={22} className="text-primary" />
               </div>
               <div>
                 <p className="font-display font-semibold text-on-surface text-sm">{r.title}</p>
@@ -186,7 +191,7 @@ export default function StartupClient({ userId }: any) {
               <div><label className="section-label block mb-1">WHAT DO YOU NEED?</label><input className="input-glass" placeholder="Funding, co-founder, dev…" value={pitchForm.ask} onChange={e=>setPitchForm(p=>({...p,ask:e.target.value}))} /></div>
             </div>
             <button onClick={submitPitch} disabled={submitting} className="btn-primary text-sm disabled:opacity-60">
-              <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
+              <Rocket size={16} />
               {submitting ? 'Submitting…' : 'Submit Pitch'}
             </button>
           </div>
@@ -206,7 +211,7 @@ export default function StartupClient({ userId }: any) {
                 <h2 className="font-display text-lg font-bold text-on-surface">{selected.name}</h2>
                 <p className="text-sm font-mono text-on-surface-variant">{selected.sector} · Founded {selected.founded}</p>
               </div>
-              <button onClick={()=>setSelected(null)}><span className="material-symbols-outlined text-[20px] text-on-surface-variant">close</span></button>
+              <button onClick={()=>setSelected(null)}><X className="text-on-surface-variant" size={20} /></button>
             </div>
             <p className="text-sm text-on-surface-variant mb-4">{selected.description}</p>
             <div className="grid grid-cols-3 gap-3 mb-4">
@@ -224,7 +229,7 @@ export default function StartupClient({ userId }: any) {
               </div>
             </div>
             <button onClick={()=>{toast.success(`Application sent to ${selected.name}!`);setSelected(null)}} className="btn-primary w-full justify-center text-sm">
-              <span className="material-symbols-outlined text-[16px]">person_add</span>
+              <UserPlus size={16} />
               Apply to Join Team
             </button>
           </div>

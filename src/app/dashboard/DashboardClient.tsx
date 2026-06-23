@@ -45,6 +45,8 @@ interface Profile {
   username: string | null
   is_verified: boolean
   bio?: string | null
+  college_id?: string | null
+  role?: string | null
 }
 
 interface Post {
@@ -489,6 +491,45 @@ export default function DashboardClient({
   const supabase = createClient()
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [likedPostIds, setLikedPostIds] = useState<string[]>(initialLikedIds)
+  const [connections, setConnections] = useState<any[]>([])
+  const [friends, setFriends] = useState<any[]>([])
+
+  useEffect(() => {
+    async function getCampusData() {
+      try {
+        // Fetch suggested peers from same college
+        let queryBuilder = supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, branch, year, username, is_verified')
+          .neq('id', currentUserId)
+
+        if (profile?.college_id) {
+          queryBuilder = queryBuilder.eq('college_id', profile.college_id)
+        }
+
+        const { data: suggestions } = await queryBuilder.limit(3)
+        if (suggestions) setConnections(suggestions)
+
+        // Fetch accepted friends
+        const { data: friendshipData } = await supabase
+          .from('friendships')
+          .select('requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(id, full_name, avatar_url, branch, year, username, is_verified), addressee:profiles!friendships_addressee_id_fkey(id, full_name, avatar_url, branch, year, username, is_verified)')
+          .eq('status', 'accepted')
+          .or(`requester_id.eq.${currentUserId},addressee_id.eq.${currentUserId}`)
+          .limit(3)
+
+        if (friendshipData) {
+          const activeFriends = friendshipData
+            .map((f: any) => f.requester_id === currentUserId ? f.addressee : f.requester)
+            .filter(Boolean)
+          setFriends(activeFriends)
+        }
+      } catch (e) {
+        console.error('Error fetching campus data:', e)
+      }
+    }
+    getCampusData()
+  }, [currentUserId, profile?.college_id, supabase])
 
   const handleNewPost = (post: Post) => setPosts(p => [post, ...p])
 
@@ -539,7 +580,7 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen bg-[#030712] text-neutral-100 flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-white overflow-x-hidden">
-      <Navbar />
+      <Navbar profile={profile} />
 
       <main className="flex-1 flex flex-col w-full z-10">
         
@@ -578,7 +619,7 @@ export default function DashboardClient({
         <HeroSection />
         
         <div className="my-4">
-          <ModuleSection />
+          <ModuleSection userRole={profile?.role} />
         </div>
 
         {/* Primary Functional Dashboard Node Grid */}
@@ -705,31 +746,63 @@ export default function DashboardClient({
             </div>
 
             {/* Campus Connections */}
-            <div className="glass-panel-base rounded-2xl p-4">
-              <span className="text-xs font-bold text-white tracking-tight block mb-4">Campus Connections</span>
-              <div className="space-y-4">
-                {['Anika Mehra', 'Rohan Gupta', 'Sakshi Jain'].map((name, i) => (
-                  <div key={name} className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01]">
-                    <div className="flex items-center gap-3">
-                      <GlobalAvatar profile={{ 
-                        id: i.toString(),
-                        full_name: name,
-                        avatar_url: null,
-                        branch: ['BBA', 'MBA', 'BCA'][i],
-                        year: [2, 1, 3][i],
-                        username: name.toLowerCase().replace(' ', ''),
-                        is_verified: true
-                      }} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer tracking-tight">{name}</p>
-                        <p className="text-[10px] text-neutral-500 font-medium mt-0.5">{['BBA · Y2', 'MBA · Y1', 'BCA · Y3'][i]}</p>
+            <div className="glass-panel-base rounded-2xl p-4 space-y-5">
+              {/* Friends list */}
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block mb-3">My Connections ({friends.length})</span>
+                <div className="space-y-3">
+                  {friends.length > 0 ? (
+                    friends.map((f) => (
+                      <div key={f.id} className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01]">
+                        <div className="flex items-center gap-3">
+                          <GlobalAvatar profile={f} size="sm" />
+                          <div className="min-w-0 text-left">
+                            <Link href={`/profile?id=${f.id}`} className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer tracking-tight block truncate max-w-[130px]">
+                              {f.full_name}
+                            </Link>
+                            <p className="text-[10px] text-neutral-500 font-medium mt-0.5 truncate max-w-[130px]">
+                              {f.branch ? `${f.branch}` : ''} {f.year ? `· Y${f.year}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href={`/profile?id=${f.id}`} className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center">
+                          <User size={13} className="text-neutral-400" />
+                        </Link>
                       </div>
-                    </div>
-                    <Link href="/discover" className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95">
-                      <UserPlus size={14} />
-                    </Link>
-                  </div>
-                ))}
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-neutral-500 italic">No connections yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Suggested Connections */}
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block mb-3">Suggested Peers</span>
+                <div className="space-y-3">
+                  {connections.length > 0 ? (
+                    connections.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01]">
+                        <div className="flex items-center gap-3">
+                          <GlobalAvatar profile={c} size="sm" />
+                          <div className="min-w-0 text-left">
+                            <Link href={`/profile?id=${c.id}`} className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer tracking-tight block truncate max-w-[130px]">
+                              {c.full_name}
+                            </Link>
+                            <p className="text-[10px] text-neutral-500 font-medium mt-0.5 truncate max-w-[130px]">
+                              {c.branch ? `${c.branch}` : ''} {c.year ? `· Y${c.year}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href={`/profile?id=${c.id}`} className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center">
+                          <UserPlus size={13} className="text-cyan-400" />
+                        </Link>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-neutral-500 italic">No suggestions.</p>
+                  )}
+                </div>
               </div>
             </div>
 

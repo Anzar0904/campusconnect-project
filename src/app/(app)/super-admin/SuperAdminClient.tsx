@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
@@ -354,7 +355,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                   {c.is_active ? 'Active' : 'Disabled'}
                 </span>
                 <button onClick={() => handleToggleCollege(c.id, c.is_active)} className="btn-ghost text-xs p-2 rounded-lg hover:bg-white/10">
-                  <span className="material-symbols-outlined text-[18px]">{c.is_active ? 'block' : 'check_circle'}</span>
+                  <DynamicIcon name={c.is_active ? 'block' : 'check_circle'} size={18} />
                 </button>
               </div>
             </div>

@@ -1,4 +1,6 @@
 'use client'
+import { AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react'
+
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -76,10 +78,7 @@ function VerifyContent() {
         <>
           <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'rgba(76,215,246,0.2)', border: '1px solid rgba(76,215,246,0.4)' }}>
-            <span className="material-symbols-outlined text-[36px]"
-              style={{ color: '#4cd7f6', fontVariationSettings: "'FILL' 1" }}>
-              verified
-            </span>
+            <CheckCircle style={{ color: '#4cd7f6', fontVariationSettings: "'FILL' 1" }} size={36} />
           </div>
           <p className="font-display text-lg font-semibold text-on-surface">Verified! Welcome back 🎉</p>
           <p className="text-sm text-on-surface-variant">Taking you to your campus…</p>
@@ -90,9 +89,7 @@ function VerifyContent() {
         <>
           <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'rgba(147,0,10,0.2)', border: '1px solid rgba(255,180,171,0.3)' }}>
-            <span className="material-symbols-outlined text-[36px]" style={{ color: '#ffb4ab' }}>
-              error
-            </span>
+            <AlertCircle style={{ color: '#ffb4ab' }} size={36} />
           </div>
           <p className="font-display text-lg font-semibold text-on-surface">Link invalid or expired</p>
           <p className="text-sm text-on-surface-variant px-4">
@@ -100,7 +97,7 @@ function VerifyContent() {
           </p>
           <a href="/auth/login"
             className="btn-primary inline-flex items-center gap-2 mt-2">
-            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <ArrowLeft size={16} />
             Back to Login
           </a>
         </>

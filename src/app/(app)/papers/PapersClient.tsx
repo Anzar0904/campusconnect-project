@@ -1,4 +1,6 @@
 'use client'
+import { Download, FileText, Search, SearchX, Upload } from 'lucide-react'
+
 import { useState } from 'react'
 
 const PAPERS = [
@@ -32,14 +34,14 @@ export default function PapersClient({ userId }: any) {
           <p className="text-sm text-on-surface-variant mt-0.5">Previous year exam papers for exam preparation</p>
         </div>
         <button className="btn-primary text-sm">
-          <span className="material-symbols-outlined text-[16px]">upload</span>
+          <Upload size={16} />
           Upload Paper
         </button>
       </div>
 
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
           <input className="input-glass pl-9" placeholder="Search by subject or course code…" value={search} onChange={e=>setSearch(e.target.value)} />
         </div>
         <select className="input-glass w-36" value={yearFilter} onChange={e=>setYearFilter(e.target.value)}>
@@ -57,7 +59,7 @@ export default function PapersClient({ userId }: any) {
         {filtered.map(paper=>(
           <div key={paper.id} className="glass-card rounded-xl p-5 flex gap-4 items-start">
             <div className="w-12 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0" style={{background:'rgba(195,192,255,0.12)',border:'1px solid rgba(195,192,255,0.2)'}}>
-              <span className="material-symbols-outlined text-[22px] text-primary" style={{fontVariationSettings:"'FILL' 1"}}>description</span>
+              <FileText className="text-primary" style={{fontVariationSettings:"'FILL' 1"}} size={22} />
               <span className="text-[9px] font-mono text-on-surface-variant mt-0.5">{paper.pages}p</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -69,11 +71,11 @@ export default function PapersClient({ userId }: any) {
               </div>
               <div className="flex items-center justify-between mt-3">
                 <span className="flex items-center gap-1 text-xs font-mono text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[14px]">download</span>
+                  <Download size={14} />
                   {paper.downloads.toLocaleString()} downloads
                 </span>
                 <button className="btn-primary text-xs px-3 py-1.5">
-                  <span className="material-symbols-outlined text-[14px]">download</span>
+                  <Download size={14} />
                   Download
                 </button>
               </div>
@@ -84,7 +86,7 @@ export default function PapersClient({ userId }: any) {
 
       {filtered.length===0 && (
         <div className="glass-card rounded-xl p-12 text-center">
-          <span className="material-symbols-outlined text-[48px] text-on-surface-variant mb-3 block">search_off</span>
+          <SearchX className="text-on-surface-variant mb-3 block" size={48} />
           <p className="text-on-surface-variant">No papers found. Try different filters.</p>
         </div>
       )}

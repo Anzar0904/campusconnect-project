@@ -1,4 +1,6 @@
 'use client'
+import { Heart, MessageSquare, Star, Trash2, X } from 'lucide-react'
+
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -141,7 +143,7 @@ export default function DatingClient({
       <div className="animate-fade-in flex items-center justify-center min-h-[60vh]">
         <div className="glass-card rounded-2xl p-10 max-w-md w-full text-center space-y-6">
           <div className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center" style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)',boxShadow:'0 0 40px rgba(236,72,153,0.4)'}}>
-            <span className="material-symbols-outlined text-[40px] text-white" style={{fontVariationSettings:"'FILL' 1"}}>favorite</span>
+            <Heart className="text-white" style={{fontVariationSettings:"'FILL' 1"}} size={40} />
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-on-surface">Campus Dating</h1>
@@ -156,7 +158,7 @@ export default function DatingClient({
           </div>
           <button onClick={() => setSetupStep('setup')} className="btn-primary w-full justify-center"
             style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)',boxShadow:'0 0 30px rgba(236,72,153,0.35)'}}>
-            <span className="material-symbols-outlined text-[18px]" style={{fontVariationSettings:"'FILL' 1"}}>favorite</span>
+            <Heart style={{fontVariationSettings:"'FILL' 1"}} size={18} />
             Set Up My Profile
           </button>
         </div>
@@ -286,17 +288,17 @@ export default function DatingClient({
                 <button onClick={() => swipe('left')}
                   className="w-16 h-16 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{background:'rgba(255,180,171,0.12)',border:'2px solid rgba(255,180,171,0.3)'}}>
-                  <span className="material-symbols-outlined text-[28px]" style={{color:'#ffb4ab'}}>close</span>
+                  <X style={{color:'#ffb4ab'}} size={28} />
                 </button>
                 <button onClick={() => swipe('right')}
                   className="w-20 h-20 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)',boxShadow:'0 0 30px rgba(236,72,153,0.5)'}}>
-                  <span className="material-symbols-outlined text-[36px] text-white" style={{fontVariationSettings:"'FILL' 1"}}>favorite</span>
+                  <Heart className="text-white" style={{fontVariationSettings:"'FILL' 1"}} size={36} />
                 </button>
                 <button onClick={() => swipe('left')}
                   className="w-16 h-16 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   style={{background:'rgba(251,191,36,0.12)',border:'2px solid rgba(251,191,36,0.3)'}}>
-                  <span className="material-symbols-outlined text-[28px]" style={{color:'#fbbf24'}}>star</span>
+                  <Star style={{color:'#fbbf24'}} size={28} />
                 </button>
               </div>
               <p className="text-xs font-mono text-on-surface-variant">{discoverable.length - cardIdx} profiles left</p>
@@ -333,7 +335,7 @@ export default function DatingClient({
                     </div>
                     <button className="btn-primary text-xs px-4 py-1.5 w-full justify-center"
                       style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)'}}>
-                      <span className="material-symbols-outlined text-[14px]">chat_bubble</span>
+                      <MessageSquare size={14} />
                       Message
                     </button>
                   </div>
@@ -369,7 +371,7 @@ export default function DatingClient({
               style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)'}}>Save Changes</button>
           </div>
           <button className="btn-ghost text-sm w-full justify-center text-error">
-            <span className="material-symbols-outlined text-[16px]">delete</span>
+            <Trash2 size={16} />
             Delete Dating Profile
           </button>
         </div>

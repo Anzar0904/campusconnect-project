@@ -1,4 +1,6 @@
 'use client'
+import { MapPin, Search, X } from 'lucide-react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -20,7 +22,26 @@ const INTERNSHIPS = [
 
 const TYPES = ['All','Technical','Management','Finance-Tech','Consulting','Design']
 
-export default function InternshipsClient({ userId, profile, appliedMap: initApplied }: any) {
+export default function InternshipsClient({ userId, profile, appliedMap: initApplied, dbInternships }: any) {
+  const mergedInternships = dbInternships && dbInternships.length > 0
+    ? dbInternships.map((i: any) => ({
+        id: i.id,
+        company: i.company,
+        role: i.title,
+        location: i.location || 'Unknown',
+        stipend: typeof i.stipend === 'string' ? (parseInt(i.stipend.replace(/[^0-9]/g, '')) || 0) : (i.stipend || 0),
+        duration: i.duration || '2 months',
+        deadline: i.deadline || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+        skills: i.skills || [],
+        type: i.type || 'Technical',
+        logo: i.company.charAt(0),
+        color: '#4cd7f6',
+        description: i.description || '',
+        requirements: i.requirements || 'Any branch',
+        posted: i.created_at || new Date().toISOString()
+      }))
+    : INTERNSHIPS
+
   const [applied, setApplied] = useState<Record<string,string>>(initApplied)
   const [typeFilter, setTypeFilter] = useState('All')
   const [search, setSearch] = useState('')
@@ -29,13 +50,13 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
   const [tab, setTab] = useState<'browse'|'applied'>('browse')
   const supabase: any = createClient()
 
-  const filtered = INTERNSHIPS.filter(i => {
+  const filtered = mergedInternships.filter((i: any) => {
     const matchType = typeFilter === 'All' || i.type === typeFilter
     const matchSearch = !search || i.company.toLowerCase().includes(search.toLowerCase()) || i.role.toLowerCase().includes(search.toLowerCase())
     return matchType && matchSearch
   })
 
-  const appliedList = INTERNSHIPS.filter(i => applied[i.id])
+  const appliedList = mergedInternships.filter((i: any) => applied[i.id])
 
   async function applyNow(internship: any) {
     setApplying(true)
@@ -101,7 +122,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
               {/* Filters */}
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-[18px]">search</span>
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                   <input className="input-pro pl-11" placeholder="Search by role or company…" value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
                 <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.05] overflow-x-auto no-scrollbar">
@@ -120,14 +141,14 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  {label:'Openings',val:INTERNSHIPS.length,icon:'work',color:'text-indigo-400'},
-                  {label:'Tech Roles',val:INTERNSHIPS.filter(i=>i.type==='Technical').length,icon:'code',color:'text-cyan-400'},
-                  {label:'Avg Stipend',val:'₹'+Math.round(INTERNSHIPS.reduce((a,i)=>a+i.stipend,0)/INTERNSHIPS.length/1000)+'K',icon:'payments',color:'text-emerald-400'},
-                  {label:'Closing Soon',val:INTERNSHIPS.filter(i=>daysUntil(i.deadline)<=7).length,icon:'timer',color:'text-amber-400'},
+                  {label:'Openings',val:mergedInternships.length,icon:'work',color:'text-indigo-400'},
+                  {label:'Tech Roles',val:mergedInternships.filter((i:any)=>i.type==='Technical').length,icon:'code',color:'text-cyan-400'},
+                  {label:'Avg Stipend',val:'₹'+Math.round(mergedInternships.reduce((a:number,i:any)=>a+i.stipend,0)/mergedInternships.length/1000)+'K',icon:'payments',color:'text-emerald-400'},
+                  {label:'Closing Soon',val:mergedInternships.filter((i:any)=>daysUntil(i.deadline)<=7).length,icon:'timer',color:'text-amber-400'},
                 ].map(s => (
                   <div key={s.label} className="card-premium p-4 flex flex-col gap-3 group hover:border-white/15 transition-all">
                     <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/[0.03] shadow-inner transition-colors group-hover:bg-white/[0.02]", s.color)}>
-                      <span className="material-symbols-outlined text-[20px]" style={{fontVariationSettings:"'FILL' 1"}}>{s.icon}</span>
+                      <DynamicIcon name={s.icon} size={20} />
                     </div>
                     <div>
                       <p className="text-xl font-display font-bold text-zinc-50 leading-none">{s.val}</p>
@@ -147,7 +168,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filtered.map(intern => {
+                  {filtered.map((intern: any) => {
                     const isApplied = !!applied[intern.id]
                     const days = daysUntil(intern.deadline)
                     return (
@@ -176,7 +197,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
                         </div>
 
                         <div className="flex flex-wrap gap-1.5">
-                          {intern.skills.slice(0,3).map(s => (
+                          {intern.skills.slice(0,3).map((s: string) => (
                             <span key={s} className="chip-pro text-[9px] py-0">{s}</span>
                           ))}
                         </div>
@@ -200,7 +221,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
 
                         <div className="flex items-center justify-between pt-4 border-t border-white/[0.04]">
                           <span className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono">
-                            <span className="material-symbols-outlined text-[16px] text-zinc-600">location_on</span>
+                            <MapPin className="text-zinc-600" size={16} />
                             {intern.location}
                           </span>
                           <span className="chip-pro text-[9px] uppercase tracking-tighter" style={{borderColor: `${intern.color}30`, color: intern.color}}>{intern.type}</span>
@@ -221,7 +242,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
                   action={{ label: "Browse Roles", onClick: () => setTab('browse') }}
                 />
               ) : (
-                appliedList.map(intern => {
+                appliedList.map((intern: any) => {
                   const status = applied[intern.id] || 'applied'
                   return (
                     <div key={intern.id} className="card-premium p-5 flex flex-col md:flex-row md:items-center gap-6 group hover:border-white/15 transition-all">
@@ -276,7 +297,7 @@ export default function InternshipsClient({ userId, profile, appliedMap: initApp
                     <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest mt-1">{selectedInternship.company}</p>
                   </div>
                   <button onClick={()=>setSelectedInternship(null)} className="w-10 h-10 rounded-full bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">close</span>
+                    <X size={20} />
                   </button>
                 </div>
 

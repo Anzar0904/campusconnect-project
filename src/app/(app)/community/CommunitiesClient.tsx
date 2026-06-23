@@ -1,4 +1,6 @@
 'use client'
+import { Lock, Plus, Search, X } from 'lucide-react'
+
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -252,7 +254,7 @@ if (error) {
           <p className="text-on-surface-variant text-sm mt-1">{communities.length} communities at IILM</p>
         </div>
         <button onClick={() => setCreating(true)} className="btn-primary flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">add</span>
+          <Plus size={18} />
           New Community
         </button>
       </div>
@@ -264,7 +266,7 @@ if (error) {
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-bold text-on-surface">Create Community</h2>
               <button onClick={() => setCreating(false)} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
+                <X size={18} />
               </button>
             </div>
             <div>
@@ -294,7 +296,7 @@ if (error) {
       {/* Search + filter */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-48">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2  text-on-surface-variant" size={18} />
           <input value={search} onChange={e => setSearch(e.target.value)} className="input-glass pl-9" placeholder="Search communities…" />
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -391,7 +393,7 @@ if (error) {
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h3 className="font-display font-semibold text-on-surface text-sm leading-snug">{c.name}</h3>
                     {c.is_private && (
-                      <span className="material-symbols-outlined text-[14px] text-on-surface-variant flex-shrink-0">lock</span>
+                      <Lock className="text-on-surface-variant flex-shrink-0" size={14} />
                     )}
                   </div>
                   <span className="chip text-[10px] py-0.5" style={{ background: `${color}20`, border: `1px solid ${color}50`, color }}>

@@ -1,4 +1,6 @@
 'use client'
+import { Check, Clock, MapPin, Users } from 'lucide-react'
+import { DynamicIcon } from '@/components/ui/DynamicIcon'
 
 import { useState } from 'react'
 import { format, isAfter, isBefore, parseISO } from 'date-fns'
@@ -106,7 +108,7 @@ export default function EventsClient({
                    <span className="chip-pro text-[9px] font-mono py-0.5" style={{ background: color.bg, borderColor: `${color.text}30`, color: color.text }}>
                     {e.category}
                   </span>
-                  {isIn && <span className="chip-pro text-[9px] font-mono py-0.5 bg-brand-500/10 border-brand-500/20 text-brand-400 flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">check</span> GOING</span>}
+                  {isIn && <span className="chip-pro text-[9px] font-mono py-0.5 bg-brand-500/10 border-brand-500/20 text-brand-400 flex items-center gap-1"><Check size={10} /> GOING</span>}
                 </div>
                 <h3 className={clsx("display-heading text-xl tracking-tight group-hover:text-brand-400 transition-colors", isPast && "opacity-50")}>
                   {e.title}
@@ -115,17 +117,17 @@ export default function EventsClient({
 
               <div className="flex items-center gap-4 flex-wrap text-zinc-500">
                 <span className="flex items-center gap-1.5 text-xs font-mono">
-                  <span className="material-symbols-outlined text-[16px] text-zinc-600">schedule</span>
+                  <Clock className="text-zinc-600" size={16} />
                   {format(dt, 'h:mm a')}
                 </span>
                 {e.venue && (
                   <span className="flex items-center gap-1.5 text-xs font-mono">
-                    <span className="material-symbols-outlined text-[16px] text-zinc-600">location_on</span>
+                    <MapPin className="text-zinc-600" size={16} />
                     {e.venue}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5 text-xs font-mono">
-                  <span className="material-symbols-outlined text-[16px] text-zinc-600">group</span>
+                  <Users className="text-zinc-600" size={16} />
                   {e.attendee_count} attending
                 </span>
               </div>
@@ -144,9 +146,7 @@ export default function EventsClient({
                         isIn ? "bg-brand-500/10 text-brand-400 border-brand-500/30" : "hover:bg-brand-500/5"
                       )}
                     >
-                      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: `'FILL' ${isIn ? 1 : 0}` }}>
-                        {isIn ? 'check_circle' : 'add_circle'}
-                      </span>
+                      <DynamicIcon name={isIn ? 'check_circle' : 'add_circle'} size={16} />
                       {isIn ? 'Attending' : 'RSVP'}
                     </button>
                     {e.registration_link && (

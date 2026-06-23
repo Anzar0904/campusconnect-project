@@ -9,8 +9,8 @@ export default async function InternshipsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  // Fetch profile and internship applications concurrently
-  const [profileResult, applicationsResult] = await Promise.all([
+  // Fetch profile, internship applications, and internships concurrently
+  const [profileResult, applicationsResult, internshipsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('branch, year, skills, resume_url')
@@ -19,14 +19,18 @@ export default async function InternshipsPage() {
     (supabase as any)
       .from('internship_applications')
       .select('internship_id, status')
-      .eq('user_id', user.id)
+      .eq('user_id', user.id),
+    supabase
+      .from('internships')
+      .select('*')
   ])
 
   const profile = profileResult.data
   const applications = applicationsResult.data
+  const dbInternships = internshipsResult.data
 
   const appliedMap: Record<string, string> = {}
   for (const a of applications ?? []) appliedMap[a.internship_id] = a.status
 
-  return <InternshipsClient userId={user.id} profile={profile} appliedMap={appliedMap} />
+  return <InternshipsClient userId={user.id} profile={profile} appliedMap={appliedMap} dbInternships={dbInternships || []} />
 }

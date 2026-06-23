@@ -1,4 +1,6 @@
 'use client'
+import { LogOut, Network } from 'lucide-react'
+
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -118,7 +120,7 @@ export function Sidebar({
       <div className="flex items-center gap-3 px-6 py-6 border-b border-white/[0.04]">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>
-          <span className="material-symbols-outlined text-[20px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
+          <Network className="text-white" style={{ fontVariationSettings: "'FILL' 1" }} size={20} />
         </div>
         <div className="min-w-0">
           <p className="font-display font-bold text-[15px] text-zinc-50 leading-tight tracking-tight uppercase tracking-[0.05em]">CampusConnect</p>
@@ -189,7 +191,7 @@ export function Sidebar({
             title="Sign out"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
           >
-            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <LogOut size={18} />
           </button>
         </div>
       </div>
