@@ -1,6 +1,6 @@
 'use client'
 import { Lock, Plus, Search, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -90,6 +90,16 @@ const router = useRouter()
   const [newDesc, setNewDesc] = useState('')
   const [newCat, setNewCat] = useState('General')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const createAction = params.get('create')
+      if (createAction === 'true') {
+        setCreating(true)
+      }
+    }
+  }, [])
 
   const categories = ['All', ...Object.keys(CATEGORY_COLORS)]
 

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { 
   Search, Loader2, User, Users, BookOpen, Calendar, 
   Store, Briefcase, GraduationCap, X, BookMarked, 
-  MessageCircle, FileText, Terminal, Sparkles, Clock, Compass 
+  MessageCircle, FileText, Terminal, Sparkles, Clock, Compass,
+  CornerDownLeft, Command
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface SearchResult {
   id: string
@@ -38,24 +40,18 @@ const STATIC_MODULES = [
   { title: 'AI Assistant', category: 'USERS', href: '/ai', subtitle: 'Generative AI helper' }
 ] as const
 
-// Real seeded entity fallbacks for empty query dashboard
-const POPULAR_COMMUNITIES = [
-  { id: '71c2a7fd-c53b-4c2e-91ed-62a214f93a76', name: 'Computer Science Hub', category: 'Technology', href: '/community/71c2a7fd-c53b-4c2e-91ed-62a214f93a76' },
-  { id: '1460904f-eeab-40ad-b0d1-d7bab133ff9d', name: 'Photography Club Members', category: 'Arts', href: '/community/1460904f-eeab-40ad-b0d1-d7bab133ff9d' },
-  { id: 'd9cb8eb4-5553-48b3-921d-8a87c68d19ce', name: 'Campus Placement Prep', category: 'Career', href: '/community/d9cb8eb4-5553-48b3-921d-8a87c68d19ce' }
-]
-
-const POPULAR_EVENTS = [
-  { id: 'fb6579e7-1b42-4396-afcb-be497ffde91d', name: 'Annual Coding Hackathon', category: 'Coding', href: '/events?id=fb6579e7-1b42-4396-afcb-be497ffde91d' },
-  { id: '096861be-6e1f-48a1-a122-96c8f08d9bdc', name: 'AI and Future Seminar', category: 'Academic', href: '/events?id=096861be-6e1f-48a1-a122-96c8f08d9bdc' }
-]
-
-const SUGGESTED_USERS = [
-  { id: 'ce63e132-3a93-44fd-a1ac-4db3d752d5da', name: 'Anzar0904 (Super Admin)', email: 'anzar0904@gmail.com', href: '/profile?id=ce63e132-3a93-44fd-a1ac-4db3d752d5da' },
-  { id: '50e6463c-91c0-45c4-92ff-0365a07a1dfe', name: 'Mohammad Anzar (Student)', email: 'mohammad.anzar.cs28@iilm.edu', href: '/profile?id=50e6463c-91c0-45c4-92ff-0365a07a1dfe' }
-]
-
 const DEFAULT_RECENT = ['Computer', 'Hackathon', 'Software']
+
+const CATEGORY_HEADINGS: Record<SearchResult['category'], string> = {
+  USERS: 'Users',
+  COMMUNITIES: 'Communities',
+  EVENTS: 'Events',
+  INTERNSHIPS: 'Internships',
+  MARKETPLACE: 'Marketplace',
+  NOTES: 'Notes',
+  'PAST PAPERS': 'Past Papers',
+  'STUDY GROUPS': 'Study Groups'
+}
 
 function getFuzzyScore(text: string, query: string): number {
   const t = text.toLowerCase()
@@ -78,25 +74,50 @@ function getFuzzyScore(text: string, query: string): number {
   return 0
 }
 
+interface PaletteItem {
+  id: string
+  title: string
+  subtitle?: string
+  category?: SearchResult['category']
+  href?: string
+  action?: () => void
+  icon: React.ReactNode
+  type: 'action' | 'module' | 'result' | 'recent'
+}
+
 export function NavbarSearch() {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<SearchResult[]>([])
-  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   
-  const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const modalInputRef = useRef<HTMLInputElement>(null)
   const lastQueryRef = useRef('')
   const router = useRouter()
   const supabase = createClient()
 
-  // Load user profile & recent searches on mount
+  // Load user profile, role, & recent searches on mount
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setCurrentUserId(data.user.id)
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data?.user) {
+        setCurrentUserId(data.user.id)
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single()
+          if (profile?.role) {
+            setUserRole(profile.role.toUpperCase())
+          }
+        } catch (e) {
+          console.error('Error fetching role in NavbarSearch:', e)
+        }
+      }
     })
     try {
       const stored = localStorage.getItem('recent_searches')
@@ -110,31 +131,30 @@ export function NavbarSearch() {
     }
   }, [supabase])
 
-  // Handle Ctrl+K/Cmd+K shortcuts
+  // Handle Ctrl+K / Cmd+K shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        inputRef.current?.focus()
-        setIsOpen(true)
+        setIsOpen(prev => !prev)
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [])
 
-  // Close search suggestions on clicking outside
+  // Auto-focus input when modal opens
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
+    if (isOpen) {
+      setSelectedIndex(0)
+      const timer = setTimeout(() => {
+        modalInputRef.current?.focus()
+      }, 80)
+      return () => clearTimeout(timer)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [isOpen])
 
-  // Debounced search trigger (200ms debounce, prevents duplicate runs)
+  // Query database in parallel for all entities on query change (Debounced)
   useEffect(() => {
     const searchQuery = query.trim()
     if (!searchQuery) {
@@ -145,14 +165,13 @@ export function NavbarSearch() {
     }
 
     if (searchQuery === lastQueryRef.current) {
-      return // Prevent duplicate query run
+      return
     }
 
     setLoading(true)
     const delayDebounce = setTimeout(async () => {
       lastQueryRef.current = searchQuery
       try {
-        // Query database in parallel for all entities
         const [
           usersRes,
           commsRes,
@@ -189,7 +208,7 @@ export function NavbarSearch() {
               subtitle: mod.subtitle,
               category: mod.category as any,
               href: mod.href,
-              score: score + 10 // Give slight preference to static modules
+              score: score + 10 // Slight preference to static modules
             })
           }
         })
@@ -326,7 +345,7 @@ export function NavbarSearch() {
           .sort((a, b) => (b.score || 0) - (a.score || 0))
 
         setResults(finalRanked)
-        setSelectedIndex(-1)
+        setSelectedIndex(0)
       } catch (err) {
         console.error('Unified lookup query error:', err)
       } finally {
@@ -337,9 +356,190 @@ export function NavbarSearch() {
     return () => clearTimeout(delayDebounce)
   }, [query, supabase, currentUserId])
 
-  // Group results based on requested 8 headings
+  const getCategoryIcon = (category?: SearchResult['category']) => {
+    switch (category) {
+      case 'USERS': return <User size={14} />
+      case 'COMMUNITIES': return <Users size={14} />
+      case 'EVENTS': return <Calendar size={14} />
+      case 'INTERNSHIPS': return <Briefcase size={14} />
+      case 'MARKETPLACE': return <Store size={14} />
+      case 'NOTES': return <BookOpen size={14} />
+      case 'PAST PAPERS': return <FileText size={14} />
+      case 'STUDY GROUPS': return <BookMarked size={14} />
+      default: return <Compass size={14} />
+    }
+  }
+
+  // Calculate visible items for flat list navigation
+  const visibleItems = useMemo(() => {
+    const items: PaletteItem[] = []
+    const sq = query.toLowerCase().trim()
+    const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
+
+    if (!sq) {
+      // 1. Suggested Actions
+      items.push({
+        id: 'action-create-community',
+        title: 'Create Community',
+        subtitle: 'Launch a new interest group or batch channel',
+        href: '/community?create=true',
+        type: 'action',
+        icon: <Users size={14} className="text-purple-400" />
+      })
+
+      if (isAdmin) {
+        items.push({
+          id: 'action-create-event',
+          title: 'Create Event',
+          subtitle: 'Create a new campus event (Admin Only)',
+          href: '/events?create=true',
+          type: 'action',
+          icon: <Calendar size={14} className="text-rose-400" />
+        })
+        items.push({
+          id: 'action-create-internship',
+          title: 'Create Internship',
+          subtitle: 'Post a new internship opening (Admin Only)',
+          href: '/internships?create=true',
+          type: 'action',
+          icon: <Briefcase size={14} className="text-cyan-400" />
+        })
+      }
+
+      items.push(
+        {
+          id: 'action-messages',
+          title: 'Go to Messages',
+          subtitle: 'Open direct peer messages and chats',
+          href: '/messages',
+          type: 'action',
+          icon: <MessageCircle size={14} className="text-blue-400" />
+        },
+        {
+          id: 'action-profile',
+          title: 'View My Profile',
+          subtitle: 'Manage your student portfolio and resume',
+          href: '/profile',
+          type: 'action',
+          icon: <User size={14} className="text-emerald-400" />
+        }
+      )
+
+      // 2. Popular Modules
+      const popularMods = STATIC_MODULES.slice(0, 8).map(mod => ({
+        id: `module-${mod.href}`,
+        title: mod.title,
+        subtitle: mod.subtitle,
+        href: mod.href,
+        type: 'module' as const,
+        icon: getCategoryIcon(mod.category)
+      }))
+      items.push(...popularMods)
+
+      // 3. Recent Searches
+      recentSearches.forEach((term, index) => {
+        items.push({
+          id: `recent-${index}-${term}`,
+          title: term,
+          subtitle: 'Execute previous search query',
+          type: 'recent',
+          action: () => {
+            setQuery(term)
+          },
+          icon: <Clock size={14} className="text-zinc-500" />
+        })
+      })
+
+    } else {
+      // Query active quick actions
+      if ('create event'.includes(sq) && isAdmin) {
+        items.push({
+          id: 'action-create-event-query',
+          title: 'Create Event',
+          subtitle: 'Launch the event creation wizard',
+          href: '/events?create=true',
+          type: 'action',
+          icon: <Calendar size={14} className="text-rose-400" />
+        })
+      }
+      if ('create internship'.includes(sq) && isAdmin) {
+        items.push({
+          id: 'action-create-internship-query',
+          title: 'Create Internship',
+          subtitle: 'Post a new internship listing',
+          href: '/internships?create=true',
+          type: 'action',
+          icon: <Briefcase size={14} className="text-cyan-400" />
+        })
+      }
+      if ('create community'.includes(sq)) {
+        items.push({
+          id: 'action-create-community-query',
+          title: 'Create Community',
+          subtitle: 'Start a new campus community',
+          href: '/community?create=true',
+          type: 'action',
+          icon: <Users size={14} className="text-purple-400" />
+        })
+      }
+
+      // Add database & matching results
+      results.forEach(res => {
+        items.push({
+          id: `result-${res.category}-${res.id}`,
+          title: res.title,
+          subtitle: res.subtitle,
+          category: res.category,
+          href: res.href,
+          type: 'result',
+          icon: getCategoryIcon(res.category)
+        })
+      })
+    }
+
+    return items
+  }, [query, results, userRole, recentSearches])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev + 1 < visibleItems.length ? prev + 1 : 0))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev - 1 >= 0 ? prev - 1 : visibleItems.length - 1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < visibleItems.length) {
+        executeItem(visibleItems[selectedIndex])
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setIsOpen(false)
+    }
+  }
+
+  const executeItem = (item: PaletteItem) => {
+    if (item.action) {
+      item.action()
+    } else if (item.href) {
+      // Add query to recent searches
+      if (query.trim() && item.type === 'result') {
+        const term = query.trim()
+        setRecentSearches(prev => {
+          const next = [term, ...prev.filter(x => x.toLowerCase() !== term.toLowerCase())].slice(0, 5)
+          localStorage.setItem('recent_searches', JSON.stringify(next))
+          return next
+        })
+      }
+      router.push(item.href)
+      setIsOpen(false)
+      setQuery('')
+    }
+  }
+
+  // Group search results to render correct headings
   const groupedResults = useMemo(() => {
-    const groups: Record<SearchResult['category'], SearchResult[]> = {
+    const groups: Record<SearchResult['category'], PaletteItem[]> = {
       USERS: [],
       COMMUNITIES: [],
       EVENTS: [],
@@ -349,68 +549,20 @@ export function NavbarSearch() {
       'PAST PAPERS': [],
       'STUDY GROUPS': []
     }
-    results.forEach(r => {
-      if (groups[r.category]) {
-        groups[r.category].push(r)
+    visibleItems.forEach(item => {
+      if (item.type === 'result' && item.category && groups[item.category]) {
+        groups[item.category].push(item)
       }
     })
     return groups
-  }, [results])
+  }, [visibleItems])
 
-  // Count items to map flat index to grouped index for keyboard navigation
-  const flatResultList = useMemo(() => {
-    return Object.values(groupedResults).flat()
-  }, [groupedResults])
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSelectedIndex(prev => (prev + 1 < flatResultList.length ? prev + 1 : 0))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSelectedIndex(prev => (prev - 1 >= 0 ? prev - 1 : flatResultList.length - 1))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (selectedIndex >= 0 && selectedIndex < flatResultList.length) {
-        navigate(flatResultList[selectedIndex])
-      }
-    } else if (e.key === 'Escape') {
-      setIsOpen(false)
-      inputRef.current?.blur()
-    }
-  }
-
-  const navigate = (result: { href: string; title?: string; name?: string }) => {
-    // Add to recent searches (up to 5 history items)
-    if (query.trim()) {
-      const term = query.trim()
-      setRecentSearches(prev => {
-        const next = [term, ...prev.filter(x => x.toLowerCase() !== term.toLowerCase())].slice(0, 5)
-        localStorage.setItem('recent_searches', JSON.stringify(next))
-        return next
-      })
-    }
-    router.push(result.href)
-    setIsOpen(false)
-    setQuery('')
-  }
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'USERS': return <User size={13} className="text-blue-400" />
-      case 'COMMUNITIES': return <Users size={13} className="text-purple-400" />
-      case 'EVENTS': return <Calendar size={13} className="text-rose-400" />
-      case 'INTERNSHIPS': return <Briefcase size={13} className="text-cyan-400" />
-      case 'MARKETPLACE': return <Store size={13} className="text-pink-400" />
-      case 'NOTES': return <BookOpen size={13} className="text-amber-400" />
-      case 'PAST PAPERS': return <FileText size={13} className="text-indigo-400" />
-      case 'STUDY GROUPS': return <BookMarked size={13} className="text-teal-400" />
-      default: return <Search size={13} />
-    }
-  }
+  const suggestedActionQueryItems = useMemo(() => {
+    return visibleItems.filter(item => item.type === 'action' && query.trim().length > 0)
+  }, [visibleItems, query])
 
   return (
-    <div ref={containerRef} className="flex-1 max-w-xl mx-8 relative hidden md:block">
+    <div className="flex-1 max-w-xl mx-8 relative hidden md:block">
       {/* Rotating neon outline border */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rotatingGlow {
@@ -423,209 +575,291 @@ export function NavbarSearch() {
           background-size: 300% 300%;
           animation: rotatingGlow 4s linear infinite;
         }
+        .palette-blur {
+          backdrop-filter: blur(20px) saturate(190%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 182, 212, 0.3);
+        }
       `}} />
 
-      <div className={`p-[1.5px] rounded-full transition-all duration-300 relative ${
-        isOpen ? 'glowing-border shadow-[0_0_20px_rgba(168,85,247,0.35)] scale-[1.01]' : 'glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)]'
-      }`}>
-        <div className="bg-[#030712]/95 rounded-full flex items-center relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04]">
-          <div className="text-neutral-400 mr-2 shrink-0">
-            {loading ? <Loader2 size={14} className="animate-spin text-cyan-400" /> : <Search size={14} strokeWidth={2.5} />}
+      {/* Navbar Trigger Button */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="w-full p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)] hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:scale-[1.005] active:scale-[0.995]"
+      >
+        <div className="bg-[#030712]/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
+          <div className="flex items-center text-neutral-400">
+            <Search size={14} strokeWidth={2.5} className="mr-2.5 shrink-0 text-neutral-400" />
+            <span className="text-xs text-neutral-500 font-medium">Search or type a command...</span>
           </div>
-          
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={e => {
-              setQuery(e.target.value)
-              setIsOpen(true)
-            }}
-            onFocus={() => setIsOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search communities, notes, internships, marketplace..."
-            className="w-full bg-transparent border-none text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-0 min-w-0 pr-8"
-          />
-
-          {query ? (
-            <button 
-              onClick={() => { setQuery(''); setResults([]); }}
-              className="absolute right-3.5 text-neutral-500 hover:text-white transition-colors"
-            >
-              <X size={12} />
-            </button>
-          ) : (
-            <div className="absolute right-3.5 pointer-events-none text-[9px] font-mono font-bold text-neutral-400 tracking-widest bg-white/[0.04] border border-white/[0.08] rounded-md px-1.5 py-0.5 shadow-sm">
-              ⌘ K
-            </div>
-          )}
+          <div className="pointer-events-none text-[9px] font-mono font-bold text-neutral-400 tracking-widest bg-white/[0.04] border border-white/[0.08] rounded-md px-1.5 py-0.5 shadow-sm">
+            ⌘ K
+          </div>
         </div>
-      </div>
+      </button>
 
-      {/* suggestion panel dropdown */}
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-3 bg-[#090d16]/98 border border-white/[0.08] rounded-2xl p-4 backdrop-blur-3xl shadow-2xl z-50 max-h-[460px] overflow-y-auto custom-scrollbar animate-fade-in">
-          
-          {/* PHASE 3: Empty query behavior (Dashboard view) */}
-          {!query.trim() ? (
-            <div className="grid grid-cols-2 gap-5 py-2">
-              {/* Left Column: Recent searches & Suggested users */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1 flex items-center gap-1.5">
-                    <Clock size={10} /> Recent Searches
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {recentSearches.map((term, i) => (
-                      <button
-                        key={i}
-                        onClick={() => { setQuery(term); inputRef.current?.focus(); }}
-                        className="text-[10px] font-mono font-medium bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.08] hover:border-white/[0.1] text-neutral-300 hover:text-white px-2.5 py-1 rounded-lg transition-all"
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+      {/* Command Palette Modal */}
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsOpen(false)}
+              className="absolute inset-0 bg-[#030712]/75 backdrop-blur-md"
+            />
 
-                <div className="space-y-2">
-                  <h4 className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1 flex items-center gap-1.5">
-                    <User size={10} /> Suggested Users
-                  </h4>
-                  <div className="flex flex-col gap-1.5">
-                    {SUGGESTED_USERS.map(user => (
-                      <div
-                        key={user.id}
-                        onClick={() => navigate(user)}
-                        className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/[0.03] cursor-pointer transition-colors group"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                          <User size={12} className="text-blue-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-neutral-200 group-hover:text-white truncate">{user.name}</p>
-                          <p className="text-[9px] text-neutral-500 truncate leading-none mt-0.5">{user.email}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            {/* Centered glassmorphic container */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="palette-blur bg-[#090d16]/85 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(6,182,212,0.15)] w-full max-w-5xl h-[70vh] min-h-[500px]"
+            >
+              {/* Top Search Input */}
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.08] bg-zinc-950/40 relative">
+                <Search className="text-cyan-400 w-5 h-5 shrink-0" />
+                <input
+                  ref={modalInputRef}
+                  type="text"
+                  placeholder="Search or type a command (e.g. 'create event')..."
+                  value={query}
+                  onChange={e => {
+                    setQuery(e.target.value)
+                    setSelectedIndex(0)
+                  }}
+                  onKeyDown={handleKeyDown}
+                  className="flex-1 bg-transparent border-none text-base text-white placeholder-neutral-500 focus:outline-none focus:ring-0 min-w-0"
+                />
+                {loading && <Loader2 className="animate-spin text-cyan-400 w-4 h-4 shrink-0 mr-2" />}
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="text-neutral-500 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              {/* Right Column: Popular Communities & Popular Events */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1 flex items-center gap-1.5">
-                    <Users size={10} /> Popular Communities
-                  </h4>
-                  <div className="flex flex-col gap-1.5">
-                    {POPULAR_COMMUNITIES.map(comm => (
-                      <div
-                        key={comm.id}
-                        onClick={() => navigate(comm)}
-                        className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/[0.03] cursor-pointer transition-colors group"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                          <Users size={12} className="text-purple-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-neutral-200 group-hover:text-white truncate">{comm.name}</p>
-                          <p className="text-[9px] text-neutral-500 truncate leading-none mt-0.5">{comm.category}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1 flex items-center gap-1.5">
-                    <Calendar size={10} /> Popular Events
-                  </h4>
-                  <div className="flex flex-col gap-1.5">
-                    {POPULAR_EVENTS.map(ev => (
-                      <div
-                        key={ev.id}
-                        onClick={() => navigate(ev)}
-                        className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/[0.03] cursor-pointer transition-colors group"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
-                          <Calendar size={12} className="text-rose-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-neutral-200 group-hover:text-white truncate">{ev.name}</p>
-                          <p className="text-[9px] text-neutral-500 truncate leading-none mt-0.5">{ev.category}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Search Active query mode
-            <>
-              {loading && results.length === 0 && (
-                <div className="flex items-center justify-center py-10 text-neutral-400 text-xs gap-2.5">
-                  <Loader2 size={16} className="animate-spin text-cyan-400" />
-                  <span>Scanning platform index...</span>
-                </div>
-              )}
-
-              {!loading && results.length === 0 && (
-                <div className="text-center py-10 text-neutral-500 text-xs">
-                  No matching entries found for &ldquo;{query}&rdquo;
-                </div>
-              )}
-
-              {results.length > 0 && (
-                <div className="space-y-4">
-                  {Object.entries(groupedResults).map(([category, items]) => {
-                    if (items.length === 0) return null
-                    return (
-                      <div key={category} className="space-y-1.5">
-                        <h4 className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-2 py-0.5 bg-white/[0.02] rounded border border-white/[0.04] w-fit mb-1 shadow-sm">
-                          {category}
+              {/* Scrollable Content View */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                {!query.trim() ? (
+                  /* Empty state / Dashboard view: 2-column layout */
+                  <div className="grid grid-cols-12 gap-8 h-full">
+                    {/* Left side: Suggested Actions & Recent Searches */}
+                    <div className="col-span-5 space-y-6">
+                      {/* Suggested Actions */}
+                      <div className="space-y-2.5">
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1.5 flex items-center gap-1.5">
+                          <Sparkles size={11} className="text-cyan-400" /> Suggested Actions
                         </h4>
                         <div className="flex flex-col gap-1">
-                          {items.map((result) => {
-                            const idx = flatResultList.indexOf(result)
+                          {visibleItems.filter(item => item.type === 'action').map(item => {
+                            const idx = visibleItems.findIndex(x => x.id === item.id)
                             return (
-                              <div
-                                key={`${result.category}-${result.id}-${idx}`}
-                                onClick={() => navigate(result)}
-                                onMouseEnter={() => setSelectedIndex(idx)}
-                                className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-all duration-150 border border-transparent ${
-                                  selectedIndex === idx 
-                                    ? 'bg-cyan-500/10 text-white border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)] pl-3' 
-                                    : 'hover:bg-white/[0.02] text-neutral-300'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="w-7 h-7 rounded-lg bg-zinc-950/80 border border-white/[0.04] flex items-center justify-center shrink-0">
-                                    {getCategoryIcon(result.category)}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-bold truncate leading-tight">{result.title}</p>
-                                    {result.subtitle && (
-                                      <p className="text-[10px] text-neutral-500 truncate leading-none mt-0.5 font-medium">{result.subtitle}</p>
-                                    )}
-                                  </div>
-                                </div>
-                                <span className="text-[8px] font-mono font-bold tracking-wider text-neutral-500 uppercase shrink-0 bg-white/[0.02] px-2 py-0.5 rounded border border-white/[0.04] opacity-0 group-hover:opacity-100 transition-opacity">
-                                  Jump
-                                </span>
-                              </div>
+                              <PaletteItemRow 
+                                key={item.id}
+                                item={item}
+                                index={idx}
+                                selectedIndex={selectedIndex}
+                                onHover={() => setSelectedIndex(idx)}
+                                onClick={() => executeItem(item)}
+                              />
                             )
                           })}
                         </div>
                       </div>
-                    )
-                  })}
+
+                      {/* Recent Searches */}
+                      {recentSearches.length > 0 && (
+                        <div className="space-y-2.5">
+                          <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1.5 flex items-center gap-1.5">
+                            <Clock size={11} className="text-cyan-400" /> Recent Searches
+                          </h4>
+                          <div className="flex flex-col gap-1">
+                            {visibleItems.filter(item => item.type === 'recent').map(item => {
+                              const idx = visibleItems.findIndex(x => x.id === item.id)
+                              return (
+                                <PaletteItemRow 
+                                  key={item.id}
+                                  item={item}
+                                  index={idx}
+                                  selectedIndex={selectedIndex}
+                                  onHover={() => setSelectedIndex(idx)}
+                                  onClick={() => executeItem(item)}
+                                />
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right side: Popular Modules */}
+                    <div className="col-span-7 space-y-2.5">
+                      <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1.5 flex items-center gap-1.5">
+                        <Command size={11} className="text-cyan-400" /> Popular Modules
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {visibleItems.filter(item => item.type === 'module').map(item => {
+                          const idx = visibleItems.findIndex(x => x.id === item.id)
+                          return (
+                            <PaletteItemRow 
+                              key={item.id}
+                              item={item}
+                              index={idx}
+                              selectedIndex={selectedIndex}
+                              onHover={() => setSelectedIndex(idx)}
+                              onClick={() => executeItem(item)}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Active Search view: Single-column grouped list */
+                  <div className="space-y-6">
+                    {/* Suggested Quick Actions */}
+                    {suggestedActionQueryItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-2 flex items-center gap-1.5">
+                          <Sparkles size={11} className="text-cyan-400" /> Suggested Action
+                        </h4>
+                        <div className="flex flex-col gap-1">
+                          {suggestedActionQueryItems.map(item => {
+                            const idx = visibleItems.findIndex(x => x.id === item.id)
+                            return (
+                              <PaletteItemRow 
+                                key={item.id}
+                                item={item}
+                                index={idx}
+                                selectedIndex={selectedIndex}
+                                onHover={() => setSelectedIndex(idx)}
+                                onClick={() => executeItem(item)}
+                              />
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Database Results Grouped by Category Heading */}
+                    {visibleItems.some(item => item.type === 'result') ? (
+                      <div className="space-y-5">
+                        {Object.entries(groupedResults).map(([catKey, items]) => {
+                          if (items.length === 0) return null
+                          const heading = CATEGORY_HEADINGS[catKey as SearchResult['category']]
+                          return (
+                            <div key={catKey} className="space-y-2">
+                              <h4 className="text-[10px] font-mono font-bold tracking-widest text-cyan-400/80 uppercase px-2 py-0.5 w-fit border border-cyan-500/20 bg-cyan-500/5 rounded">
+                                {heading}
+                              </h4>
+                              <div className="flex flex-col gap-1">
+                                {items.map(item => {
+                                  const idx = visibleItems.findIndex(x => x.id === item.id)
+                                  return (
+                                    <PaletteItemRow 
+                                      key={item.id}
+                                      item={item}
+                                      index={idx}
+                                      selectedIndex={selectedIndex}
+                                      onHover={() => setSelectedIndex(idx)}
+                                      onClick={() => executeItem(item)}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      !loading && suggestedActionQueryItems.length === 0 && (
+                        <div className="text-center py-16 text-neutral-500 text-sm">
+                          <Search size={32} className="mx-auto text-zinc-700 mb-3" />
+                          No matching platform entries found for &ldquo;{query}&rdquo;
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Statusbar footer */}
+              <div className="flex items-center justify-between px-6 py-3 bg-[#030712]/50 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1 py-0.2 rounded">↑↓</span> Navigate</span>
+                  <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.2 rounded font-sans">↵</span> Select</span>
+                  <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1 py-0.2 rounded">esc</span> Close</span>
                 </div>
-              )}
-            </>
+                <div className="flex items-center gap-1.5 text-cyan-400/80 font-semibold uppercase tracking-wider">
+                  <Command size={10} /> Command Palette
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function PaletteItemRow({
+  item,
+  index,
+  selectedIndex,
+  onHover,
+  onClick
+}: {
+  item: PaletteItem
+  index: number
+  selectedIndex: number
+  onHover: () => void
+  onClick: () => void
+}) {
+  const isSelected = index === selectedIndex
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={onHover}
+      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-150 border ${
+        isSelected
+          ? 'bg-cyan-500/10 text-white border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)] pl-3.5'
+          : 'bg-white/[0.01] hover:bg-white/[0.02] border-transparent text-neutral-400'
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+          isSelected ? 'bg-cyan-500/20 text-cyan-300' : 'bg-zinc-950/80 border border-white/[0.04] text-neutral-400'
+        }`}>
+          {item.icon}
+        </div>
+        <div className="min-w-0 text-left">
+          <p className="text-xs font-semibold truncate leading-tight transition-colors">{item.title}</p>
+          {item.subtitle && (
+            <p className="text-[10px] text-neutral-500 truncate leading-none mt-1 font-medium">{item.subtitle}</p>
           )}
         </div>
+      </div>
+      {isSelected && (
+        <span className="text-[9px] font-mono font-bold tracking-wider text-cyan-400 uppercase shrink-0 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 animate-pulse flex items-center gap-1">
+          Jump <CornerDownLeft size={8} />
+        </span>
       )}
     </div>
   )

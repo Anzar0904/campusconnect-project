@@ -81,19 +81,31 @@ export default function InternshipsClient({
     }
   }, [])
 
-  // Auto-select internship from query parameter
+  // Auto-select internship or trigger creation modal from query parameter
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const id = params.get('id')
+      const createAction = params.get('create')
+
       if (id && internships.length > 0) {
         const found = internships.find(x => x.id === id)
         if (found) {
           setSelectedInternship(found)
         }
       }
+
+      if (createAction === 'true' && isAdmin) {
+        setEditingInternship(null)
+        setForm({
+          company: '', title: '', location: '', stipend: '',
+          duration: '', deadline: '', type: 'hybrid', description: '', apply_link: '',
+          category: 'Technical', eligibility: ''
+        })
+        setShowAddModal(true)
+      }
     }
-  }, [internships])
+  }, [internships, isAdmin])
 
   const toggleSave = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()

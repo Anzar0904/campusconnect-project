@@ -88,6 +88,8 @@ export default function EventsClient({
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const id = params.get('id')
+      const createAction = params.get('create')
+      
       if (id && events.length > 0) {
         setFilter('all')
         setCat('All')
@@ -102,8 +104,17 @@ export default function EventsClient({
           }
         }, 500)
       }
+
+      if (createAction === 'true' && isAdmin) {
+        setEditingEvent(null)
+        setForm({
+          title: '', category: 'Academic', description: '', date: '', time: '',
+          venue: '', registration_link: '', banner_url: '', capacity: ''
+        })
+        setShowAddModal(true)
+      }
     }
-  }, [events])
+  }, [events, isAdmin])
 
   async function handleToggleRSVP(eventId: string) {
     const isInterested = interested.includes(eventId)
