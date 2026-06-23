@@ -13,6 +13,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const resolvedParams = await searchParams
   const targetUserId = resolvedParams.id || user.id
   const profile = await getCachedProfile(targetUserId)
+  
+  const currentUserProfile = await getCachedProfile(user.id)
+  const currentUserRole = currentUserProfile?.role || 'STUDENT'
 
-  return <ProfileClient profile={profile} userId={user.id} targetUserId={targetUserId} />
+  return (
+    <ProfileClient 
+      profile={profile} 
+      userId={user.id} 
+      targetUserId={targetUserId} 
+      currentUserRole={currentUserRole} 
+    />
+  )
 }

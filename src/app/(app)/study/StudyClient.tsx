@@ -1,10 +1,11 @@
 'use client'
 import { ExternalLink, UserPlus, Users } from 'lucide-react'
-
 import { useState } from 'react'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+import Link from 'next/link'
 
 const RESOURCES = [
   { icon:'link', title:'NPTEL Courses', desc:'Free IIT-level MOOCs', url:'https://nptel.ac.in', color:'#4cd7f6' },
@@ -141,9 +142,15 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
 
             <div className="space-y-3">
               {groups.length === 0 ? (
-                <div className="glass-card rounded-xl p-8 text-center border border-white/[0.04]">
-                  <p className="text-on-surface-variant text-sm italic">No active study groups. Create one to start collaborating!</p>
-                </div>
+                <EmptyState 
+                  icon="school"
+                  title="No active study groups"
+                  description="Start a collaborative virtual study room for your subject or revision batch."
+                  action={{
+                    label: "Create Group",
+                    onClick: () => setShowCreate(true)
+                  }}
+                />
               ) : (
                 groups.map(g => {
                   const isMember = g.study_group_members?.some((m: any) => m.user_id === userId)
@@ -162,12 +169,20 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
                         </p>
                       </div>
                       {isMember ? (
-                        <span className="chip chip-tertiary text-xs py-1.5 px-3">Joined</span>
+                        <div className="flex items-center gap-2">
+                          <span className="chip chip-tertiary text-xs py-1.5 px-2.5 hidden sm:inline-block">Joined</span>
+                          <Link 
+                            href={`/study/${g.id}`}
+                            className="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 bg-[#4f46e5] hover:bg-[#4338ca] text-white rounded-lg font-medium"
+                          >
+                            Enter Room
+                          </Link>
+                        </div>
                       ) : (
                         <button 
                           onClick={() => handleJoinGroup(g.id)}
                           disabled={isFull}
-                          className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50"
+                          className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50 bg-[#4f46e5]/10 hover:bg-[#4f46e5]/20 text-[#c3c0ff] border border-[#4f46e5]/30 rounded-lg font-medium"
                         >
                           {isFull ? 'Full' : 'Join'}
                         </button>

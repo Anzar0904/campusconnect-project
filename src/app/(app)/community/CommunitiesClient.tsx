@@ -1,8 +1,7 @@
 'use client'
 import { Lock, Plus, Search, X } from 'lucide-react'
-
-
 import { useState } from 'react'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -53,9 +52,7 @@ export default function CommunitiesClient({
 }) {
  const supabase: any = createClient()
 const router = useRouter()
-  const [communities, setCommunities] = useState<Community[]>(
-    initial.length > 0 ? initial : IILM_COMMUNITIES
-  )
+  const [communities, setCommunities] = useState<Community[]>(initial)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(initial.length >= 10)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -375,7 +372,7 @@ if (error) {
             return (
              <div
   key={c.id}
-  onClick={() => router.push(`/communities/${c.id}`)}
+  onClick={() => router.push(`/community/${c.id}`)}
   className="glass-card rounded-xl overflow-hidden cursor-pointer"
 >
                 {/* Banner */}
@@ -421,9 +418,15 @@ if (error) {
         </div>
 
         {filtered.filter(c => !joined.includes(c.id)).length === 0 && (
-          <div className="glass-card rounded-xl p-8 text-center col-span-2">
-            <p className="text-on-surface-variant text-sm">No communities found. Try a different filter.</p>
-          </div>
+          <EmptyState 
+            icon="group_off"
+            title="No communities found"
+            description="Be the first one to create a community for your batch, subject, or interest!"
+            action={{
+              label: "New Community",
+              onClick: () => setCreating(true)
+            }}
+          />
         )}
       </div>
     </div>

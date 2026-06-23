@@ -33,9 +33,13 @@ import {
 import Link from 'next/link'
 import { clsx } from 'clsx'
 import { NavbarSearch } from './NavbarSearch'
+import { useNotifications } from '@/hooks/useNotifications'
+import { Clock, Check } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface NavbarProps {
   profile?: {
+    id?: string | null
     avatar_url?: string | null
     full_name?: string | null
     username?: string | null
@@ -92,9 +96,7 @@ const NAV_SECTIONS = [
     items: [
       { label: 'Dating', href: '/dating', icon: Heart, desc: 'Connect on campus' },
       { label: 'Coding Arena', href: '/coding-arena', icon: Terminal, desc: 'Coding challenges' },
-      { label: 'Startup Cell', href: '/startup', icon: Rocket, desc: 'Build your startup' },
       { label: 'AI Assistant', href: '/ai', icon: Sparkles, desc: 'AI queries' },
-      { label: 'Rewards', href: '/rewards', icon: Trophy, desc: 'Earning point systems' },
     ]
   },
   {
@@ -108,15 +110,28 @@ const NAV_SECTIONS = [
 
 export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-white/[0.04] bg-[#030712]/65 backdrop-blur-xl px-6 py-2.5 flex items-center justify-between transition-all duration-300">
       <div className="flex items-center gap-2.5">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center neon-glow-cyan">
-            <span className="text-white font-black text-lg italic tracking-tighter">C</span>
-          </div>
+          <svg className="w-8.5 h-8.5 shrink-0 drop-shadow-[0_0_10px_rgba(6,182,212,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
+              fill="url(#c-gradient-nav)"
+              strokeWidth="1"
+            />
+            <defs>
+              <linearGradient id="c-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="50%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+          </svg>
           <span className="text-white font-bold text-lg tracking-tight hidden sm:block">
             Campus<span className="text-neutral-400 font-normal">Connect</span>
           </span>
@@ -129,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
         {profile ? (
           <>
             <button 
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => { setIsOpen(!isOpen); setShowNotifications(false) }}
               className={clsx(
                 "p-2 text-neutral-400 hover:text-white transition-all rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
                 isOpen && "text-white bg-white/[0.05]"
@@ -139,12 +154,94 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
               <LayoutGrid size={18} />
             </button>
 
-            <button className="relative p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-red-500 text-[9px] text-white rounded-full flex items-center justify-center font-black">
-                3
-              </span>
-            </button>
+            {/* Notification Bell with Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => { setShowNotifications(!showNotifications); setIsOpen(false) }}
+                className={clsx(
+                  "relative p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
+                  showNotifications && "text-white bg-white/[0.05]"
+                )}
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[15px] h-[15px] px-1 bg-cyan-500 text-[8px] text-zinc-950 rounded-full flex items-center justify-center font-black animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute top-full right-0 mt-3.5 w-80 bg-[#090d16]/95 border border-white/[0.08] rounded-2xl p-4 backdrop-blur-2xl shadow-2xl z-50 animate-fade-in max-h-[420px] overflow-y-auto custom-scrollbar flex flex-col gap-2">
+                    <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                      <p className="text-[10px] font-bold font-mono uppercase text-zinc-400 tracking-wider">Notifications</p>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 font-bold uppercase transition-colors"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[320px] custom-scrollbar pr-0.5">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 text-center">
+                          <Bell className="mx-auto text-zinc-700 mb-2" size={24} />
+                          <p className="text-[11px] text-zinc-500 italic">No new notifications</p>
+                        </div>
+                      ) : (
+                        notifications.map(notif => (
+                          <Link 
+                            key={notif.id}
+                            href={notif.link || '#'}
+                            onClick={() => {
+                              markAsRead(notif.id)
+                              setShowNotifications(false)
+                            }}
+                            className={clsx(
+                              "flex gap-2.5 p-2 rounded-xl transition-all border border-transparent text-left",
+                              notif.read 
+                                ? "bg-transparent hover:bg-white/[0.02]" 
+                                : "bg-cyan-500/[0.03] border-cyan-500/10 hover:bg-cyan-500/[0.06] hover:border-cyan-500/15"
+                            )}
+                          >
+                            <div className="shrink-0 mt-1">
+                              <span className={clsx(
+                                "w-1.5 h-1.5 rounded-full block",
+                                notif.read ? "bg-zinc-700" : "bg-cyan-400"
+                              )} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={clsx(
+                                "text-[11px] leading-snug truncate",
+                                notif.read ? "text-zinc-400 font-normal" : "text-zinc-100 font-bold"
+                              )}>
+                                {notif.title}
+                              </p>
+                              {notif.content && (
+                                <p className="text-[9px] text-zinc-500 mt-0.5 line-clamp-2 leading-normal">
+                                  {notif.content}
+                                </p>
+                              )}
+                              <p className="text-[8px] font-mono text-zinc-600 mt-1 flex items-center gap-1">
+                                <Clock size={8} />
+                                {format(new Date(notif.created_at), 'd MMM, h:mm a')}
+                              </p>
+                            </div>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <Link href="/messages" className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center">
               <MessageSquare size={18} />
             </Link>

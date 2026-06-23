@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { Navbar } from './Navbar'
-import { useNotifications } from '@/hooks/useNotifications'
+import { NotificationProvider } from '@/hooks/useNotifications'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -31,20 +31,21 @@ export function AppShell({
   year
 }: AppShellProps) {
   const pathname = usePathname()
-  const { unreadCount } = useNotifications(userId)
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#030712] text-neutral-100 font-sans antialiased selection:bg-blue-500/30 selection:text-white">
-      <Navbar
-        profile={{
-          avatar_url: userAvatar,
-          full_name: userName,
-          username: username,
-          branch: branch,
-          year: year,
-          role: userRole
-        }}
-      />
+    <NotificationProvider userId={userId}>
+      <div className="flex flex-col min-h-screen bg-[#030712] text-neutral-100 font-sans antialiased selection:bg-blue-500/30 selection:text-white">
+        <Navbar
+          profile={{
+            id: userId,
+            avatar_url: userAvatar,
+            full_name: userName,
+            username: username,
+            branch: branch,
+            year: year,
+            role: userRole
+          }}
+        />
       
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-20 py-8 relative">
         <AnimatePresence mode="wait">
@@ -65,6 +66,7 @@ export function AppShell({
           </motion.div>
         </AnimatePresence>
       </main>
-    </div>
+      </div>
+    </NotificationProvider>
   )
 }

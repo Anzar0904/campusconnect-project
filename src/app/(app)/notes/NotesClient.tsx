@@ -1,7 +1,7 @@
 'use client'
 import { CheckCircle, Download, FileText, Heart, Search, Upload, UploadCloud } from 'lucide-react'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -21,6 +21,29 @@ export default function NotesClient({ notes, userId }: any) {
   const [showUpload, setShowUpload] = useState(false)
   const [uploadForm, setUploadForm] = useState({ title:'', subject:'', course_code:'', description:'', year:'' })
   const supabase: any = createClient()
+
+  // Auto-scroll and highlight note from query parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      if (id && allNotes.length > 0) {
+        setSubjectFilter('')
+        setYearFilter('')
+        setSearch('')
+        setTimeout(() => {
+          const el = document.getElementById(`note-${id}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('ring-2', 'ring-cyan-500', 'ring-offset-2', 'ring-offset-[#090d16]')
+            setTimeout(() => {
+              el.classList.remove('ring-2', 'ring-cyan-500', 'ring-offset-2', 'ring-offset-[#090d16]')
+            }, 6000)
+          }
+        }, 500)
+      }
+    }
+  }, [allNotes])
 
   const filtered = allNotes
     .filter((n:any) => {
@@ -202,6 +225,7 @@ export default function NotesClient({ notes, userId }: any) {
                 <motion.div 
                   layout
                   key={note.id} 
+                  id={`note-${note.id}`}
                   className="card-premium p-6 flex flex-col gap-4 group hover:border-brand-500/30 transition-all duration-300 shadow-lg"
                 >
                   <div className="flex items-start justify-between gap-4">

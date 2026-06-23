@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardClient from './DashboardClient'
+import { NotificationProvider } from '@/hooks/useNotifications'
 
 export const metadata = { title: 'Home Feed — IILM Connect' }
 
@@ -47,12 +48,14 @@ export default async function DashboardPage() {
   const likedPostIds = (myLikes ?? []).map((l: any) => l.post_id)
 
   return (
-    <DashboardClient
-      profile={profile}
-      posts={posts || []}
-      events={events || []}
-      currentUserId={user.id}
-      initialLikedIds={likedPostIds}
-    />
+    <NotificationProvider userId={user.id}>
+      <DashboardClient
+        profile={profile}
+        posts={posts || []}
+        events={events || []}
+        currentUserId={user.id}
+        initialLikedIds={likedPostIds}
+      />
+    </NotificationProvider>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X } from 'lucide-react'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -30,6 +30,19 @@ export default function MarketplaceClient({ items, userId }: any) {
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      if (id && allItems.length > 0) {
+        const found = allItems.find((x: any) => x.id === id)
+        if (found) {
+          setSelectedItem(found)
+        }
+      }
+    }
+  }, [allItems])
 
   const filtered = allItems.filter((item:any) => {
     const matchCat = category === 'All' || item.category === category
@@ -182,15 +195,22 @@ export default function MarketplaceClient({ items, userId }: any) {
         </div>
       </div>
 
-      {/* Grid */}
       {filtered.length === 0 ? (
         <EmptyState 
           icon="storefront"
-          title="No items found"
-          description="We couldn't find any listings matching your current filters."
+          title="No marketplace listings"
+          description={allItems.length === 0 ? "Be the first to list an item for sale on campus!" : "No items match your filters."}
           action={{
-            label: "Clear Filters",
-            onClick: () => { setCategory('All'); setSearch(''); setMaxPrice('') }
+            label: allItems.length === 0 ? "Create Listing" : "Clear Filters",
+            onClick: () => {
+              if (allItems.length === 0) {
+                setShowSell(true)
+              } else {
+                setCategory('All')
+                setSearch('')
+                setMaxPrice('')
+              }
+            }
           }}
         />
       ) : (

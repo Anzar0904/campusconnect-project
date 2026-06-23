@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import InternshipsClient from './InternshipsClient'
+import { getCachedProfile } from '@/lib/profile'
 
 export const metadata = { title: 'Internships — IILM Connect' }
 
@@ -10,12 +11,8 @@ export default async function InternshipsPage() {
   if (!user) redirect('/auth/login')
 
   // Fetch profile, internship applications, and internships concurrently
-  const [profileResult, applicationsResult, internshipsResult] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('branch, year, skills, resume_url')
-      .eq('id', user.id)
-      .single(),
+  const [profile, applicationsResult, internshipsResult] = await Promise.all([
+    getCachedProfile(user.id),
     (supabase as any)
       .from('internship_applications')
       .select('internship_id, status')
@@ -25,7 +22,6 @@ export default async function InternshipsPage() {
       .select('*')
   ])
 
-  const profile = profileResult.data
   const applications = applicationsResult.data
   const dbInternships = internshipsResult.data
 

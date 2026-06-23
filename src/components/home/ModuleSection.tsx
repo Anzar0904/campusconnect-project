@@ -1,36 +1,59 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { 
-  Rss, MessageSquare, Users, ShoppingBag, Heart, Briefcase, 
-  Code2, Bot, Calendar, ShieldAlert, Plus
+  Rss, MessageSquare, Users, Store, Heart, Briefcase, 
+  Terminal, Sparkles, Calendar, BookOpen, FileText, 
+  GraduationCap, Award, Bot, ShieldAlert, Plus, X, Gamepad2
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { clsx } from 'clsx'
 
 interface ModuleSectionProps {
   userRole?: string | null
 }
 
-const modules = [
-  { icon: Rss, name: 'Home Feed', href: '/dashboard', color: 'from-blue-500 via-blue-600 to-cyan-500', count: null },
-  { icon: MessageSquare, name: 'Messages', href: '/messages', color: 'from-emerald-500 to-teal-500', count: null },
-  { icon: Users, name: 'Communities', href: '/community', color: 'from-purple-500 via-indigo-600 to-purple-600', count: null },
-  { icon: ShoppingBag, name: 'Marketplace', href: '/marketplace', color: 'from-pink-500 to-rose-500', count: null },
-  { icon: Heart, name: 'Dating', href: '/dating', color: 'from-red-500 to-pink-500', count: null },
-  { icon: Briefcase, name: 'Internships', href: '/internships', color: 'from-amber-500 via-orange-500 to-amber-600', count: null },
-  { icon: Code2, name: 'Coding Arena', href: '/coding-arena', color: 'from-cyan-500 via-blue-500 to-indigo-500', count: null },
-  { icon: Bot, name: 'AI Assistant', href: '/ai', color: 'from-violet-500 via-fuchsia-500 to-purple-500', count: null },
-  { icon: Calendar, name: 'Events', href: '/events', color: 'from-sky-500 to-indigo-600', count: null },
-  { icon: ShieldAlert, name: 'Admin Dashboard', href: '/super-admin', color: 'from-rose-600 to-red-600', count: null },
+const visibleGridModules = [
+  { icon: Rss, name: 'Home Feed', href: '/dashboard', color: 'from-blue-500 via-blue-600 to-cyan-500' },
+  { icon: MessageSquare, name: 'Messages', href: '/messages', color: 'from-emerald-500 to-teal-500' },
+  { icon: Users, name: 'Communities', href: '/community', color: 'from-purple-500 via-indigo-600 to-purple-600' },
+  { icon: Store, name: 'Marketplace', href: '/marketplace', color: 'from-pink-500 to-rose-500' },
+  { icon: Heart, name: 'Dating', href: '/dating', color: 'from-red-500 to-pink-500' },
+  { icon: Briefcase, name: 'Internships', href: '/internships', color: 'from-amber-500 via-orange-500 to-amber-600' },
+  { icon: Terminal, name: 'Coding Arena', href: '/coding-arena', color: 'from-cyan-500 via-blue-500 to-indigo-500' },
+  { icon: Sparkles, name: 'AI Assistant', href: '/ai', color: 'from-violet-500 via-fuchsia-500 to-purple-500' },
+  { icon: Calendar, name: 'Events', href: '/events', color: 'from-sky-500 to-indigo-600' },
+]
+
+const ALL_MODULES = [
+  { icon: Rss, name: 'Home Feed', href: '/dashboard', color: 'from-blue-500 via-blue-600 to-cyan-500', desc: 'Realtime campus feed' },
+  { icon: MessageSquare, name: 'Messages', href: '/messages', color: 'from-emerald-500 to-teal-500', desc: 'Direct peer chats' },
+  { icon: Users, name: 'Communities', href: '/community', color: 'from-purple-500 via-indigo-600 to-purple-600', desc: 'Interest groups & channels' },
+  { icon: Gamepad2, name: 'Clubs & Societies', href: '/clubs', color: 'from-cyan-500 to-blue-500', desc: 'Student-run clubs' },
+  { icon: Calendar, name: 'Events', href: '/events', color: 'from-sky-500 to-indigo-600', desc: 'Campus events calendar' },
+  { icon: BookOpen, name: 'Notes Library', href: '/notes', color: 'from-amber-500 to-yellow-500', desc: 'Shared lecture notes' },
+  { icon: FileText, name: 'Past Papers', href: '/papers', color: 'from-indigo-500 to-blue-600', desc: 'Exam question papers' },
+  { icon: GraduationCap, name: 'Study Hub', href: '/study', color: 'from-teal-500 to-emerald-600', desc: 'Collaborative rooms' },
+  { icon: Calendar, name: 'Academic Calendar', href: '/calendar', color: 'from-sky-400 to-blue-500', desc: 'Timetables & schedules' },
+  { icon: Store, name: 'Marketplace', href: '/marketplace', color: 'from-pink-500 to-rose-500', desc: 'Campus classifieds grid' },
+  { icon: Briefcase, name: 'Internships', href: '/internships', color: 'from-amber-500 via-orange-500 to-amber-600', desc: 'Internship postings' },
+  { icon: Award, name: 'Placements', href: '/placements', color: 'from-rose-500 to-orange-500', desc: 'Jobs and package tracker' },
+  { icon: Bot, name: 'Mentorship', href: '/mentorship', color: 'from-purple-400 to-indigo-500', desc: 'Alumni career guides' },
+  { icon: Heart, name: 'Dating', href: '/dating', color: 'from-red-500 to-pink-500', desc: 'Connect on campus' },
+  { icon: Terminal, name: 'Coding Arena', href: '/coding-arena', color: 'from-cyan-500 via-blue-500 to-indigo-500', desc: 'Coding challenges' },
+  { icon: Sparkles, name: 'AI Assistant', href: '/ai', color: 'from-violet-500 via-fuchsia-500 to-purple-500', desc: 'Generative AI helper' },
+  { icon: ShieldAlert, name: 'Platform Admin', href: '/super-admin', color: 'from-rose-600 to-red-600', desc: 'System settings & roles', roleOnly: true }
 ]
 
 export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
   const pathname = usePathname()
   const normalizedRole = (userRole || '').toUpperCase()
+  const [showAll, setShowAll] = useState(false)
 
-  const visibleModules = modules.filter(mod => {
+  // Filter modules based on user permissions
+  const filteredGrid = visibleGridModules.filter(mod => {
     if (mod.name === 'Admin Dashboard') {
       return normalizedRole === 'ADMIN' || normalizedRole === 'SUPER_ADMIN'
     }
@@ -40,7 +63,7 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
   return (
     <section className="w-full px-6 sm:px-12 lg:px-20 py-4 bg-[#030712]">
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-3.5">
-        {visibleModules.map((mod, idx) => {
+        {filteredGrid.map((mod, idx) => {
           const IconComponent = mod.icon
           const active = pathname === mod.href || (mod.href !== '/dashboard' && pathname.startsWith(mod.href))
 
@@ -72,11 +95,6 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
                   mod.color
                 )}>
                   <IconComponent size={18} strokeWidth={2.2} />
-                  {mod.count && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-[9px] text-white font-black px-1.5 py-0.5 rounded-md min-w-[14px] shadow-sm">
-                      {mod.count}
-                    </span>
-                  )}
                 </div>
                 
                 <span className={clsx(
@@ -90,7 +108,8 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
           )
         })}
         
-        <Link href="/discover" className="block">
+        {/* More Button triggers slide-up panel / modal */}
+        <div onClick={() => setShowAll(true)} className="block">
           <motion.div
             whileHover={{ scale: 1.06, y: -3 }}
             whileTap={{ scale: 0.96 }}
@@ -102,12 +121,80 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
             </div>
             <span className="text-[11px] font-bold mt-2.5 tracking-tight">More</span>
           </motion.div>
-        </Link>
+        </div>
       </div>
+
+      {/* Glassmorphic All-Modules Panel Modal */}
+      <AnimatePresence>
+        {showAll && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAll(false)}
+              className="absolute inset-0 bg-black/85 backdrop-blur-md"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="relative w-full max-w-4xl bg-[#090d16]/95 border border-white/[0.08] rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl overflow-y-auto max-h-[85vh] custom-scrollbar"
+            >
+              <div className="flex justify-between items-center mb-8 pb-4 border-b border-white/[0.04]">
+                <div>
+                  <h2 className="text-xl font-bold font-display text-white">All Platform Modules</h2>
+                  <p className="text-xs text-neutral-400 mt-1">Navigate to any functional node in the student operating system.</p>
+                </div>
+                <button 
+                  onClick={() => setShowAll(false)}
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {ALL_MODULES.filter(mod => {
+                  if (mod.roleOnly) {
+                    return normalizedRole === 'ADMIN' || normalizedRole === 'SUPER_ADMIN'
+                  }
+                  return true
+                }).map((mod, idx) => {
+                  const Icon = mod.icon
+                  return (
+                    <Link
+                      key={idx}
+                      href={mod.href}
+                      onClick={() => setShowAll(false)}
+                      className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-cyan-500/20 active:scale-[0.98] transition-all group"
+                    >
+                      <div className={clsx(
+                        "w-10 h-10 rounded-xl flex items-center justify-center text-white bg-gradient-to-tr shadow-md group-hover:scale-105 transition-transform shrink-0",
+                        mod.color
+                      )}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-neutral-200 group-hover:text-white leading-tight truncate">
+                          {mod.name}
+                        </p>
+                        <p className="text-[10px] text-neutral-400 truncate mt-1 leading-none font-medium">
+                          {mod.desc}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   )
-}
-
-function clsx(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
 }

@@ -61,9 +61,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dating',        href: '/dating',       icon: 'favorite' },
       { label: 'Coding Arena',  href: '/coding-arena', icon: 'code' },
-      { label: 'Startup Cell',  href: '/startup',      icon: 'rocket_launch' },
       { label: 'AI Assistant',  href: '/ai',           icon: 'smart_toy' },
-      { label: 'Rewards',       href: '/rewards',      icon: 'emoji_events' },
       { label: 'Super Admin', href: '/super-admin', icon: 'admin_panel_settings' },
     ],
   },

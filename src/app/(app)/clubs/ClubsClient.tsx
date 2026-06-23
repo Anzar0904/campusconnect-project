@@ -2,7 +2,7 @@
 import { CheckCircle, X } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -56,6 +56,19 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
   const [filter, setFilter] = useState('All')
   const [joined, setJoined] = useState<string[]>([])
   const [selected, setSelected] = useState<Club | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      if (id && clubs.length > 0) {
+        const found = clubs.find(x => x.id === id)
+        if (found) {
+          setSelected(found)
+        }
+      }
+    }
+  }, [clubs])
 
   const categories = ['All', ...Object.keys(CAT_ICONS)]
   const filtered = clubs.filter(c => filter === 'All' || c.category === filter)

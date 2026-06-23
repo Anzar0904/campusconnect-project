@@ -2,6 +2,7 @@
 import { Heart, MessageSquare, Star, Trash2, X } from 'lucide-react'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
@@ -25,6 +26,7 @@ export default function DatingClient({
   initialDiscoverable,
   initialMatches,
 }: any) {
+  const router = useRouter()
   const [datingProfile, setDatingProfile] = useState(initDP)
   const [setupStep, setSetupStep] = useState<'idle'|'setup'|'browse'>(initDP ? 'browse' : 'idle')
   const [form, setForm] = useState({ 
@@ -89,6 +91,19 @@ export default function DatingClient({
         if (!matchError && newMatch) {
           setMatches(prev => [newMatch, ...prev])
           toast.success(`💕 It's a match with ${current.profiles.full_name}!`, { duration: 4000 })
+          
+          // Automatically insert a friendship to unlock direct messaging
+          try {
+            await supabase
+              .from('friendships')
+              .insert({
+                requester_id: userId,
+                addressee_id: current.user_id,
+                status: 'accepted'
+              })
+          } catch (friendErr) {
+            console.error('Friendship insertion error (ignoring if duplicate):', friendErr)
+          }
         }
       }
     }
@@ -333,11 +348,14 @@ export default function DatingClient({
                       <p className="font-display font-semibold text-on-surface">{display.name}</p>
                       <p className="text-xs font-mono text-on-surface-variant">{display.branch} · Y{display.year}</p>
                     </div>
-                    <button className="btn-primary text-xs px-4 py-1.5 w-full justify-center"
-                      style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)'}}>
+                     <button 
+                      onClick={() => router.push('/messages')}
+                      className="btn-primary text-xs px-4 py-1.5 w-full justify-center flex items-center gap-1.5"
+                      style={{background:'linear-gradient(135deg,#ec4899,#f43f5e)'}}
+                     >
                       <MessageSquare size={14} />
                       Message
-                    </button>
+                     </button>
                   </div>
                 )
               })}

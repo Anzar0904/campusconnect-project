@@ -815,9 +815,20 @@ export default function DashboardClient({
         <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 pb-10 text-xs font-medium text-neutral-400">
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-400 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black italic text-sm shadow-md">
-                C
-              </div>
+              <svg className="w-7 h-7 shrink-0 drop-shadow-[0_0_8px_rgba(6,182,212,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
+                  fill="url(#c-gradient-footer)"
+                  strokeWidth="1"
+                />
+                <defs>
+                  <linearGradient id="c-gradient-footer" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#06b6d4" />
+                    <stop offset="50%" stopColor="#2563eb" />
+                    <stop offset="100%" stopColor="#6366f1" />
+                  </linearGradient>
+                </defs>
+              </svg>
               <span className="text-white font-bold text-base tracking-tight">Campus<span className="text-neutral-400 font-normal">Connect</span></span>
             </div>
             <p className="text-neutral-500 max-w-sm text-[11px] leading-relaxed">

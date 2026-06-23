@@ -84,13 +84,25 @@ if (!isAdmin && !profile?.dating_verified)
     .map((s: any) => s.swiped_id)
     .concat(user.id)
 
-  // Fetch discoverable profiles (same college, active, not swiped)
-  const { data: discoverable } = await supabase
+  const myGender = myDatingProfile?.gender?.toLowerCase()
+  let targetGender = null
+  if (myGender === 'male') {
+    targetGender = 'Female'
+  } else if (myGender === 'female') {
+    targetGender = 'Male'
+  }
+
+  let dbQuery = supabase
     .from('dating_profiles')
     .select('*, profiles!dating_profiles_user_id_fkey(full_name, branch, year, avatar_url)')
     .eq('is_active', true)
     .not('user_id', 'in', `(${excludeIds.join(',')})`)
-    .limit(20)
+
+  if (targetGender) {
+    dbQuery = dbQuery.eq('gender', targetGender)
+  }
+
+  const { data: discoverable } = await dbQuery.limit(20)
 
   return <DatingClient 
     userId={user.id} 

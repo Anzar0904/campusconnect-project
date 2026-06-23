@@ -30,40 +30,6 @@ export const HeroSection: React.FC = () => {
           CampusConnect is your all-in-one student OS built with 20+ powerful modules to learn, connect, build, and grow — exclusively engineered for college life.
         </p>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <button className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide transition-all duration-300 shadow-[0_4px_30px_rgba(37,99,235,0.45)] hover:shadow-[0_4px_35px_rgba(37,99,235,0.6)] flex items-center gap-2 group transform active:scale-98">
-            Get Started For Free
-            <ArrowRight size={14} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform duration-200" />
-          </button>
-          <button className="px-6 py-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-white/[0.12] text-white font-bold text-xs tracking-wide transition-all duration-300 flex items-center gap-2 backdrop-blur-md transform active:scale-98">
-            Explore Modules
-            <Play size={10} fill="white" strokeWidth={0} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/[0.05] max-w-md">
-          <div>
-            <div className="flex items-center gap-1.5 text-neutral-500 text-[10px] uppercase font-bold tracking-widest mb-1.5">
-              <span className="text-cyan-400 text-[8px]">●</span>
-              <span>Trusted by</span>
-            </div>
-            <p className="text-lg font-black text-white tracking-tight">200+ Colleges</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-neutral-500 text-[10px] uppercase font-bold tracking-widest mb-1.5">
-              <span className="text-purple-400 text-[8px]">●</span>
-              <span>Students</span>
-            </div>
-            <p className="text-lg font-black text-white tracking-tight">500K+</p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-neutral-500 text-[10px] uppercase font-bold tracking-widest mb-1.5">
-              <span className="text-pink-400 text-[8px]">●</span>
-              <span>Rating</span>
-            </div>
-            <p className="text-lg font-black text-white tracking-tight flex items-center gap-1">4.9 <Star size={12} fill="#ec4899" strokeWidth={0} className="mb-0.5" /></p>
-          </div>
-        </div>
       </div>
 
       {/* Hero Interactive Space Right */}
