@@ -122,16 +122,16 @@ function getProfileCompletion(profile: any) {
   return { pct, missing }
 }
 
-export default function AIAssistantClient() {
-  const STORAGE_KEY = 'ai_assistant_history'
-  const WELCOME_MSG: ChatMessage = {
-    id: 'welcome',
-    role: 'assistant',
-    content: 'Welcome! I am your **Campus Copilot v2**, powered exclusively by secure local data. Ask me for recommendations, event registrations, matching internships, marketplace items, or check your dashboard action plan!',
-    created_at: new Date().toISOString(),
-    dataType: 'general'
-  }
+const STORAGE_KEY = 'ai_assistant_history'
+const WELCOME_MSG: ChatMessage = {
+  id: 'welcome',
+  role: 'assistant',
+  content: 'Welcome! I am your **Campus Copilot v2**, powered exclusively by secure local data. Ask me for recommendations, event registrations, matching internships, marketplace items, or check your dashboard action plan!',
+  created_at: '2026-06-24T12:00:00.000Z',
+  dataType: 'general'
+}
 
+export default function AIAssistantClient() {
   const supabase = createClient()
   const [userId, setUserId] = useState<string | null>(null)
   const [collegeId, setCollegeId] = useState<string | null>(null)
@@ -172,6 +172,7 @@ export default function AIAssistantClient() {
       }
     }
     initSession()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
