@@ -1342,7 +1342,7 @@ Type any of these commands to start!`
                     <span className="text-xs font-bold text-zinc-100">{msg.profiles?.full_name || `@${msg.profiles?.username || 'user'}`}</span>
                     <span className="text-[9px] font-mono text-zinc-500 font-bold">{new Date(msg.created_at).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'})}</span>
                   </div>
-                  <p className="text-xs text-zinc-300 mt-1 truncate pl-4">"{msg.content}"</p>
+                  <p className="text-xs text-zinc-300 mt-1 truncate pl-4">&quot;{msg.content}&quot;</p>
                 </div>
                 <a
                   href="/messages"
