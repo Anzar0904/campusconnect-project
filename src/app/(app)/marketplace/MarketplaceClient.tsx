@@ -268,7 +268,7 @@ export default function MarketplaceClient({ items, userId }: any) {
                       <p className="text-[10px] font-mono tracking-widest uppercase">No Image</p>
                     </div>
                   )}
-                  <div className="absolute top-4 right-4 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                  <div className="absolute top-4 right-4 z-10">
                     <span className="chip-pro bg-black/60 backdrop-blur-md border-white/10 text-zinc-50 px-3 py-1.5 text-sm font-bold shadow-2xl">
                       ₹{item.price?.toLocaleString()}
                     </span>

@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 const SUBJECTS = ['Mathematics','Physics','Chemistry','Computer Science','Economics','Management','English','Statistics','Electronics','Other']
 
 export default function NotesClient({ notes, userId }: any) {
-  const allNotes = notes
+  const [allNotes, setAllNotes] = useState<any[]>(notes)
   const [search, setSearch] = useState('')
   const [subjectFilter, setSubjectFilter] = useState('')
   const [yearFilter, setYearFilter] = useState('')
@@ -73,6 +73,21 @@ export default function NotesClient({ notes, userId }: any) {
     if (!ALLOWED.includes(file.type)) { setFileError('Only PDF, DOC, DOCX, PPT, PPTX allowed'); return }
     if (file.size > 20 * 1024 * 1024) { setFileError('File must be under 20 MB'); return }
     setSelectedFile(file)
+  }
+
+  async function handleDownload(note: any) {
+    window.open(note.file_url, '_blank')
+    setAllNotes(prev => prev.map(n => 
+      n.id === note.id ? { ...n, downloads: (n.downloads || 0) + 1 } : n
+    ))
+    try {
+      await supabase
+        .from('notes')
+        .update({ downloads: (note.downloads || 0) + 1 })
+        .eq('id', note.id)
+    } catch {
+      // Ignored
+    }
   }
 
   async function handleUpload() {
@@ -257,10 +272,10 @@ export default function NotesClient({ notes, userId }: any) {
                        <span className="flex items-center gap-1.5"><Download className="opacity-40" size={16} />{note.downloads||0}</span>
                        <span className="flex items-center gap-1.5"><Heart className="opacity-40" size={16} />{note.likes||0}</span>
                     </div>
-                    <a href={note.file_url} target="_blank" rel="noopener noreferrer" className="btn-premium py-1.5 px-5 text-xs">
+                    <button onClick={() => handleDownload(note)} className="btn-premium py-1.5 px-5 text-xs">
                       <Download size={16} />
                       Download
-                    </a>
+                    </button>
                   </div>
                 </motion.div>
               )
