@@ -53,14 +53,12 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Internships',  href: '/internships', icon: 'work_outline' },
       { label: 'Placements',   href: '/placements',  icon: 'business_center' },
-      { label: 'Mentorship',   href: '/mentorship',  icon: 'support_agent' },
     ],
   },
   {
     label: 'Special',
     items: [
       { label: 'Dating',        href: '/dating',       icon: 'favorite' },
-      { label: 'Coding Arena',  href: '/coding-arena', icon: 'code' },
       { label: 'AI Assistant',  href: '/ai',           icon: 'smart_toy' },
       { label: 'Super Admin', href: '/super-admin', icon: 'admin_panel_settings' },
     ],
@@ -98,8 +96,8 @@ export function Sidebar({
     ...section,
     items: section.items.filter(item => {
       if (item.label === 'Dating' && !isVerified && userRole !== 'SUPER_ADMIN') return false;
-      if (item.label === 'Super Admin' && userRole !== 'SUPER_ADMIN')
-  return false;
+      if (item.label === 'Super Admin' && userRole !== 'SUPER_ADMIN' && userRole !== 'COLLEGE_ADMIN')
+        return false;
       return true;
     }).map(item => {
       // Inject live notification count for Messages

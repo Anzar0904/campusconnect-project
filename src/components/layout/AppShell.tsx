@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { Navbar } from './Navbar'
+import { BottomNav } from './BottomNav'
 import { NotificationProvider } from '@/hooks/useNotifications'
 
 interface AppShellProps {
@@ -66,6 +67,7 @@ export function AppShell({
           </motion.div>
         </AnimatePresence>
       </main>
+      <BottomNav />
       </div>
     </NotificationProvider>
   )

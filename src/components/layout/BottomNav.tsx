@@ -23,8 +23,10 @@ import {
   Bot, 
   Heart, 
   Terminal, 
-  Sparkles 
+  Sparkles,
+  LogOut
 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const MOBILE_NAV_ITEMS = [
   { label: 'Home', href: '/dashboard', icon: Home },
@@ -62,14 +64,12 @@ const MODULE_SECTIONS = [
     items: [
       { label: 'Internships', href: '/internships', icon: Briefcase, desc: 'Intern openings' },
       { label: 'Placements', href: '/placements', icon: Award, desc: 'Jobs feed' },
-      { label: 'Mentorship', href: '/mentorship', icon: Bot, desc: 'Alumni guides' },
     ]
   },
   {
     label: 'Special',
     items: [
       { label: 'Dating', href: '/dating', icon: Heart, desc: 'Connect on campus' },
-      { label: 'Coding Arena', href: '/coding-arena', icon: Terminal, desc: 'Challenges' },
       { label: 'AI Assistant', href: '/ai', icon: Sparkles, desc: 'AI assistant' },
     ]
   }
@@ -78,6 +78,18 @@ const MODULE_SECTIONS = [
 export function BottomNav() {
   const pathname = usePathname()
   const [showModules, setShowModules] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      supabase.removeAllChannels()
+      localStorage.removeItem('recent_searches')
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error logging out:', error)
+    }
+  }
 
   return (
     <>
@@ -191,6 +203,19 @@ export function BottomNav() {
                     </div>
                   </div>
                 ))}
+                
+                <div className="pt-4 border-t border-white/[0.08] flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      setShowModules(false)
+                      handleLogout()
+                    }}
+                    className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 active:bg-red-500/20 text-red-400 font-bold text-sm transition-all"
+                  >
+                    <LogOut size={16} />
+                    <span>Log Out</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>

@@ -19,7 +19,7 @@ export default async function SuperAdminPage() {
   const profileData = profile as any
 
   const userRole = (profileData?.role || '').toUpperCase()
-  if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
+  if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN' && userRole !== 'COLLEGE_ADMIN') {
     redirect('/dashboard')
   }
 

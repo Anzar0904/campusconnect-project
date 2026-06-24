@@ -58,7 +58,7 @@ export default function MessagesClient({
     if (!currentUserId) return
 
     const presenceChannelName = 'global-online-presence'
-    const existingPresenceChannel = supabase.getChannels().find(c => c.topic === presenceChannelName)
+    const existingPresenceChannel = supabase.getChannels().find((c: any) => c.topic === presenceChannelName)
     if (existingPresenceChannel) {
       supabase.removeChannel(existingPresenceChannel)
     }
@@ -80,7 +80,7 @@ export default function MessagesClient({
         })
         setOnlineUsers(onlineIds)
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status: any) => {
         if (status === 'SUBSCRIBED') {
           await presenceChannel.track({
             online_at: new Date().toISOString(),
@@ -120,6 +120,15 @@ export default function MessagesClient({
   // Typing state
   const [friendIsTyping, setFriendIsTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const typingChannelRef = useRef<any>(null)
+
+  // Message Pagination state
+  const [messagesLimit, setMessagesLimit] = useState(50)
+
+  // Reset page limit on conversation switch
+  useEffect(() => {
+    setMessagesLimit(50)
+  }, [selectedId])
 
   // Emoji Popover state
   const [activeMessageIdForEmoji, setActiveMessageIdForEmoji] = useState<string | null>(null)
@@ -162,10 +171,10 @@ export default function MessagesClient({
         ])
 
         if (myCommsRes.data && friendCommsRes.data) {
-          const myIds = new Set(myCommsRes.data.map(c => c.community_id))
+          const myIds = new Set(myCommsRes.data.map((c: any) => c.community_id))
           const mutual = friendCommsRes.data
-            .filter(c => myIds.has(c.community_id))
-            .map(c => c.communities)
+            .filter((c: any) => myIds.has(c.community_id))
+            .map((c: any) => c.communities)
             .filter(Boolean)
           setMutualCommunities(mutual)
         }
@@ -185,8 +194,9 @@ export default function MessagesClient({
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUserId})`)
-        .order('created_at', { ascending: true })
-      setMessages(data || [])
+        .order('created_at', { ascending: false })
+        .limit(messagesLimit)
+      setMessages((data || []).reverse())
 
       // Mark unread messages as read
       await supabase
@@ -200,7 +210,7 @@ export default function MessagesClient({
 
     // Realtime Postgres listener for message insert/update
     const msgChannelName = `messages-${targetId}`
-    const existingMsgChannel = supabase.getChannels().find(c => c.topic === msgChannelName)
+    const existingMsgChannel = supabase.getChannels().find((c: any) => c.topic === msgChannelName)
     if (existingMsgChannel) {
       supabase.removeChannel(existingMsgChannel)
     }
@@ -214,7 +224,7 @@ export default function MessagesClient({
           schema: 'public',
           table: 'messages',
         },
-        payload => {
+        (payload: any) => {
           const msg = payload.new as Message
           if (
             (msg.sender_id === currentUserId && msg.receiver_id === targetId) ||
@@ -239,25 +249,28 @@ export default function MessagesClient({
 
     // Typing broadcast channel
     const typingChannelName = `typing-${targetId}`
-    const existingTypingChannel = supabase.getChannels().find(c => c.topic === typingChannelName)
+    const existingTypingChannel = supabase.getChannels().find((c: any) => c.topic === typingChannelName)
     if (existingTypingChannel) {
       supabase.removeChannel(existingTypingChannel)
     }
 
     const typingChannel = supabase
       .channel(typingChannelName)
-      .on('broadcast', { event: 'typing' }, payload => {
+      .on('broadcast', { event: 'typing' }, (payload: any) => {
         if (payload.payload.userId === targetId) {
           setFriendIsTyping(payload.payload.isTyping)
         }
       })
       .subscribe()
 
+    typingChannelRef.current = typingChannel
+
     return () => { 
       supabase.removeChannel(channel)
       supabase.removeChannel(typingChannel)
+      typingChannelRef.current = null
     }
-  }, [selectedId, currentUserId, supabase])
+  }, [selectedId, currentUserId, supabase, messagesLimit])
 
   // Scroll to Bottom
   useEffect(() => {
@@ -268,20 +281,23 @@ export default function MessagesClient({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)
     
-    const channel = supabase.channel(`typing-${selectedId}`)
-    channel.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: currentUserId, isTyping: true }
-    })
+    if (typingChannelRef.current) {
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: currentUserId, isTyping: true }
+      })
+    }
     
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => {
-      channel.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { userId: currentUserId, isTyping: false }
-      })
+      if (typingChannelRef.current) {
+        typingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { userId: currentUserId, isTyping: false }
+        })
+      }
     }, 1500)
   }
 
@@ -669,7 +685,19 @@ export default function MessagesClient({
             </header>
 
             {/* Conversation Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gradient-to-b from-[#090d16]/10 to-[#030712]/30">
+            <div 
+              onScroll={(e) => {
+                const target = e.currentTarget
+                if (target.scrollTop === 0 && messages.length >= messagesLimit) {
+                  const previousScrollHeight = target.scrollHeight
+                  setMessagesLimit(prev => prev + 50)
+                  setTimeout(() => {
+                    target.scrollTop = target.scrollHeight - previousScrollHeight
+                  }, 100)
+                }
+              }}
+              className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gradient-to-b from-[#090d16]/10 to-[#030712]/30"
+            >
               {searchedMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-2">
                   <MessageCircle className="text-4xl text-neutral-500" size={24} />

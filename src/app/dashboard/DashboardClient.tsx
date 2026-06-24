@@ -75,6 +75,7 @@ function PostCard({
   liked = false,
   currentUserProfile,
   onCommentAdded,
+  supabase,
 }: {
   post: Post
   currentUserId: string
@@ -82,6 +83,7 @@ function PostCard({
   liked?: boolean
   currentUserProfile: Profile | null
   onCommentAdded: (postId: string) => void
+  supabase: any
 }) {
   const author = post.author
   const [showComments, setShowComments] = useState(false)
@@ -89,7 +91,6 @@ function PostCard({
   const [loadingComments, setLoadingComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const supabase = createClient()
 
   const fetchComments = async () => {
     setLoadingComments(true)
@@ -302,8 +303,7 @@ function PostCard({
   )
 }
 
-function CreatePost({ profile, onPost }: { profile: Profile | null; onPost: (p: Post) => void }) {
-  const supabase = createClient()
+function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; onPost: (p: Post) => void; supabase: any }) {
   const [open, setOpen] = useState(false)
   const [content, setContent] = useState('')
   const [postType, setPostType] = useState<'post' | 'confession' | 'announcement'>('post')
@@ -627,7 +627,7 @@ export default function DashboardClient({
           
           {/* Feed Column */}
           <div className="lg:col-span-6 xl:col-span-6 space-y-4">
-            <CreatePost profile={profile} onPost={handleNewPost} />
+            <CreatePost profile={profile} onPost={handleNewPost} supabase={supabase} />
             
             <div className="flex items-center gap-5 border-b border-white/[0.04] text-[11px] font-bold tracking-tight pb-2">
               <button className="text-blue-400 border-b-2 border-blue-400 pb-2 px-1">For You</button>
@@ -656,6 +656,7 @@ export default function DashboardClient({
                       liked={likedPostIds.includes(p.id)}
                       currentUserProfile={profile}
                       onCommentAdded={handleCommentAdded}
+                      supabase={supabase}
                     />
                   ))}
                 </AnimatePresence>

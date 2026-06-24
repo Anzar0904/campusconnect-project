@@ -99,7 +99,7 @@ if (!isAdmin && !profile?.dating_verified)
     .not('user_id', 'in', `(${excludeIds.join(',')})`)
 
   if (targetGender) {
-    dbQuery = dbQuery.eq('gender', targetGender)
+    dbQuery = dbQuery.ilike('gender', targetGender)
   }
 
   const { data: discoverable } = await dbQuery.limit(20)

@@ -84,16 +84,25 @@ export default function StudyRoomClient({
   const isOwner = group.creator_id === currentUserId
   const isPlatformAdmin = currentUserRole?.toUpperCase() === 'SUPER_ADMIN' || currentUserRole?.toUpperCase() === 'ADMIN'
   const canManage = isOwner || isPlatformAdmin
+  const chatChannelRef = useRef<any>(null)
 
   // Scroll chat bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Load persisted chat from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(`study_chat_${group.id}`)
+    if (stored) {
+      try { setMessages(JSON.parse(stored)) } catch {}
+    }
+  }, [group.id])
+
   // Subscribing to Supabase Realtime Broadcast for Room Chat
   useEffect(() => {
     const channelName = `study-group-${group.id}`
-    const existingChannel = supabase.getChannels().find(c => c.topic === channelName)
+    const existingChannel = supabase.getChannels().find((c: any) => c.topic === channelName)
     if (existingChannel) {
       supabase.removeChannel(existingChannel)
     }
@@ -102,12 +111,19 @@ export default function StudyRoomClient({
 
     channel
       .on('broadcast', { event: 'chat' }, (payload: any) => {
-        setMessages(prev => [...prev, payload.payload])
+        setMessages(prev => {
+          const next = [...prev, payload.payload]
+          localStorage.setItem(`study_chat_${group.id}`, JSON.stringify(next.slice(-200)))
+          return next
+        })
       })
       .subscribe()
 
+    chatChannelRef.current = channel
+
     return () => {
       supabase.removeChannel(channel)
+      chatChannelRef.current = null
     }
   }, [group.id, supabase])
 
@@ -124,16 +140,21 @@ export default function StudyRoomClient({
       created_at: new Date().toISOString()
     }
 
-    // Broadcast to other clients
-    const channel = supabase.channel(`study-group-${group.id}`)
-    channel.send({
-      type: 'broadcast',
-      event: 'chat',
-      payload
-    })
+    // Broadcast to other clients reusing active channel ref
+    if (chatChannelRef.current) {
+      chatChannelRef.current.send({
+        type: 'broadcast',
+        event: 'chat',
+        payload
+      })
+    }
 
-    // Update local messages array
-    setMessages(prev => [...prev, payload])
+    // Update local messages array and persist
+    setMessages(prev => {
+      const next = [...prev, payload]
+      localStorage.setItem(`study_chat_${group.id}`, JSON.stringify(next.slice(-200)))
+      return next
+    })
     setChatInput('')
   }
 

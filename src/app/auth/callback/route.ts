@@ -51,13 +51,26 @@ export async function GET(request: NextRequest) {
     }
   )
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     console.error('[auth/callback] exchangeCodeForSession error:', error.message)
     return NextResponse.redirect(
       new URL(`/auth/verify?error=${encodeURIComponent(error.message)}`, requestUrl.origin)
     )
+  }
+
+  // First-login onboarding: if profile is incomplete, redirect to profile setup
+  if (sessionData?.user && safeNext === '/dashboard') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, branch, bio')
+      .eq('id', sessionData.user.id)
+      .single()
+
+    if (profile && !profile.username && !profile.branch) {
+      return NextResponse.redirect(new URL('/profile?onboarding=1', requestUrl.origin))
+    }
   }
 
   // Successful exchange — redirect into the app.

@@ -1,5 +1,5 @@
 'use client'
-import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X } from 'lucide-react'
+import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X, Pencil, Trash2 } from 'lucide-react'
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
@@ -19,7 +19,7 @@ const CONDITION_LABELS: Record<string,string> = { new:'Brand New', like_new:'Lik
 const conditionColor: Record<string,string> = { new:'#86efac', like_new:'#4cd7f6', good:'#c3c0ff', fair:'#fbbf24' }
 
 export default function MarketplaceClient({ items, userId }: any) {
-  const allItems = items
+  const [allItems, setAllItems] = useState<any[]>(items)
   const [category, setCategory] = useState('All')
   const [search, setSearch] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
@@ -29,6 +29,9 @@ export default function MarketplaceClient({ items, userId }: any) {
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [selectedItem, setSelectedItem] = useState<any>(null)
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [editForm, setEditForm] = useState({ title:'', description:'', price:'', category:'Books', condition:'good' })
+  const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -50,6 +53,31 @@ export default function MarketplaceClient({ items, userId }: any) {
     const matchPrice = !maxPrice || item.price <= parseFloat(maxPrice)
     return matchCat && matchSearch && matchPrice
   })
+
+  async function deleteItem(itemId: string) {
+    if (!confirm('Delete this listing?')) return
+    const { error } = await (supabase as any).from('marketplace_items').delete().eq('id', itemId).eq('seller_id', userId)
+    if (error) { toast.error('Delete failed: ' + error.message); return }
+    setAllItems(prev => prev.filter(i => i.id !== itemId))
+    setSelectedItem(null)
+    toast.success('Listing deleted')
+  }
+
+  async function saveEdit() {
+    if (!editingItem) return
+    setSaving(true)
+    const { error } = await (supabase as any).from('marketplace_items').update({
+      title: editForm.title, description: editForm.description,
+      price: parseFloat(editForm.price), category: editForm.category, condition: editForm.condition,
+    }).eq('id', editingItem.id).eq('seller_id', userId)
+    if (error) { toast.error('Update failed: ' + error.message); setSaving(false); return }
+    const updated = { ...editingItem, ...editForm, price: parseFloat(editForm.price) }
+    setAllItems(prev => prev.map(i => i.id === editingItem.id ? updated : i))
+    setEditingItem(null)
+    setSelectedItem(null)
+    toast.success('Listing updated')
+    setSaving(false)
+  }
 
   async function postItem() {
     if (!sellForm.title || !sellForm.price) { toast.error('Fill title and price'); return }
@@ -346,16 +374,56 @@ export default function MarketplaceClient({ items, userId }: any) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button className="btn-ghost-pro py-3">
-                    <Bookmark size={18} />
-                    Save Item
-                  </button>
-                  <Link href={`/messages?user=${selectedItem.seller_id}`} className="btn-premium py-3 justify-center">
-                    <MessageSquare size={18} />
-                    Message Seller
-                  </Link>
+                  {selectedItem.seller_id === userId ? (
+                    <>
+                      <button onClick={() => { setEditingItem(selectedItem); setEditForm({ title: selectedItem.title, description: selectedItem.description || '', price: String(selectedItem.price), category: selectedItem.category, condition: selectedItem.condition }); setSelectedItem(null) }} className="btn-ghost-pro py-3">
+                        <Pencil size={16} /> Edit
+                      </button>
+                      <button onClick={() => deleteItem(selectedItem.id)} className="py-3 flex items-center justify-center gap-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all text-sm font-bold">
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="btn-ghost-pro py-3">
+                        <Bookmark size={18} />
+                        Save Item
+                      </button>
+                      <Link href={`/messages?user=${selectedItem.seller_id}`} className="btn-premium py-3 justify-center">
+                        <MessageSquare size={18} />
+                        Message Seller
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit modal */}
+      <AnimatePresence>
+        {editingItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setEditingItem(null)} />
+            <motion.div initial={{opacity:0,scale:0.9,y:20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.9,y:20}} className="card-premium max-w-md w-full relative z-10 p-8 space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="sub-heading text-lg">Edit Listing</h2>
+                <button onClick={() => setEditingItem(null)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white"><X size={15} /></button>
+              </div>
+              <input value={editForm.title} onChange={e => setEditForm(f => ({...f, title: e.target.value}))} placeholder="Title" className="input-pro w-full" />
+              <textarea value={editForm.description} onChange={e => setEditForm(f => ({...f, description: e.target.value}))} placeholder="Description" className="input-pro w-full h-24 resize-none" />
+              <input value={editForm.price} onChange={e => setEditForm(f => ({...f, price: e.target.value}))} placeholder="Price (₹)" type="number" className="input-pro w-full" />
+              <select value={editForm.category} onChange={e => setEditForm(f => ({...f, category: e.target.value}))} className="input-pro w-full">
+                {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select value={editForm.condition} onChange={e => setEditForm(f => ({...f, condition: e.target.value}))} className="input-pro w-full">
+                {CONDITIONS.map(c => <option key={c} value={c}>{CONDITION_LABELS[c]}</option>)}
+              </select>
+              <button onClick={saveEdit} disabled={saving} className="btn-premium w-full py-3 justify-center">
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </motion.div>
           </div>
         )}

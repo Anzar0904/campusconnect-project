@@ -65,6 +65,15 @@ export default function ProfileClient({
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(profile?.avatar_url)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('edit') === 'true' || params.get('onboarding') === '1') {
+        setEditing(true)
+      }
+    }
+  }, [])
+
   const [form, setForm] = useState({
     full_name: profile?.full_name || '',
     username: profile?.username || '',

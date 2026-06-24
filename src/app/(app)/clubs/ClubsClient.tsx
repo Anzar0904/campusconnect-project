@@ -51,14 +51,19 @@ const CAT_COLORS: Record<string, string> = {
   Social: '#8b5cf6',
 }
 
-export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; currentUserId: string }) {
+export default function ClubsClient({ clubs: dbClubs, currentUserId }: { clubs: Club[]; currentUserId: string }) {
   const clubs = dbClubs.length > 0 ? dbClubs : IILM_CLUBS
   const [filter, setFilter] = useState('All')
   const [joined, setJoined] = useState<string[]>([])
   const [selected, setSelected] = useState<Club | null>(null)
 
+  // Load persisted club memberships from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`clubs_joined_${currentUserId}`)
+      if (stored) {
+        try { setJoined(JSON.parse(stored)) } catch {}
+      }
       const params = new URLSearchParams(window.location.search)
       const id = params.get('id')
       if (id && clubs.length > 0) {
@@ -68,14 +73,22 @@ export default function ClubsClient({ clubs: dbClubs }: { clubs: Club[]; current
         }
       }
     }
-  }, [clubs])
+  }, [clubs, currentUserId])
 
   const categories = ['All', ...Object.keys(CAT_ICONS)]
   const filtered = clubs.filter(c => filter === 'All' || c.category === filter)
   const official = filtered.filter(c => c.is_official)
   const unofficial = filtered.filter(c => !c.is_official)
 
-  const toggle = (id: string) => setJoined(j => j.includes(id) ? j.filter(x => x !== id) : [...j, id])
+  const toggle = (id: string) => {
+    setJoined(j => {
+      const next = j.includes(id) ? j.filter(x => x !== id) : [...j, id]
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`clubs_joined_${currentUserId}`, JSON.stringify(next))
+      }
+      return next
+    })
+  }
 
   return (
     <div className="animate-fade-in space-y-8 pb-32">

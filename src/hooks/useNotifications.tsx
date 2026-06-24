@@ -46,7 +46,7 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
 
       if (error) throw error
       setNotifications(data || [])
-      setUnreadCount(data?.filter(n => !n.read).length || 0)
+      setUnreadCount(data?.filter((n: any) => !n.read).length || 0)
     } catch (err) {
       console.error('Error fetching notifications:', err)
     } finally {
@@ -55,12 +55,16 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
   }, [userId, supabase])
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId) {
+      setNotifications([])
+      setUnreadCount(0)
+      return
+    }
 
     fetchNotifications()
 
     const channelName = `user-notifications-${userId}`
-    const existingChannel = supabase.getChannels().find(c => c.topic === channelName)
+    const existingChannel = supabase.getChannels().find((c: any) => c.topic === channelName)
     if (existingChannel) {
       supabase.removeChannel(existingChannel)
     }
@@ -72,7 +76,7 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
-      }, payload => {
+      }, (payload: any) => {
         const newNotif = payload.new as DBNotification
         setNotifications(prev => [newNotif, ...prev])
         setUnreadCount(prev => prev + 1)
@@ -86,7 +90,7 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
-      }, payload => {
+      }, (payload: any) => {
         const updatedNotif = payload.new as DBNotification
         setNotifications(prev => prev.map(n => n.id === updatedNotif.id ? updatedNotif : n))
         // Re-calculate unread count

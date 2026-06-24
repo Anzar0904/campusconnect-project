@@ -29,7 +29,8 @@ function VerifyContent() {
       const supabase = createClient()
 
       // Check if session already exists (callback already ran)
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then((res: any) => {
+        const session = res.data?.session
         if (session) {
           setStatus('success')
           setTimeout(() => router.replace('/dashboard'), 1200)
@@ -37,7 +38,7 @@ function VerifyContent() {
       })
 
       // Also listen for the SIGNED_IN event in case callback is in-flight
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
         if (event === 'SIGNED_IN' && session) {
           setStatus('success')
           setTimeout(() => router.replace('/dashboard'), 1200)
