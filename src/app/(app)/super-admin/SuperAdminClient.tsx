@@ -72,12 +72,15 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   // --- ACTIONS ---
 
   async function handleVerifyUser(targetId: string, verify: boolean) {
-   const { error } = await (supabase as any)
-  .from('profiles')
-  .update({
-    is_verified: verify
-  })
-  .eq('id', targetId)
+    const { error } = await (supabase as any)
+      .from('profiles')
+      .update({
+        is_verified: verify
+      })
+      .eq('id', targetId)
+    if (error) { toast.error(error.message); return }
+    toast.success(verify ? 'User verified' : 'User verification revoked')
+    fetchData()
   }
 
   async function handleSuspendUser(targetId: string, suspend: boolean) {

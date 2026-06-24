@@ -2,10 +2,12 @@
 import { CheckCircle, X } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { createClient } from '@/lib/supabase/client'
+import toast from 'react-hot-toast'
 
 interface Club {
   id: string
@@ -57,13 +59,23 @@ export default function ClubsClient({ clubs: dbClubs, currentUserId }: { clubs: 
   const [joined, setJoined] = useState<string[]>([])
   const [selected, setSelected] = useState<Club | null>(null)
 
-  // Load persisted club memberships from localStorage on mount
+  const supabase = useMemo(() => createClient(), [])
+
+  // Load persisted club memberships from DB on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(`clubs_joined_${currentUserId}`)
-      if (stored) {
-        try { setJoined(JSON.parse(stored)) } catch {}
+    async function loadJoinedClubs() {
+      if (!currentUserId) return
+      const { data, error } = await supabase
+        .from('club_members')
+        .select('club_id')
+        .eq('user_id', currentUserId)
+      if (!error && data) {
+        setJoined(data.map((x: any) => x.club_id))
       }
+    }
+    loadJoinedClubs()
+
+    if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const id = params.get('id')
       if (id && clubs.length > 0) {
@@ -73,21 +85,40 @@ export default function ClubsClient({ clubs: dbClubs, currentUserId }: { clubs: 
         }
       }
     }
-  }, [clubs, currentUserId])
+  }, [clubs, currentUserId, supabase])
 
   const categories = ['All', ...Object.keys(CAT_ICONS)]
   const filtered = clubs.filter(c => filter === 'All' || c.category === filter)
   const official = filtered.filter(c => c.is_official)
   const unofficial = filtered.filter(c => !c.is_official)
 
-  const toggle = (id: string) => {
-    setJoined(j => {
-      const next = j.includes(id) ? j.filter(x => x !== id) : [...j, id]
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`clubs_joined_${currentUserId}`, JSON.stringify(next))
+  const toggle = async (id: string) => {
+    const isJoined = joined.includes(id)
+    if (isJoined) {
+      setJoined(j => j.filter(x => x !== id))
+      const { error } = await supabase
+        .from('club_members')
+        .delete()
+        .eq('club_id', id)
+        .eq('user_id', currentUserId)
+      if (error) {
+        toast.error('Failed to leave club: ' + error.message)
+        setJoined(j => [...j, id])
+      } else {
+        toast.success('Left club successfully')
       }
-      return next
-    })
+    } else {
+      setJoined(j => [...j, id])
+      const { error } = await supabase
+        .from('club_members')
+        .insert({ club_id: id, user_id: currentUserId })
+      if (error) {
+        toast.error('Failed to join club: ' + error.message)
+        setJoined(j => j.filter(x => x !== id))
+      } else {
+        toast.success('Joined club successfully!')
+      }
+    }
   }
 
   return (

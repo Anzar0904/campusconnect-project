@@ -33,7 +33,8 @@ import {
   Lock, 
   Megaphone,
   UserX,
-  ArrowUpRight
+  ArrowUpRight,
+  Flag
 } from 'lucide-react'
 
 interface Profile {
@@ -91,6 +92,41 @@ function PostCard({
   const [loadingComments, setLoadingComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [reporting, setReporting] = useState(false)
+
+  const handleReport = async () => {
+    const reasonInput = prompt(
+      'Why are you reporting this post?\nEnter one of the following reasons exactly:\n- spam\n- harassment\n- misinformation\n- inappropriate_content\n- fake_account\n- scam\n- other'
+    )
+    if (!reasonInput) return
+    const cleanReason = reasonInput.trim().toLowerCase().replace(' ', '_')
+    const validReasons = ['spam', 'harassment', 'misinformation', 'inappropriate_content', 'fake_account', 'scam', 'other']
+    if (!validReasons.includes(cleanReason)) {
+      toast.error('Invalid reason. Please select from the list.')
+      return
+    }
+    const details = prompt('Please provide additional details for the report (optional):')
+    
+    setReporting(true)
+    const { error } = await supabase
+      .from('abuse_reports')
+      .insert({
+        reporter_id: currentUserId,
+        target_type: 'post',
+        target_id: post.id,
+        reason: cleanReason,
+        details: details || null,
+        status: 'pending',
+        college_id: currentUserProfile?.college_id || null
+      })
+    
+    if (error) {
+      toast.error('Failed to submit report: ' + error.message)
+    } else {
+      toast.success('Thank you. The content has been reported to administrators.')
+    }
+    setReporting(false)
+  }
 
   const fetchComments = async () => {
     setLoadingComments(true)
@@ -230,7 +266,15 @@ function PostCard({
           <span className="font-mono">{post.comments_count}</span>
         </button>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <button 
+            onClick={handleReport}
+            disabled={reporting}
+            title="Report Post"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-50"
+          >
+            <Flag size={14} />
+          </button>
           <button className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-zinc-300 transition-colors">
             <Share2 size={16} />
           </button>
