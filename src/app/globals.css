@@ -104,6 +104,27 @@ body {
     border-color: rgba(195, 192, 255, 0.4);
   }
 
+  .btn-premium {
+    @apply px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-white transition-all duration-300 active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2;
+    background: linear-gradient(135deg, #4f46e5, #571bc1);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    cursor: pointer;
+  }
+  .btn-premium:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a51f0, #6320d4);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost-pro {
+    @apply px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-zinc-400 border border-white/[0.08] bg-zinc-900/50 transition-all duration-300 active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2;
+    cursor: pointer;
+  }
+  .btn-ghost-pro:hover:not(:disabled) {
+    @apply border-white/[0.15] bg-zinc-900/80 text-zinc-200;
+    transform: translateY(-1px);
+  }
+
   .input-glass {
     @apply w-full px-4 py-3 rounded-lg text-sm text-on-surface outline-none;
     background: rgba(23, 31, 51, 0.6);

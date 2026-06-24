@@ -210,7 +210,7 @@ export default function MarketplaceClient({ items, userId }: any) {
         <div className="flex gap-4">
           <input className="input-pro w-36" type="number" placeholder="Max price ₹" value={maxPrice} onChange={e=>setMaxPrice(e.target.value)} />
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.05] overflow-x-auto no-scrollbar">
-            {['All', 'Books', 'Electronics', 'Clothing'].map(cat=>(
+            {CATEGORIES.map(cat=>(
               <button key={cat} onClick={()=>setCategory(cat)}
                 className={clsx(
                   "px-4 py-1.5 rounded-lg text-xs font-mono tracking-tighter whitespace-nowrap transition-all",
