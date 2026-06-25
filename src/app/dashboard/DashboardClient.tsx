@@ -42,7 +42,8 @@ import {
   UserX,
   Flag,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Award
 } from 'lucide-react'
 
 interface Profile {
@@ -436,8 +437,22 @@ function PostCard({
   )
 }
 
-function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; onPost: (p: Post) => void; supabase: any }) {
-  const [open, setOpen] = useState(false)
+function CreatePost({ 
+  profile, 
+  onPost, 
+  supabase, 
+  isOpen, 
+  setIsOpen 
+}: { 
+  profile: Profile | null; 
+  onPost: (p: Post) => void; 
+  supabase: any;
+  isOpen?: boolean;
+  setIsOpen?: (o: boolean) => void;
+}) {
+  const [localOpen, setLocalOpen] = useState(false)
+  const open = isOpen !== undefined ? isOpen : localOpen
+  const setOpen = setIsOpen !== undefined ? setIsOpen : setLocalOpen
   const [content, setContent] = useState('')
   const [postType, setPostType] = useState<'post' | 'confession' | 'announcement'>('post')
   const [anon, setAnon] = useState(false)
@@ -504,7 +519,7 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
     ] as const
 
   return (
-    <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 shadow-sm space-y-4">
+    <div id="post-composer" className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 shadow-sm space-y-4">
       {!open ? (
         <div className="flex items-center gap-3">
           <GlobalAvatar profile={profile} size="sm" className="border border-white/5 shrink-0" />
@@ -693,6 +708,178 @@ const ConnectionsSkeleton = () => (
   </div>
 )
 
+interface DashboardHeroProps {
+  profile: Profile | null
+  stats: {
+    internshipsCount: number
+    upcomingEventsCount: number
+    friendsCount: number
+    communitiesCount: number
+    currentRanking: number
+    unreadMessagesCount: number
+    points: number
+    level: number
+  }
+  onCreatePostClick: () => void
+}
+
+const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreatePostClick }) => {
+  const getGreeting = () => {
+    const hr = new Date().getHours()
+    if (hr < 12) return 'Good Morning'
+    if (hr < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }
+
+  // Cards configuration
+  const summaryCards = [
+    {
+      label: 'Internships',
+      value: stats.internshipsCount > 0 ? `${stats.internshipsCount} Matches` : 'No matches',
+      icon: Briefcase,
+      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      href: '/internships'
+    },
+    {
+      label: 'Upcoming Events',
+      value: stats.upcomingEventsCount > 0 ? `${stats.upcomingEventsCount} Scheduled` : 'No events',
+      icon: CalendarIcon,
+      color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+      href: '/events'
+    },
+    {
+      label: 'Friends Connected',
+      value: stats.friendsCount > 0 ? `${stats.friendsCount} Active` : '0 Active',
+      icon: Users,
+      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      href: '/friends'
+    },
+    {
+      label: 'Communities',
+      value: stats.communitiesCount > 0 ? `${stats.communitiesCount} Joined` : '0 Joined',
+      icon: MessageCircle,
+      color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+      href: '/community'
+    },
+    {
+      label: 'Campus Rank',
+      value: `Rank #${stats.currentRanking}`,
+      subvalue: `Level ${stats.level}`,
+      icon: Award,
+      color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+      href: '/rewards'
+    },
+    {
+      label: 'Unread Messages',
+      value: stats.unreadMessagesCount > 0 ? `${stats.unreadMessagesCount} New` : 'Inbox clear',
+      icon: MessageSquare,
+      color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+      href: '/messages'
+    }
+  ]
+
+  const quickActions = [
+    { label: 'Create Post', icon: Plus, action: onCreatePostClick, isPrimary: true },
+    { label: 'Marketplace', icon: Store, href: '/marketplace' },
+    { label: 'Communities', icon: Users, href: '/community' },
+    { label: 'Study Hub', icon: BookOpen, href: '/study' },
+    { label: 'AI Assistant', icon: Sparkles, href: '/ai', isAi: true },
+    { label: 'Events', icon: CalendarIcon, href: '/events' },
+  ]
+
+  return (
+    <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6 select-none">
+      <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+        {/* Glow backdrop */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.015),transparent_60%)] pointer-events-none" />
+
+        {/* Personalized Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-left">
+            <GlobalAvatar profile={profile} className="w-12 h-12 border border-white/10 shadow-md shrink-0" />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight font-sans">
+                {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'there'} 👋
+              </h2>
+              <p className="text-zinc-400 text-xs sm:text-sm mt-1 font-normal font-sans">
+                Ready to build your campus today?
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
+          {summaryCards.map((card, idx) => {
+            const Icon = card.icon
+            return (
+              <Link href={card.href} key={idx}>
+                <motion.div
+                  whileHover={{ y: -2, border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                  className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">{card.label}</span>
+                    <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0", card.color)}>
+                      <Icon size={12} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight font-sans">{card.value}</p>
+                    {card.subvalue && (
+                      <p className="text-[9px] text-zinc-500 font-mono mt-0.5">{card.subvalue}</p>
+                    )}
+                  </div>
+                </motion.div>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Quick Actions Row */}
+        <div className="flex flex-wrap items-center gap-2.5 mt-6 pt-5 border-t border-white/[0.04]">
+          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mr-2">Quick Actions:</span>
+          {quickActions.map((action, idx) => {
+            const Icon = action.icon
+            const isPrimary = action.isPrimary
+            const isAi = action.isAi
+
+            const buttonContent = (
+              <span className="flex items-center gap-1.5 font-sans">
+                <Icon size={13} className={cn("shrink-0", isAi ? "text-purple-400" : isPrimary ? "text-white" : "text-zinc-500 group-hover:text-zinc-300")} />
+                <span>{action.label}</span>
+              </span>
+            )
+
+            const classes = cn(
+              "px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 border cursor-pointer select-none group active:scale-95",
+              isPrimary
+                ? "bg-brand-500 hover:bg-brand-600 border-brand-500/20 text-white shadow-md shadow-brand-500/10 hover:shadow-brand-500/15"
+                : isAi
+                ? "bg-purple-500/10 hover:bg-purple-500/15 border-purple-500/20 hover:border-purple-500/35 text-purple-400"
+                : "bg-white/[0.01] hover:bg-white/[0.04] border-white/[0.04] hover:border-white/[0.1] text-zinc-400 hover:text-zinc-200"
+            )
+
+            if (action.action) {
+              return (
+                <button key={idx} onClick={action.action} className={classes}>
+                  {buttonContent}
+                </button>
+              )
+            }
+
+            return (
+              <Link href={action.href!} key={idx} className={classes}>
+                {buttonContent}
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardClient({
   profile: initialProfile,
   posts: initialPosts,
@@ -731,6 +918,17 @@ export default function DashboardClient({
   // Premium UI & interaction state
   const [loadingWidgets, setLoadingWidgets] = useState(true)
   const [activeFeedTab, setActiveFeedTab] = useState<'for-you' | 'following' | 'trending'>('for-you')
+  const [composerOpen, setComposerOpen] = useState(false)
+  const [dashboardStats, setDashboardStats] = useState({
+    internshipsCount: 0,
+    upcomingEventsCount: 0,
+    friendsCount: 0,
+    communitiesCount: 0,
+    currentRanking: 1,
+    unreadMessagesCount: 0,
+    points: 0,
+    level: 1,
+  })
 
   // Client-side premium sorting & filtering
   const sortedPosts = useMemo(() => {
@@ -882,6 +1080,62 @@ export default function DashboardClient({
           .limit(2)
         if (dbMarket) setMarketplaceItems(dbMarket)
 
+        // Fetch command center statistics
+        const [
+          unreadMsgsRes,
+          commsCountRes,
+          ptsDataRes,
+          friendsCountRes,
+          upcomingEventsRes,
+          internshipsRes
+        ] = await Promise.all([
+          supabase
+            .from('messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('receiver_id', currentUserId)
+            .eq('read', false),
+          supabase
+            .from('community_members')
+            .select('community_id', { count: 'exact', head: true })
+            .eq('user_id', currentUserId),
+          supabase
+            .from('user_points')
+            .select('total, level')
+            .eq('user_id', currentUserId)
+            .maybeSingle(),
+          supabase
+            .from('friendships')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'accepted')
+            .or(`requester_id.eq.${currentUserId},addressee_id.eq.${currentUserId}`),
+          supabase
+            .from('events')
+            .select('id', { count: 'exact', head: true })
+            .gte('start_time', new Date().toISOString()),
+          supabase
+            .from('internships')
+            .select('id', { count: 'exact', head: true })
+        ])
+
+        const pts = ptsDataRes.data?.total || 0
+        const lvl = ptsDataRes.data?.level || 1
+
+        const { count: higherCount } = await supabase
+          .from('user_points')
+          .select('user_id', { count: 'exact', head: true })
+          .gt('total', pts)
+
+        setDashboardStats({
+          unreadMessagesCount: unreadMsgsRes.count || 0,
+          communitiesCount: commsCountRes.count || 0,
+          points: pts,
+          level: lvl,
+          currentRanking: (higherCount || 0) + 1,
+          friendsCount: friendsCountRes.count || 0,
+          upcomingEventsCount: upcomingEventsRes.count || 0,
+          internshipsCount: internshipsRes.count || 0,
+        })
+
       } catch (e) {
         console.error('Error fetching campus data:', e)
       } finally {
@@ -940,6 +1194,18 @@ export default function DashboardClient({
     }
   }
 
+  const handleCreatePostClick = () => {
+    setComposerOpen(true)
+    const composer = document.getElementById('post-composer')
+    if (composer) {
+      composer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const textarea = composer.querySelector('textarea')
+      if (textarea) {
+        setTimeout(() => textarea.focus(), 150)
+      }
+    }
+  }
+
   const isProfileIncomplete = !profile?.username || !profile?.bio || !profile?.branch
 
   return (
@@ -980,10 +1246,12 @@ export default function DashboardClient({
           </div>
         )}
 
-        {/* Dashboard Pill Shortcuts */}
-        <div className="mb-6 select-none">
-          <ModuleSection userRole={profile?.role} />
-        </div>
+        {/* Personalized Student Command Center Hero */}
+        <DashboardHero 
+          profile={profile} 
+          stats={dashboardStats} 
+          onCreatePostClick={handleCreatePostClick} 
+        />
 
         {/* Primary Functional Dashboard Node Grid */}
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -992,7 +1260,13 @@ export default function DashboardClient({
           <div className="lg:col-span-8 space-y-6">
             
             {/* Create Post composer */}
-            <CreatePost profile={profile} onPost={handleNewPost} supabase={supabase} />
+            <CreatePost 
+              profile={profile} 
+              onPost={handleNewPost} 
+              supabase={supabase} 
+              isOpen={composerOpen} 
+              setIsOpen={setComposerOpen} 
+            />
             
             {/* Feed Sort Tabs */}
             <div className="flex items-center gap-2 select-none border-b border-white/[0.04] pb-3">
