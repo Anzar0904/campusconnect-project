@@ -22,21 +22,21 @@ export default function SwipeStack({ profiles, onLike, onNope, onSuperLike }: Sw
 
   const bind = useGesture(
     {
-      onDrag: ({ offset: [dx] }) => x.set(dx),
-      onDragEnd: ({ velocity: [vx], direction: [dx] }) => {
+      onDrag: ({ movement: [mx] }) => x.set(mx),
+      onDragEnd: ({ movement: [mx, my], velocity: [vx, vy], direction: [dirX, dirY] }) => {
         const threshold = 150
-        if (dx > threshold || (vx > 0 && Math.abs(dx) > 50)) {
+        if (mx > threshold || (vx > 0.5 && dirX > 0 && mx > 50)) {
           // LIKE
           onLike(profiles[index].id)
           setIndex((i) => i + 1)
           x.set(0)
-        } else if (dx < -threshold || (vx < 0 && Math.abs(dx) > 50)) {
+        } else if (mx < -threshold || (vx > 0.5 && dirX < 0 && mx < -50)) {
           // NOPE
           onNope(profiles[index].id)
           setIndex((i) => i + 1)
           x.set(0)
-        } else if (Math.abs(dx) < 20 && Math.abs(vx) > 800) {
-          // SUPER LIKE (quick upward flick – we treat as a special action)
+        } else if (my < -threshold || (vy > 0.5 && dirY < 0 && my < -50)) {
+          // SUPER LIKE
           onSuperLike(profiles[index].id)
           setIndex((i) => i + 1)
           x.set(0)
