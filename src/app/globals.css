@@ -4,22 +4,22 @@
 
 :root {
   /* Premium Dark Mode Surface Tokens */
-  --surface: #09090b;             /* zinc-950 (Global Background) */
-  --surface-container: #18181b;   /* zinc-900 (Card Base / Primary Surface) */
-  --surface-container-high: #27272a; /* zinc-800 (Secondary Surface / Hover) */
+  --surface: #0B0D10;             /* Global Background */
+  --surface-container: #15181D;   /* Card Base / Primary Surface */
+  --surface-container-high: #1B1F24; /* Secondary Surface / Hover */
   --on-surface: #fafafa;          /* zinc-50 (Primary Text) */
   --on-surface-variant: #a1a1aa;  /* zinc-400 (Muted Text) */
   
   /* Brand Accent Tokens */
-  --primary: #6366f1;             /* indigo-500 */
-  --primary-container: rgba(99, 102, 241, 0.08);
-  --secondary: #8b5cf6;           /* violet-500 */
+  --primary: #3B82F6;             /* blue-500 (Primary Accent) */
+  --primary-container: rgba(59, 130, 246, 0.08);
+  --secondary: #8b5cf6;           /* violet-500 (AI Assistant Only) */
   --secondary-container: rgba(139, 92, 246, 0.08);
-  --tertiary: #22d3ee;            /* cyan-400 */
+  --tertiary: #10b981;            /* emerald-500 (Success) */
   
   /* Borders and Outlines */
-  --outline: rgba(255, 255, 255, 0.08);
-  --outline-variant: rgba(255, 255, 255, 0.04);
+  --outline: rgba(255, 255, 255, 0.06);
+  --outline-variant: rgba(255, 255, 255, 0.03);
 }
 
 * {
@@ -61,28 +61,28 @@ body {
      PREMIUM CARDS
      ========================================== */
   .card-premium {
-    @apply rounded-2xl border border-white/[0.08] bg-zinc-900/40 backdrop-blur-xl transition-all duration-300;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    @apply rounded-2xl border border-white/[0.06] bg-zinc-900/40 backdrop-blur-xl transition-all duration-300;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   }
   .card-premium:hover {
-    @apply border-brand-500/30 bg-zinc-900/60 shadow-glow-brand;
-    transform: translateY(-2px);
+    @apply border-brand-500/20 bg-zinc-900/60 shadow-[0_0_20px_rgba(59,130,246,0.1)];
+    transform: translateY(-1px);
   }
 
   .card-glass {
-    @apply rounded-2xl border border-white/[0.05] bg-white/[0.02] backdrop-blur-md transition-all duration-300;
+    @apply rounded-2xl border border-white/[0.04] bg-white/[0.01] backdrop-blur-md transition-all duration-300;
   }
   .card-glass:hover {
-    @apply border-white/[0.08] bg-white/[0.04];
+    @apply border-white/[0.06] bg-white/[0.02];
   }
 
   .card-elevated {
-    @apply rounded-2xl bg-zinc-900 border border-white/[0.04] transition-all duration-300;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.05);
+    @apply rounded-2xl bg-zinc-900 border border-white/[0.03] transition-all duration-300;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.03);
   }
   .card-elevated:hover {
-    @apply border-white/[0.08];
-    transform: translateY(-2px);
+    @apply border-white/[0.06];
+    transform: translateY(-1px);
   }
 
   /* Legacy layout maps */
@@ -101,22 +101,22 @@ body {
      ========================================== */
   .btn-premium {
     @apply px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-white transition-all duration-300 active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
     cursor: pointer;
   }
   .btn-premium:hover:not(:disabled) {
-    background: linear-gradient(135deg, #6d28d9, #7c3aed);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
     transform: translateY(-1px);
   }
 
   .btn-ghost-pro {
-    @apply px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-zinc-400 border border-white/[0.08] bg-zinc-900/50 transition-all duration-300 active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2;
+    @apply px-6 py-2.5 rounded-xl font-display font-semibold text-sm text-zinc-400 border border-white/[0.08] bg-zinc-900/30 transition-all duration-300 active:scale-95 disabled:opacity-50 inline-flex items-center justify-center gap-2;
     cursor: pointer;
   }
   .btn-ghost-pro:hover:not(:disabled) {
-    @apply border-white/[0.15] bg-zinc-900/80 text-zinc-200;
+    @apply border-white/[0.12] bg-zinc-800/40 text-zinc-200;
     transform: translateY(-1px);
   }
 
