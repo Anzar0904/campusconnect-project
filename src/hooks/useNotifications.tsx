@@ -21,6 +21,7 @@ interface NotificationContextProps {
   loading: boolean
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
+  deleteNotification: (id: string) => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -101,6 +102,15 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
           return prev
         })
       })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, (payload: any) => {
+        const deletedNotif = payload.old as { id: string }
+        setNotifications(prev => prev.filter(n => n.id !== deletedNotif.id))
+      })
       .subscribe()
 
     return () => {
@@ -144,14 +154,39 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
     }
   }, [userId, supabase])
 
+  // Delete notification
+  const deleteNotification = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      // Re-calculate unread count
+      setUnreadCount(prev => {
+        const deletedNotif = notifications.find(n => n.id === id)
+        if (deletedNotif && !deletedNotif.read) {
+          return Math.max(0, prev - 1)
+        }
+        return prev
+      })
+    } catch (err) {
+      console.error('Failed to delete notification:', err)
+    }
+  }, [supabase, notifications])
+
   const contextValue = useMemo(() => ({
     notifications,
     unreadCount,
     loading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     refresh: fetchNotifications
-  }), [notifications, unreadCount, loading, markAsRead, markAllAsRead, fetchNotifications])
+  }), [notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, fetchNotifications])
 
   return (
     <NotificationContext.Provider value={contextValue}>

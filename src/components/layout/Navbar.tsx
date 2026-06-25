@@ -26,7 +26,10 @@ import {
   FileUp,
   Tags,
   CalendarPlus,
-  FolderPlus
+  FolderPlus,
+  Trash2,
+  Inbox,
+  CheckCheck
 } from 'lucide-react'
 import Link from 'next/navigation'
 import { useRouter, usePathname } from 'next/navigation'
@@ -64,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showQuickCreate, setShowQuickCreate] = useState(false)
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
   const { profile: currentProfile } = useCurrentProfile()
   const profile = currentProfile || initialProfile
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
@@ -267,6 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                       notifications={notifications} 
                       markAsRead={markAsRead} 
                       markAllAsRead={markAllAsRead} 
+                      deleteNotification={deleteNotification}
                     />
                   )}
                 </AnimatePresence>
@@ -391,6 +395,7 @@ interface NotificationsDropdownProps {
   notifications: any[]
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
+  deleteNotification: (id: string) => Promise<void>
 }
 
 const NotificationsDropdown = React.memo(({
@@ -399,10 +404,117 @@ const NotificationsDropdown = React.memo(({
   unreadCount,
   notifications,
   markAsRead,
-  markAllAsRead
+  markAllAsRead,
+  deleteNotification
 }: NotificationsDropdownProps) => {
   const [parent] = useAutoAnimate()
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+
   if (!showNotifications) return null
+
+  // Filter notifications
+  const filteredNotifications = notifications.filter(n => filter === 'all' || !n.read)
+
+  // Group notifications
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
+
+  const todayNotifs = filteredNotifications.filter(n => new Date(n.created_at).getTime() >= todayStart)
+  const yesterdayNotifs = filteredNotifications.filter(n => {
+    const t = new Date(n.created_at).getTime()
+    return t >= yesterdayStart && t < todayStart
+  })
+  const earlierNotifs = filteredNotifications.filter(n => new Date(n.created_at).getTime() < yesterdayStart)
+
+  const renderSection = (title: string, items: any[]) => {
+    if (items.length === 0) return null
+    return (
+      <div className="flex flex-col gap-1.5 mb-4">
+        <h4 className="text-[10px] font-bold font-mono text-zinc-500 uppercase tracking-wider pl-1">{title}</h4>
+        <div className="flex flex-col gap-1.5">
+          {items.map(notif => (
+            <div 
+              key={notif.id}
+              className={clsx(
+                "group relative flex gap-2.5 p-3 rounded-xl transition-all border text-left",
+                notif.read 
+                  ? "bg-white/[0.01] border-white/[0.03] hover:bg-white/[0.03] hover:border-white/[0.06]" 
+                  : "bg-cyan-500/[0.02] border-cyan-500/10 hover:bg-cyan-500/[0.05] hover:border-cyan-500/20"
+              )}
+            >
+              {/* Main Link Area */}
+              <LinkComponent 
+                href={notif.link || '#'}
+                onClick={() => {
+                  if (!notif.read) {
+                    markAsRead(notif.id)
+                  }
+                  setShowNotifications(false)
+                }}
+                className="flex-1 flex gap-2.5 min-w-0"
+              >
+                <div className="shrink-0 mt-1">
+                  <span className={clsx(
+                    "w-1.5 h-1.5 rounded-full block transition-transform group-hover:scale-125",
+                    notif.read ? "bg-zinc-700" : "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                  )} />
+                </div>
+                <div className="flex-1 min-w-0 pr-6">
+                  <p className={clsx(
+                    "text-[11px] leading-snug",
+                    notif.read ? "text-zinc-400 font-normal" : "text-zinc-100 font-bold"
+                  )}>
+                    {notif.title}
+                  </p>
+                  {notif.content && (
+                    <p className="text-[10px] text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
+                      {notif.content}
+                    </p>
+                  )}
+                  <p className="text-[8px] font-mono text-zinc-600 mt-1.5 flex items-center gap-1">
+                    <Clock size={9} />
+                    {format(new Date(notif.created_at), 'd MMM, h:mm a')}
+                  </p>
+                </div>
+              </LinkComponent>
+
+              {/* Hover actions */}
+              <div className="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 bg-zinc-900/80 backdrop-blur-sm rounded-lg p-0.5 border border-white/[0.05] z-10">
+                {!notif.read && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      markAsRead(notif.id)
+                    }}
+                    title="Mark as read"
+                    aria-label="Mark as read"
+                    className="p-1 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] rounded-md transition-colors"
+                  >
+                    <CheckCheck size={11} />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    deleteNotification(notif.id)
+                  }}
+                  title="Delete notification"
+                  aria-label="Delete notification"
+                  className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/[0.05] rounded-md transition-colors"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
@@ -411,67 +523,72 @@ const NotificationsDropdown = React.memo(({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-        className="absolute right-0 mt-3 w-80 glass-panel-base rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-2 border border-white/[0.08] max-h-[420px] overflow-y-auto custom-scrollbar"
+        className="absolute right-0 mt-3 w-96 max-w-[calc(100vw-32px)] glass-panel-base rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3.5 border border-white/[0.08] max-h-[480px] overflow-hidden"
       >
-        <div className="flex items-center justify-between border-b border-white/[0.05] pb-2 select-none">
-          <p className="text-[10px] font-bold font-mono uppercase text-zinc-400 tracking-wider">Notifications</p>
+        {/* Header section */}
+        <div className="flex items-center justify-between border-b border-white/[0.05] pb-2.5 select-none shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold font-mono uppercase text-zinc-400 tracking-wider">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="bg-cyan-500/10 text-cyan-400 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border border-cyan-500/15">
+                {unreadCount} new
+              </span>
+            )}
+          </div>
           {unreadCount > 0 && (
             <button 
               onClick={markAllAsRead}
               className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 font-bold uppercase transition-colors"
             >
-              Mark all as read
+              Mark all read
             </button>
           )}
         </div>
 
-        <div ref={parent} className="flex flex-col gap-1.5 overflow-y-auto max-h-[320px] custom-scrollbar pr-0.5">
-          {notifications.length === 0 ? (
-            <div className="py-8 text-center select-none">
-              <Bell className="mx-auto text-zinc-700 mb-2" size={24} />
-              <p className="text-[11px] text-zinc-500 italic">No new notifications</p>
+        {/* Filters pills */}
+        <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.04] p-1 rounded-xl shrink-0 select-none">
+          <button
+            onClick={() => setFilter('all')}
+            className={clsx(
+              "flex-1 text-[10px] font-mono uppercase py-1 rounded-lg font-bold transition-all text-center",
+              filter === 'all' 
+                ? "bg-white/[0.06] text-white shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            All ({notifications.length})
+          </button>
+          <button
+            onClick={() => setFilter('unread')}
+            className={clsx(
+              "flex-1 text-[10px] font-mono uppercase py-1 rounded-lg font-bold transition-all text-center",
+              filter === 'unread' 
+                ? "bg-white/[0.06] text-white shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Unread ({unreadCount})
+          </button>
+        </div>
+
+        {/* List of notifications */}
+        <div ref={parent} className="flex-1 overflow-y-auto pr-0.5 custom-scrollbar pb-2">
+          {filteredNotifications.length === 0 ? (
+            <div className="py-12 text-center select-none flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mb-3">
+                <Inbox className="text-zinc-500" size={20} />
+              </div>
+              <p className="text-[12px] font-medium text-zinc-300">All caught up!</p>
+              <p className="text-[10px] text-zinc-500 mt-1 max-w-[200px]">
+                {filter === 'unread' ? "You have no unread notifications." : "No notifications available."}
+              </p>
             </div>
           ) : (
-            notifications.map(notif => (
-              <LinkComponent 
-                key={notif.id}
-                href={notif.link || '#'}
-                onClick={() => {
-                  markAsRead(notif.id)
-                  setShowNotifications(false)
-                }}
-                className={clsx(
-                  "flex gap-2.5 p-2 rounded-xl transition-all border border-transparent text-left",
-                  notif.read 
-                    ? "bg-transparent hover:bg-white/[0.02]" 
-                    : "bg-brand-500/[0.03] border-brand-500/10 hover:bg-brand-500/[0.06] hover:border-brand-500/15"
-                )}
-              >
-                <div className="shrink-0 mt-1">
-                  <span className={clsx(
-                    "w-1.5 h-1.5 rounded-full block",
-                    notif.read ? "bg-zinc-700" : "bg-brand-400"
-                  )} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={clsx(
-                    "text-[11px] leading-snug truncate",
-                    notif.read ? "text-zinc-400 font-normal" : "text-zinc-100 font-bold"
-                  )}>
-                    {notif.title}
-                  </p>
-                  {notif.content && (
-                    <p className="text-[9px] text-zinc-500 mt-0.5 line-clamp-2 leading-normal">
-                      {notif.content}
-                    </p>
-                  )}
-                  <p className="text-[8px] font-mono text-zinc-600 mt-1 flex items-center gap-1">
-                    <Clock size={8} />
-                    {format(new Date(notif.created_at), 'd MMM, h:mm a')}
-                  </p>
-                </div>
-              </LinkComponent>
-            ))
+            <>
+              {renderSection("Today", todayNotifs)}
+              {renderSection("Yesterday", yesterdayNotifs)}
+              {renderSection("Earlier", earlierNotifs)}
+            </>
           )}
         </div>
       </motion.div>
