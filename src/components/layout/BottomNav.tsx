@@ -93,8 +93,8 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden w-[90%] max-w-[400px]" style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="flex items-center justify-around px-2 py-1.5 rounded-2xl border border-white/[0.08] bg-zinc-950/90 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
+      <nav className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden w-[92%] max-w-[400px]" style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="flex items-center justify-around px-2.5 py-2 rounded-2xl border border-white/[0.08] bg-zinc-900/65 backdrop-blur-xl shadow-premium">
           {MOBILE_NAV_ITEMS.map((item) => {
             const isMore = item.href === '#more'
             const active = isMore ? showModules : pathname === item.href
@@ -115,19 +115,19 @@ export function BottomNav() {
                 href={item.href}
                 onClick={handleItemClick}
                 className={clsx(
-                  "relative flex flex-col items-center gap-1 p-2 min-w-[64px] rounded-xl transition-all duration-300",
-                  active ? "text-brand-400 font-semibold" : "text-zinc-500 hover:text-zinc-300"
+                  "relative flex flex-col items-center gap-1.5 p-2 min-w-[64px] rounded-xl transition-all duration-300",
+                  active ? "text-brand-400 font-semibold" : "text-zinc-400 hover:text-zinc-200"
                 )}
               >
                 {active && (
                   <motion.div
                     layoutId="mobile-nav-active"
                     className="absolute inset-0 bg-brand-500/10 rounded-xl border border-brand-500/20"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
                   />
                 )}
-                <Icon size={20} className="relative z-10" />
-                <span className="text-[9px] font-mono font-medium uppercase tracking-wider relative z-10">
+                <Icon size={18} className="relative z-10" />
+                <span className="text-[9px] font-display font-bold uppercase tracking-wider relative z-10">
                   {item.label}
                 </span>
               </Link>
@@ -146,7 +146,7 @@ export function BottomNav() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowModules(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 md:hidden"
+              className="fixed inset-0 bg-[#030712]/40 backdrop-blur-[2px] z-40 md:hidden"
             />
             
             {/* Slide-up panel */}
@@ -154,8 +154,8 @@ export function BottomNav() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-[#090d16]/95 border-t border-white/[0.08] rounded-t-[32px] p-6 pb-28 backdrop-blur-2xl shadow-2xl z-40 overflow-y-auto custom-scrollbar md:hidden"
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              className="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-[#09090b] border-t border-white/[0.08] rounded-t-[32px] p-6 pb-28 shadow-2xl z-40 overflow-y-auto custom-scrollbar md:hidden"
             >
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -164,7 +164,7 @@ export function BottomNav() {
                 </div>
                 <button 
                   onClick={() => setShowModules(false)}
-                  className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -174,7 +174,7 @@ export function BottomNav() {
               <div className="space-y-6">
                 {MODULE_SECTIONS.map((section) => (
                   <div key={section.label} className="space-y-2.5">
-                    <p className="font-mono text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">
+                    <p className="font-mono text-[9px] font-bold text-zinc-500 uppercase tracking-widest px-1">
                       {section.label}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
@@ -185,16 +185,16 @@ export function BottomNav() {
                             key={item.href}
                             href={item.href}
                             onClick={() => setShowModules(false)}
-                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.04] active:bg-white/[0.05] transition-all group"
+                            className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.04] active:bg-white/[0.04] transition-all group"
                           >
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.05] text-neutral-400 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20 transition-all shrink-0">
-                              <Icon size={16} />
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.05] text-neutral-400 group-hover:text-brand-400 group-hover:bg-brand-500/10 group-hover:border-brand-500/20 transition-all shrink-0">
+                              <Icon size={15} />
                             </div>
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-neutral-200 group-hover:text-white leading-tight truncate">
                                 {item.label}
                               </p>
-                              <p className="text-[9px] text-neutral-500 truncate mt-0.5 font-medium leading-none">
+                              <p className="text-[9px] text-zinc-500 truncate mt-0.5 font-medium leading-none">
                                 {item.desc}
                               </p>
                             </div>

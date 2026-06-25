@@ -665,17 +665,16 @@ export function NavbarSearch() {
         <Search size={18} />
       </button>
 
-      {/* Navbar Trigger Button (Desktop) */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="hidden md:block w-full p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)] hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:scale-[1.005] active:scale-[0.995]"
+        className="hidden md:block w-full max-w-[240px] p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(99,102,241,0.15)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-[1.005] active:scale-[0.995]"
       >
-        <div className="bg-[#030712]/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
-          <div className="flex items-center text-neutral-400">
-            <Search size={14} strokeWidth={2.5} className="mr-2.5 shrink-0 text-neutral-400" />
-            <span className="text-xs text-neutral-500 font-medium">Search or type a command...</span>
+        <div className="bg-zinc-900/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
+          <div className="flex items-center text-zinc-400">
+            <Search size={13} strokeWidth={2.5} className="mr-2 shrink-0 text-zinc-400" />
+            <span className="text-[11px] text-zinc-500 font-semibold tracking-wide">Search campus...</span>
           </div>
-          <div className="pointer-events-none text-[9px] font-mono font-bold text-neutral-400 tracking-widest bg-white/[0.04] border border-white/[0.08] rounded-md px-1.5 py-0.5 shadow-sm">
+          <div className="pointer-events-none text-[8px] font-mono font-bold text-zinc-400 tracking-wider bg-white/[0.04] border border-white/[0.08] rounded px-1.5 py-0.5 shadow-sm select-none">
             ⌘ K
           </div>
         </div>
@@ -693,7 +692,7 @@ export function NavbarSearch() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setIsOpen(false)}
-                className="absolute inset-0 bg-[#030712]/40 backdrop-blur-[2px]"
+                className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[3px]"
               />
 
               {/* Centered glassmorphic container */}
@@ -702,7 +701,7 @@ export function NavbarSearch() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: -8 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="palette-blur bg-[#090d16]/85 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(6,182,212,0.15)] w-full max-w-[900px] h-[500px] max-h-[80vh]"
+                className="palette-blur bg-zinc-900/90 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-premium w-full max-w-[900px] h-[500px] max-h-[80vh]"
               >
                 {/* Top Search Input */}
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.08] bg-zinc-950/40 relative">
@@ -888,7 +887,7 @@ export function NavbarSearch() {
                 </div>
 
                 {/* Statusbar footer */}
-                <div className="flex items-center justify-between px-6 py-3 bg-[#030712]/50 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
+                <div className="flex items-center justify-between px-6 py-3 bg-zinc-950/50 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1 py-0.2 rounded">↑↓</span> Navigate</span>
                     <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.2 rounded font-sans">↵</span> Select</span>

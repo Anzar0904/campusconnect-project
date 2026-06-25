@@ -6,6 +6,7 @@ import { Navbar } from './Navbar'
 import { BottomNav } from './BottomNav'
 import { NotificationProvider } from '@/hooks/useNotifications'
 import { ProfileProvider } from '@/hooks/useCurrentProfile'
+import { cn } from '@/lib/utils'
 
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -51,26 +52,27 @@ export function AppShell({
             if (data) {
               toast.custom((t) => (
                 <div
-                  className={`${
-                    t.visible ? 'animate-fade-in' : 'animate-fade-out'
-                  } max-w-md w-full bg-[#0d1527]/95 backdrop-blur-md border border-[#c3c0ff]/20 shadow-2xl rounded-2xl pointer-events-auto flex p-4`}
-                  style={{ boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}
+                  className={cn(
+                    t.visible ? 'animate-fade-in' : 'animate-fade-out',
+                    "max-w-md w-full bg-zinc-900/90 backdrop-blur-xl border border-white/[0.08] shadow-premium rounded-2xl pointer-events-auto flex p-4"
+                  )}
+                  style={{ boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}
                 >
                   <div className="flex-1 w-0">
                     <div className="flex items-start">
                       <div className="flex-shrink-0 pt-0.5">
-                        <div className="w-12 h-12 rounded-xl bg-[#fbbf24]/10 border border-[#fbbf24]/30 flex items-center justify-center text-2xl animate-bounce">
+                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-2xl animate-bounce">
                           🏆
                         </div>
                       </div>
                       <div className="ml-4 flex-1">
-                        <p className="text-xs font-black text-[#fbbf24] font-display uppercase tracking-wider">
+                        <p className="text-xs font-black text-amber-400 font-display uppercase tracking-wider">
                           🏆 Achievement Unlocked
                         </p>
-                        <p className="mt-1 text-sm font-bold text-white font-display">
+                        <p className="mt-1 text-sm font-bold text-zinc-50 font-display">
                           {data.name}
                         </p>
-                        <p className="mt-1 text-xs font-mono text-emerald-400 font-bold">
+                        <p className="mt-1 text-xs font-mono text-cyan-400 font-bold">
                           +{data.points_reward} Points Earned
                         </p>
                       </div>
@@ -79,7 +81,7 @@ export function AppShell({
                   <div className="ml-4 flex-shrink-0 flex">
                     <button
                       onClick={() => toast.dismiss(t.id)}
-                      className="rounded-lg p-1.5 inline-flex text-neutral-400 hover:text-white hover:bg-white/5 transition-colors self-start"
+                      className="rounded-lg p-1.5 inline-flex text-zinc-500 hover:text-zinc-50 hover:bg-white/5 transition-colors self-start"
                     >
                       <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -104,29 +106,29 @@ export function AppShell({
   return (
     <ProfileProvider initialProfile={initialProfile} userId={userId}>
       <NotificationProvider userId={userId}>
-        <div className="flex flex-col min-h-screen bg-[#030712] text-neutral-100 font-sans antialiased selection:bg-blue-500/30 selection:text-white">
+        <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
           <Navbar />
         
-        <main className="flex-1 w-full max-w-[1600px] mx-auto px-3 sm:px-12 lg:px-20 py-4 sm:py-8 relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ 
-                type: "spring",
-                mass: 1,
-                stiffness: 170,
-                damping: 26 
-              }}
-              className="pb-32 md:pb-8"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-        <BottomNav />
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ 
+                  type: "spring",
+                  mass: 1,
+                  stiffness: 170,
+                  damping: 26 
+                }}
+                className="w-full"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+          <BottomNav />
         </div>
       </NotificationProvider>
     </ProfileProvider>
