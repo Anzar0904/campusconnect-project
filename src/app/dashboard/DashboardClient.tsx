@@ -240,7 +240,7 @@ function PostCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-      className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-5 space-y-4 shadow-sm hover:border-white/[0.12] transition-colors duration-300"
+      className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 space-y-5 transition-all duration-300 hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -252,15 +252,15 @@ function PostCard({
             <GlobalAvatar profile={author} className="border border-white/5" />
           )}
           <div className="min-w-0">
-            <h4 className="font-display font-bold text-zinc-100 text-sm tracking-tight truncate leading-tight">
+            <h4 className="font-sans font-semibold text-zinc-100 text-sm tracking-tight truncate leading-tight">
               {post.is_anonymous ? 'Anonymous Student' : (author?.full_name || 'IILM Student')}
             </h4>
             <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 mt-0.5">
               <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
               {author?.branch && !post.is_anonymous && (
                 <>
-                  <span className="w-1 h-1 rounded-full bg-zinc-700" />
-                  <span className="uppercase text-brand-400 font-bold">{author.branch}</span>
+                  <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                  <span className="uppercase text-brand-400 font-semibold tracking-wider text-[9px]">{author.branch}</span>
                 </>
               )}
             </div>
@@ -284,7 +284,7 @@ function PostCard({
         </div>
       </div>
 
-      <p className="text-[13px] text-zinc-300 leading-relaxed px-0.5 whitespace-pre-wrap font-sans font-medium">
+      <p className="text-[13px] text-zinc-300 leading-relaxed px-0.5 whitespace-pre-wrap font-sans font-normal">
         {post.content}
       </p>
 
@@ -293,7 +293,7 @@ function PostCard({
           onClick={handleLike}
           whileTap={{ scale: 0.95 }}
           className={cn(
-            "group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-display tracking-wide transition-all duration-300 select-none",
+            "group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium font-sans tracking-wide transition-all duration-300 select-none",
             liked ? "bg-red-500/10 text-red-400" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
           )}
         >
@@ -306,7 +306,7 @@ function PostCard({
         <button 
           onClick={handleCommentsToggle}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-display tracking-wide transition-all duration-200 select-none",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium font-sans tracking-wide transition-all duration-200 select-none",
             showComments ? "bg-brand-500/10 text-brand-400" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
           )}
         >
@@ -358,16 +358,16 @@ function PostCard({
                       <div className="shrink-0 mt-0.5">
                         <GlobalAvatar profile={comment.author} size="sm" className="border border-white/5" />
                       </div>
-                      <div className="flex-1 bg-white/[0.01] border border-white/[0.04] rounded-xl p-2.5 space-y-1">
+                      <div className="flex-1 bg-[#1B1F24]/40 border border-white/[0.04] rounded-xl p-2.5 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-zinc-200 text-[11px]">
+                          <span className="font-semibold text-zinc-200 text-[11px]">
                             {comment.author?.full_name || 'IILM Student'}
                           </span>
                           <span className="text-[9px] font-mono text-zinc-500">
                             {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                           </span>
                         </div>
-                        <p className="text-zinc-300 font-medium text-[11px] leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-zinc-300 font-normal text-[11px] leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                       </div>
                     </div>
                   ))}
@@ -390,7 +390,7 @@ function PostCard({
                   <button
                     type="submit"
                     disabled={!newComment.trim() || submitting}
-                    className="btn-premium py-1 px-4 h-9 text-xs rounded-xl shrink-0 font-display font-semibold"
+                    className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:hover:bg-brand-500 text-white text-xs font-semibold transition-all shrink-0 active:scale-95"
                   >
                     {submitting ? (
                       <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -497,20 +497,20 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
     setPosting(false)
   }
 
-  const typeOptions = [
-    { value: 'post', label: '📝 Post' },
-    { value: 'confession', label: '🔒 Confession' },
-    { value: 'announcement', label: '📢 Announcement' },
-  ] as const
+    const typeOptions = [
+      { value: 'post', label: 'Post', icon: MessageSquare },
+      { value: 'confession', label: 'Confession', icon: Lock },
+      { value: 'announcement', label: 'Announcement', icon: Megaphone },
+    ] as const
 
   return (
-    <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-5 shadow-sm space-y-4">
+    <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 shadow-sm space-y-4">
       {!open ? (
         <div className="flex items-center gap-3">
           <GlobalAvatar profile={profile} size="sm" className="border border-white/5 shrink-0" />
           <button
             onClick={() => setOpen(true)}
-            className="flex-1 text-left px-4 h-11 rounded-xl text-xs sm:text-xs text-zinc-500 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] transition-all font-semibold select-none"
+            className="flex-1 text-left px-5 py-3.5 rounded-xl text-xs text-zinc-500 bg-white/[0.01] border border-white/[0.04] hover:bg-white/[0.03] hover:border-white/[0.08] transition-all font-medium select-none"
           >
             What&apos;s on your mind, {profile?.full_name?.split(' ')[0] || 'there'}?
           </button>
@@ -521,19 +521,30 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
           animate={{ opacity: 1, height: 'auto' }}
           className="space-y-4 overflow-hidden"
         >
-          <div className="flex gap-1.5 p-1 rounded-xl bg-zinc-950/40 w-fit select-none">
-            {typeOptions.map(t => (
-              <button
-                key={t.value}
-                onClick={() => { setPostType(t.value); if (t.value === 'confession') setAnon(true) }}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-lg text-[10px] font-bold font-display uppercase tracking-wider transition-all",
-                  postType === t.value ? "bg-white/[0.06] text-brand-400 border border-white/[0.04]" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="flex gap-1 p-0.5 rounded-lg bg-[#1B1F24] w-fit select-none border border-white/[0.04]">
+            {typeOptions.map(t => {
+              const Icon = t.icon
+              const isSelected = postType === t.value
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => { 
+                    setPostType(t.value)
+                    if (t.value === 'confession') setAnon(true)
+                  }}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md text-[10px] font-semibold tracking-wide transition-all flex items-center gap-1.5",
+                    isSelected 
+                      ? "bg-white/[0.06] text-brand-400 border border-white/[0.04] shadow-sm" 
+                      : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  <Icon size={12} className={isSelected ? "text-brand-400" : "text-zinc-500"} />
+                  <span>{t.label}</span>
+                </button>
+              )
+            })}
           </div>
 
           <div className="flex items-start gap-3">
@@ -547,7 +558,7 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
                 postType === 'announcement' ? 'Make an important announcement…' :
                 "What's happening at IILM?"
               }
-              className="flex-1 bg-transparent text-xs sm:text-sm text-zinc-200 placeholder:text-zinc-600 resize-none outline-none py-1.5 min-h-[100px] leading-relaxed font-sans font-medium"
+              className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 resize-none outline-none py-2.5 min-h-[120px] leading-relaxed font-sans font-normal"
             />
           </div>
 
@@ -592,7 +603,7 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
               <button
                 onClick={submit}
                 disabled={!content.trim() || posting || content.length > 500}
-                className="btn-premium px-5 py-1.5 text-xs select-none shadow-none"
+                className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:hover:bg-brand-500 text-white text-xs font-semibold transition-all select-none active:scale-95"
               >
                 {posting ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -607,6 +618,80 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
     </div>
   )
 }
+
+const EventSkeleton = () => (
+  <div className="space-y-3">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="flex gap-3 items-center border-b border-white/[0.04] last:border-0 pb-3 last:pb-0 animate-pulse">
+        <div className="w-10 h-10 rounded-xl bg-white/[0.02] border border-white/[0.05] shrink-0" />
+        <div className="min-w-0 space-y-1.5 flex-1">
+          <div className="h-3 bg-white/[0.06] rounded w-2/3" />
+          <div className="h-2 bg-white/[0.03] rounded w-1/3" />
+        </div>
+      </div>
+    ))}
+  </div>
+)
+
+const InternshipSkeleton = () => (
+  <div className="space-y-2.5">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="flex items-center justify-between p-2.5 rounded-xl border border-white/[0.04] bg-white/[0.01] animate-pulse">
+        <div className="min-w-0 flex-1 pr-2 space-y-1.5">
+          <div className="h-3 bg-white/[0.06] rounded w-1/2" />
+          <div className="h-2 bg-white/[0.03] rounded w-1/3" />
+        </div>
+        <div className="w-10 h-4 bg-white/[0.04] rounded shrink-0" />
+      </div>
+    ))}
+  </div>
+)
+
+const CommunitySkeleton = () => (
+  <div className="space-y-3">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="flex items-center justify-between p-0.5 animate-pulse">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+          <div className="w-8 h-8 rounded-lg bg-white/[0.03] shrink-0" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-3 bg-white/[0.06] rounded w-1/2" />
+            <div className="h-2 bg-white/[0.03] rounded w-1/3" />
+          </div>
+        </div>
+        <div className="w-12 h-6 bg-white/[0.04] rounded-lg shrink-0" />
+      </div>
+    ))}
+  </div>
+)
+
+const MarketplaceSkeleton = () => (
+  <div className="grid grid-cols-2 gap-3">
+    {[...Array(2)].map((_, i) => (
+      <div key={i} className="flex flex-col rounded-xl border border-white/[0.04] bg-white/[0.01] p-2 animate-pulse">
+        <div className="aspect-video w-full rounded-lg bg-white/[0.03]" />
+        <div className="h-3 bg-white/[0.06] rounded w-3/4 mt-2" />
+        <div className="h-2 bg-white/[0.03] rounded w-1/3 mt-1.5" />
+      </div>
+    ))}
+  </div>
+)
+
+const ConnectionsSkeleton = () => (
+  <div className="space-y-3">
+    {[...Array(2)].map((_, i) => (
+      <div key={i} className="flex items-center justify-between p-0.5 animate-pulse">
+        <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+          <div className="w-8 h-8 rounded-full bg-white/[0.03] shrink-0" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-3 bg-white/[0.06] rounded w-1/2" />
+            <div className="h-2 bg-white/[0.03] rounded w-1/3" />
+          </div>
+        </div>
+        <div className="w-16 h-6 bg-white/[0.04] rounded-lg shrink-0" />
+      </div>
+    ))}
+  </div>
+)
 
 export default function DashboardClient({
   profile: initialProfile,
@@ -642,6 +727,23 @@ export default function DashboardClient({
   const [internships, setInternships] = useState<any[]>([])
   const [communities, setCommunities] = useState<any[]>([])
   const [marketplaceItems, setMarketplaceItems] = useState<any[]>([])
+
+  // Premium UI & interaction state
+  const [loadingWidgets, setLoadingWidgets] = useState(true)
+  const [activeFeedTab, setActiveFeedTab] = useState<'for-you' | 'following' | 'trending'>('for-you')
+
+  // Client-side premium sorting & filtering
+  const sortedPosts = useMemo(() => {
+    const result = [...posts]
+    if (activeFeedTab === 'trending') {
+      return result.sort((a, b) => (b.likes_count + b.comments_count) - (a.likes_count + a.comments_count))
+    }
+    if (activeFeedTab === 'following') {
+      const friendIds = friends.map(f => f.id)
+      return result.filter(p => p.author && friendIds.includes(p.author.id))
+    }
+    return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }, [posts, activeFeedTab, friends])
 
   const getRelation = (peerId: string) => {
     const f = friendships.find(
@@ -717,6 +819,7 @@ export default function DashboardClient({
   useEffect(() => {
     async function getCampusData() {
       try {
+        setLoadingWidgets(true)
         // Fetch suggested peers from same college
         let queryBuilder = supabase
           .from('profiles')
@@ -781,6 +884,8 @@ export default function DashboardClient({
 
       } catch (e) {
         console.error('Error fetching campus data:', e)
+      } finally {
+        setLoadingWidgets(false)
       }
     }
     getCampusData()
@@ -851,22 +956,22 @@ export default function DashboardClient({
                 initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-brand-500/[0.02] border border-brand-500/25 p-6 rounded-2xl relative overflow-hidden group shadow-sm"
+                className="bg-white/[0.01] border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.08]"
               >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 blur-[80px] -mr-32 -mt-32 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/[0.02] blur-[80px] -mr-32 -mt-32 pointer-events-none" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shrink-0 text-brand-400 shadow-sm">
                       <User size={20} />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-base font-bold font-display tracking-tight text-white">Complete your Campus ID</h3>
-                      <p className="text-zinc-400 text-xs font-semibold leading-relaxed max-w-lg">
+                      <h3 className="text-base font-semibold font-sans tracking-tight text-white">Complete your Campus ID</h3>
+                      <p className="text-zinc-400 text-xs font-medium leading-relaxed max-w-lg">
                         Welcome to CampusConnect! Add a username, bio, and branch to your profile so your classmates can find you.
                       </p>
                     </div>
                   </div>
-                  <Link href="/profile" className="btn-premium px-5 py-2 text-xs font-bold shadow-none">
+                  <Link href="/profile" className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95">
                     Finish Setup
                   </Link>
                 </div>
@@ -876,12 +981,12 @@ export default function DashboardClient({
         )}
 
         {/* Dashboard Pill Shortcuts */}
-        <div className="my-2 select-none">
+        <div className="mb-6 select-none">
           <ModuleSection userRole={profile?.role} />
         </div>
 
         {/* Primary Functional Dashboard Node Grid */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-4 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left/Main Column: Feed */}
           <div className="lg:col-span-8 space-y-6">
@@ -890,30 +995,68 @@ export default function DashboardClient({
             <CreatePost profile={profile} onPost={handleNewPost} supabase={supabase} />
             
             {/* Feed Sort Tabs */}
-            <div className="flex items-center gap-6 border-b border-white/[0.04] text-[11px] font-bold font-display uppercase tracking-widest pb-3 select-none">
-              <button className="text-brand-400 border-b border-brand-400 pb-3 px-1 transition-all">For You</button>
-              <button className="text-zinc-500 hover:text-zinc-300 pb-3 px-1 transition-colors">Following</button>
-              <button className="text-zinc-500 hover:text-zinc-300 pb-3 px-1 transition-colors flex items-center gap-1">
-                <TrendingUp size={11} />
-                <span>Trending</span>
-              </button>
+            <div className="flex items-center gap-2 select-none border-b border-white/[0.04] pb-3">
+              {(['for-you', 'following', 'trending'] as const).map((tab) => {
+                const isActive = activeFeedTab === tab
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveFeedTab(tab)}
+                    className={cn(
+                      "px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 border",
+                      isActive 
+                        ? "bg-[#3B82F6]/10 border-[#3B82F6]/20 text-[#3B82F6]"
+                        : "bg-transparent border-transparent text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    {tab === 'for-you' && 'For You'}
+                    {tab === 'following' && 'Following'}
+                    {tab === 'trending' && (
+                      <span className="flex items-center gap-1">
+                        <TrendingUp size={12} />
+                        <span>Trending</span>
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Feed Cards Section */}
             <div ref={parentPosts} className="space-y-4">
-              {posts.length === 0 ? (
+              {sortedPosts.length === 0 ? (
                 <EmptyState 
-                  title="The feed is silent"
-                  description="Be the first to share something with your classmates or join a community to see what's happening."
-                  action={{
-                    label: "Explore Communities",
-                    href: "/community"
-                  }}
+                  icon={activeFeedTab === 'following' ? 'group_off' : 'feed'}
+                  title={
+                    activeFeedTab === 'following' 
+                      ? "No connection posts yet" 
+                      : activeFeedTab === 'trending'
+                      ? "No trending posts"
+                      : "The feed is silent"
+                  }
+                  description={
+                    activeFeedTab === 'following'
+                      ? "Classmates you connect with haven't posted anything yet. Connect with more peers to see updates."
+                      : activeFeedTab === 'trending'
+                      ? "No posts have received likes or comments recently. Be the first to start a conversation!"
+                      : "Be the first to share something with your classmates or join a community to see what's happening."
+                  }
+                  action={
+                    activeFeedTab === 'following'
+                      ? {
+                          label: "Find Classmates",
+                          href: "/discover"
+                        }
+                      : {
+                          label: "Explore Communities",
+                          href: "/community"
+                        }
+                  }
                   className="bg-[#15181D] border-white/[0.04]"
                 />
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {posts.map(p => (
+                  {sortedPosts.map(p => (
                     <PostCard 
                       key={p.id} 
                       post={p} 
@@ -936,19 +1079,19 @@ export default function DashboardClient({
             
             {/* Identity Verification banner */}
             {profile && !profile.is_verified && (
-              <div className="bg-amber-500/[0.02] border border-amber-500/20 rounded-2xl p-4.5 relative overflow-hidden group shadow-sm">
+              <div className="bg-amber-500/[0.02] border border-amber-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-amber-500/30 duration-300">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-all pointer-events-none" />
                 <div className="relative z-10 space-y-3.5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm shrink-0">
                       <ShieldCheck size={16} />
                     </div>
-                    <p className="text-xs font-bold text-amber-200/90 tracking-tight">Identity Verification</p>
+                    <p className="text-xs font-semibold text-amber-200/90 tracking-tight">Identity Verification</p>
                   </div>
-                  <p className="text-zinc-400 text-[11px] leading-relaxed font-semibold">
+                  <p className="text-zinc-400 text-[11px] leading-relaxed font-medium">
                     Verify your student ID to unlock Marketplace uploads and Dating features.
                   </p>
-                  <Link href="/profile" className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold w-full block text-center transition-all select-none active:scale-95">
+                  <Link href="/profile" className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold w-full block text-center transition-all select-none active:scale-95">
                     Complete Verification
                   </Link>
                 </div>
@@ -956,34 +1099,36 @@ export default function DashboardClient({
             )}
 
             {/* AI Assistant context helper */}
-            <div className="bg-purple-500/[0.02] border border-purple-500/25 rounded-2xl p-4.5 relative overflow-hidden group shadow-sm">
+            <div className="bg-purple-500/[0.02] border border-purple-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-purple-500/30 duration-300">
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-purple-500/10 transition-all pointer-events-none" />
               <div className="relative z-10 space-y-3.5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-sm shrink-0">
                     <Sparkles size={15} className="animate-pulse" />
                   </div>
-                  <p className="text-xs font-bold text-purple-200/90 tracking-tight">AI Campus Helper</p>
+                  <p className="text-xs font-semibold text-purple-200/90 tracking-tight">AI Campus Helper</p>
                 </div>
-                <p className="text-zinc-400 text-[11px] leading-relaxed font-semibold">
+                <p className="text-zinc-400 text-[11px] leading-relaxed font-medium">
                   Ask the AI assistant to help you draft your class timetable or write clean study session summaries.
                 </p>
-                <Link href="/ai" className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold w-full block text-center transition-all select-none active:scale-95">
+                <Link href="/ai" className="px-4 py-2 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 rounded-xl text-xs font-semibold w-full block text-center transition-all select-none active:scale-95">
                   Open AI Workspace
                 </Link>
               </div>
             </div>
 
             {/* Upcoming Events Calendar Widget */}
-            <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-4.5 space-y-4 shadow-sm">
+            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white tracking-tight">Upcoming Events</span>
-                <Link href="/events" className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
+                <span className="text-xs font-semibold text-white tracking-tight">Upcoming Events</span>
+                <Link href="/events" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
               </div>
 
-              {events.length === 0 ? (
+              {loadingWidgets ? (
+                <EventSkeleton />
+              ) : events.length === 0 ? (
                 <div className="py-6 text-center bg-zinc-950/20 rounded-xl border border-white/[0.02] select-none">
-                  <p className="text-zinc-500 text-[11px] font-bold italic">No events scheduled</p>
+                  <p className="text-zinc-500 text-[11px] font-medium italic">No events scheduled</p>
                 </div>
               ) : (
                 <div ref={parentEvents} className="space-y-3">
@@ -991,13 +1136,13 @@ export default function DashboardClient({
                     const { month, day } = formatEventDate(e.start_time)
                     return (
                       <div key={e.id} className="flex gap-3 items-center border-b border-white/[0.04] last:border-0 pb-3 last:pb-0 group cursor-pointer">
-                        <div className="w-10 h-10 rounded-xl bg-white/[0.02] border border-white/[0.05] flex flex-col items-center justify-center shrink-0 group-hover:border-brand-500/30 transition-all">
+                        <div className="w-10 h-10 rounded-xl bg-[#1B1F24] border border-white/[0.04] flex flex-col items-center justify-center shrink-0 group-hover:border-brand-500/20 transition-all">
                           <span className="text-brand-400 font-mono text-[8px] font-bold uppercase leading-none">{month}</span>
-                          <span className="text-zinc-100 font-display font-bold text-sm leading-none mt-0.5">{day}</span>
+                          <span className="text-zinc-100 font-sans font-semibold text-sm leading-none mt-0.5">{day}</span>
                         </div>
                         <div className="min-w-0 space-y-0.5 flex-1">
-                          <p className="text-xs font-bold text-white truncate group-hover:text-brand-400 transition-colors tracking-tight leading-tight">{e.title}</p>
-                          <p className="text-[10px] text-zinc-500 font-semibold flex items-center gap-1">
+                          <p className="text-xs font-semibold text-white truncate group-hover:text-brand-400 transition-colors tracking-tight leading-tight">{e.title}</p>
+                          <p className="text-[10px] text-zinc-500 font-medium flex items-center gap-1">
                             <MapPin size={9} className="text-zinc-600" />
                             <span className="truncate">{e.venue || 'Campus'}</span>
                           </p>
@@ -1010,131 +1155,148 @@ export default function DashboardClient({
             </div>
 
             {/* Internship Matches Widget */}
-            <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-4.5 space-y-4 shadow-sm">
+            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white tracking-tight">Internship Matches</span>
-                <Link href="/internships" className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
+                <span className="text-xs font-semibold text-white tracking-tight">Internship Matches</span>
+                <Link href="/internships" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
               </div>
 
-              <div className="space-y-2.5">
-                {internships.length > 0 ? (
-                  internships.map((job) => (
-                    <Link href="/internships" key={job.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-brand-500/20 hover:bg-white/[0.02] transition-all cursor-pointer group">
-                      <div className="min-w-0 flex-1 pr-2">
-                        <p className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors tracking-tight truncate">{job.title}</p>
-                        <p className="text-[10px] text-zinc-500 font-semibold truncate mt-0.5">{job.company}</p>
-                      </div>
-                      <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded-md border text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shrink-0 select-none">
-                        Live
-                      </span>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-[11px] text-zinc-500 font-bold italic text-center py-4">No active internships.</p>
-                )}
-              </div>
+              {loadingWidgets ? (
+                <InternshipSkeleton />
+              ) : (
+                <div className="space-y-2.5">
+                  {internships.length > 0 ? (
+                    internships.map((job) => (
+                      <Link href="/internships" key={job.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-brand-500/20 hover:bg-[#1B1F24] transition-all cursor-pointer group">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors tracking-tight truncate">{job.title}</p>
+                          <p className="text-[10px] text-zinc-500 font-medium truncate mt-0.5">{job.company}</p>
+                        </div>
+                        <span className="text-[8px] font-semibold font-mono tracking-wider uppercase px-1.5 py-0.5 rounded-md border border-emerald-500/20 text-emerald-400 bg-emerald-500/10 shrink-0 select-none">
+                          Live
+                        </span>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-zinc-500 font-medium italic text-center py-4">No active internships.</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Communities Widget */}
-            <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-4.5 space-y-4 shadow-sm">
+            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white tracking-tight">Campus Communities</span>
-                <Link href="/community" className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
+                <span className="text-xs font-semibold text-white tracking-tight">Campus Communities</span>
+                <Link href="/community" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
               </div>
 
-              <div className="space-y-3">
-                {communities.length > 0 ? (
-                  communities.map((comm, idx) => {
-                    const initial = comm.name.slice(0, 2).toUpperCase()
-                    const gradients = [
-                      'from-blue-600 to-indigo-600',
-                      'from-emerald-600 to-teal-600',
-                      'from-cyan-600 to-blue-600'
-                    ]
-                    const grad = gradients[idx % gradients.length]
-                    
-                    return (
-                      <div key={comm.id} className="flex items-center justify-between group p-0.5">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                          <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-br text-white text-[9px] font-black flex items-center justify-center shadow-sm shrink-0", grad)}>
-                            {initial}
+              {loadingWidgets ? (
+                <CommunitySkeleton />
+              ) : (
+                <div className="space-y-3">
+                  {communities.length > 0 ? (
+                    communities.map((comm, idx) => {
+                      const initial = comm.name.slice(0, 2).toUpperCase()
+                      const baseColors = [
+                        'bg-zinc-800 text-zinc-200 border border-white/[0.04]',
+                        'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20',
+                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      ]
+                      const colorClass = baseColors[idx % baseColors.length]
+                      
+                      return (
+                        <div key={comm.id} className="flex items-center justify-between group p-0.5">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                            <div className={cn("w-8 h-8 rounded-lg text-[9px] font-bold flex items-center justify-center shadow-sm shrink-0", colorClass)}>
+                              {initial}
+                            </div>
+                            <div className="min-w-0 text-left">
+                              <Link href={`/community/${comm.id}`} className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors cursor-pointer tracking-tight block truncate">{comm.name}</Link>
+                              <p className="text-[10px] text-zinc-500 font-medium truncate mt-0.5">{comm.member_count} nodes</p>
+                            </div>
                           </div>
-                          <div className="min-w-0 text-left">
-                            <Link href={`/community/${comm.id}`} className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors cursor-pointer tracking-tight block truncate">{comm.name}</Link>
-                            <p className="text-[10px] text-zinc-500 font-semibold truncate mt-0.5">{comm.member_count} nodes</p>
-                          </div>
+                          <Link href={`/community/${comm.id}`} className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-[10px] rounded-lg transition-all tracking-wide shrink-0 active:scale-95">
+                            Join
+                          </Link>
                         </div>
-                        <Link href={`/community/${comm.id}`} className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-[10px] rounded-lg transition-all tracking-wide shrink-0 active:scale-95">
-                          Join
-                        </Link>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <p className="text-[11px] text-zinc-500 font-bold italic text-center py-4">No communities yet.</p>
-                )}
-              </div>
+                      )
+                    })
+                  ) : (
+                    <p className="text-[11px] text-zinc-500 font-medium italic text-center py-4">No communities yet.</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Marketplace Featured Widget */}
-            <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-4.5 space-y-4 shadow-sm">
+            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white tracking-tight">Marketplace Deals</span>
-                <Link href="/marketplace" className="text-[10px] font-bold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
+                <span className="text-xs font-semibold text-white tracking-tight">Marketplace Deals</span>
+                <Link href="/marketplace" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {marketplaceItems.length > 0 ? (
-                  marketplaceItems.map((item) => (
-                    <Link href="/marketplace" key={item.id} className="flex flex-col rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-brand-500/20 hover:bg-white/[0.02] p-2 transition-all group">
-                      <div className="aspect-video w-full rounded-lg bg-zinc-950/60 border border-white/[0.02] relative overflow-hidden shrink-0">
-                        {item.image_url ? (
-                          <Image src={item.image_url} alt={item.title} fill className="object-cover transition-transform group-hover:scale-105" />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-mono">NO IMAGE</div>
-                        )}
-                      </div>
-                      <p className="text-[11px] font-bold text-zinc-200 truncate mt-2 group-hover:text-brand-400 transition-colors leading-tight pr-1">{item.title}</p>
-                      <p className="text-[10px] font-bold font-mono text-emerald-400 mt-1">₹{item.price}</p>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="col-span-2 py-4 text-center">
-                    <p className="text-[11px] text-zinc-500 font-bold italic">No deals listed.</p>
-                  </div>
-                )}
-              </div>
+              {loadingWidgets ? (
+                <MarketplaceSkeleton />
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {marketplaceItems.length > 0 ? (
+                    marketplaceItems.map((item) => (
+                      <Link href="/marketplace" key={item.id} className="flex flex-col rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-white/[0.08] hover:bg-[#1B1F24] p-2 transition-all group">
+                        <div className="aspect-video w-full rounded-lg bg-[#0B0D10] border border-white/[0.04] relative overflow-hidden shrink-0">
+                          {item.image_url ? (
+                            <Image src={item.image_url} alt={item.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-600 font-mono">NO IMAGE</div>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-semibold text-zinc-200 truncate mt-2 group-hover:text-brand-400 transition-colors leading-tight pr-1">{item.title}</p>
+                        <p className="text-[10px] font-medium font-mono text-emerald-400 mt-1">₹{item.price}</p>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="col-span-2 py-4 text-center">
+                      <p className="text-[11px] text-zinc-500 font-medium italic">No deals listed.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Campus Connections & Suggestions */}
-            <div className="bg-[#15181D] border border-white/[0.06] rounded-2xl p-4.5 space-y-5 shadow-sm">
+            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-5 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
               {/* Connections list */}
               <div>
-                <span className="text-[9px] font-mono font-bold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Classmate Connections ({friends.length})</span>
-                <div ref={parentFriends} className="space-y-3">
-                  {friends.length > 0 ? (
-                    friends.map((f) => (
-                      <div key={f.id} className="flex items-center justify-between group p-0.5">
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
-                          <GlobalAvatar profile={f} size="sm" className="border border-white/5 shrink-0" />
-                          <div className="min-w-0 text-left">
-                            <Link href={`/profile?id=${f.id}`} className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors cursor-pointer tracking-tight block truncate">
-                              {f.full_name}
-                            </Link>
-                            <p className="text-[10px] text-zinc-500 font-semibold truncate mt-0.5">
-                              {f.branch ? `${f.branch}` : ''} {f.year ? `· Y${f.year}` : ''}
-                            </p>
+                <span className="text-[9px] font-mono font-semibold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Classmate Connections ({friends.length})</span>
+                
+                {loadingWidgets ? (
+                  <ConnectionsSkeleton />
+                ) : (
+                  <div ref={parentFriends} className="space-y-3">
+                    {friends.length > 0 ? (
+                      friends.map((f) => (
+                        <div key={f.id} className="flex items-center justify-between group p-0.5">
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+                            <GlobalAvatar profile={f} size="sm" className="border border-white/5 shrink-0" />
+                            <div className="min-w-0 text-left">
+                              <Link href={`/profile?id=${f.id}`} className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors cursor-pointer tracking-tight block truncate">
+                                {f.full_name}
+                              </Link>
+                              <p className="text-[10px] text-zinc-400 font-medium truncate mt-0.5">
+                                {f.branch ? `${f.branch}` : ''} {f.year ? `· Y${f.year}` : ''}
+                              </p>
+                            </div>
                           </div>
+                          <Link href={`/profile?id=${f.id}`} className="p-1.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] text-zinc-400 hover:text-zinc-200 rounded-lg transition-all active:scale-95 shrink-0 flex items-center justify-center">
+                            <User size={12} />
+                          </Link>
                         </div>
-                        <Link href={`/profile?id=${f.id}`} className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 shrink-0 flex items-center justify-center">
-                          <User size={12} className="text-neutral-400" />
-                        </Link>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-zinc-500 font-bold italic select-none">No active classmate connections.</p>
-                  )}
-                </div>
+                      ))
+                    ) : (
+                      <p className="text-[10px] text-zinc-500 font-medium italic select-none">No classmate classmate connections.</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Separator line */}
@@ -1142,94 +1304,99 @@ export default function DashboardClient({
 
               {/* Suggested Connections */}
               <div>
-                <span className="text-[9px] font-mono font-bold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Suggested Peers</span>
-                <div className="space-y-3">
-                  {connections.length > 0 ? (
-                    connections.map((c) => {
-                      const relation = getRelation(c.id)
-                      return (
-                        <div 
-                          key={c.id} 
-                          onClick={() => router.push(`/profile?id=${c.id}`)}
-                          className="flex items-center justify-between group p-0.5 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
-                            <GlobalAvatar profile={c} size="sm" className="border border-white/5 shrink-0" />
-                            <div className="min-w-0 text-left">
-                              <p className="text-xs font-bold text-white group-hover:text-brand-400 transition-colors tracking-tight block truncate">
-                                {c.full_name}
-                              </p>
-                              <p className="text-[10px] text-zinc-500 font-semibold truncate mt-0.5">
-                                {c.branch ? `${c.branch}` : ''} {c.year ? `· Y${c.year}` : ''}
-                              </p>
+                <span className="text-[9px] font-mono font-semibold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Suggested Peers</span>
+                
+                {loadingWidgets ? (
+                  <ConnectionsSkeleton />
+                ) : (
+                  <div className="space-y-3">
+                    {connections.length > 0 ? (
+                      connections.map((c) => {
+                        const relation = getRelation(c.id)
+                        return (
+                          <div 
+                            key={c.id} 
+                            onClick={() => router.push(`/profile?id=${c.id}`)}
+                            className="flex items-center justify-between group p-0.5 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+                              <GlobalAvatar profile={c} size="sm" className="border border-white/5 shrink-0" />
+                              <div className="min-w-0 text-left">
+                                <p className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors tracking-tight block truncate">
+                                  {c.full_name}
+                                </p>
+                                <p className="text-[10px] text-zinc-400 font-medium truncate mt-0.5">
+                                  {c.branch ? `${c.branch}` : ''} {c.year ? `· Y${c.year}` : ''}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div 
+                              onClick={(e) => e.stopPropagation()} 
+                              className="shrink-0 flex items-center"
+                            >
+                              {relation === 'none' && (
+                                <button
+                                  onClick={(e) => handleAddFriend(e, c.id)}
+                                  disabled={sendingId === c.id}
+                                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 gap-1 text-[10px] font-semibold whitespace-nowrap"
+                                  title="Add Friend"
+                                >
+                                  {sendingId === c.id ? (
+                                    <span className="w-3.5 h-3.5 border-2 border-brand-400/20 border-t-brand-400 rounded-full animate-spin" />
+                                  ) : (
+                                    <>
+                                      <UserPlus size={10} className="text-brand-400" />
+                                      <span>Connect</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {relation === 'sent' && (
+                                <button
+                                  disabled
+                                  className="px-2.5 py-1 bg-white/5 border border-white/5 text-zinc-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-semibold whitespace-nowrap"
+                                  title="Request Sent"
+                                >
+                                  <Clock size={10} className="text-zinc-600" />
+                                  <span>Sent</span>
+                                </button>
+                              )}
+
+                              {relation === 'friends' && (
+                                <button
+                                  disabled
+                                  className="px-2.5 py-1 bg-white/5 border border-white/5 text-emerald-400 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-semibold whitespace-nowrap"
+                                  title="Connected"
+                                >
+                                  <Check size={10} className="text-emerald-500" />
+                                  <span>Friends</span>
+                                </button>
+                              )}
+
+                              {relation === 'received' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    router.push('/friends')
+                                  }}
+                                  className="px-2.5 py-1 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 text-brand-400 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] font-semibold whitespace-nowrap"
+                                  title="Accept Request"
+                                >
+                                  Accept
+                                </button>
+                              )}
                             </div>
                           </div>
-                          
-                          <div 
-                            onClick={(e) => e.stopPropagation()} 
-                            className="shrink-0 flex items-center"
-                          >
-                            {relation === 'none' && (
-                              <button
-                                onClick={(e) => handleAddFriend(e, c.id)}
-                                disabled={sendingId === c.id}
-                                className="px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 gap-1 text-[10px] font-bold whitespace-nowrap"
-                                title="Add Friend"
-                              >
-                                {sendingId === c.id ? (
-                                  <span className="w-3.5 h-3.5 border-2 border-brand-400/20 border-t-brand-400 rounded-full animate-spin" />
-                                ) : (
-                                  <>
-                                    <UserPlus size={10} className="text-brand-400" />
-                                    <span>Connect</span>
-                                  </>
-                                )}
-                              </button>
-                            )}
-
-                            {relation === 'sent' && (
-                              <button
-                                disabled
-                                className="px-2.5 py-1 bg-white/5 border border-white/5 text-zinc-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-bold whitespace-nowrap"
-                                title="Request Sent"
-                              >
-                                <Clock size={10} className="text-zinc-600" />
-                                <span>Sent</span>
-                              </button>
-                            )}
-
-                            {relation === 'friends' && (
-                              <button
-                                disabled
-                                className="px-2.5 py-1 bg-white/5 border border-white/5 text-emerald-400 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-bold whitespace-nowrap"
-                                title="Connected"
-                              >
-                                <Check size={10} className="text-emerald-500" />
-                                <span>Friends</span>
-                              </button>
-                            )}
-
-                            {relation === 'received' && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  router.push('/friends')
-                                }}
-                                className="px-2.5 py-1 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 text-brand-400 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] font-bold whitespace-nowrap"
-                                title="Accept Request"
-                              >
-                                Accept
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <p className="text-[10px] text-zinc-500 font-bold italic select-none">No recommendations available.</p>
-                  )}
-                </div>
+                        )
+                      })
+                    ) : (
+                      <p className="text-[10px] text-zinc-500 font-medium italic select-none">No recommendations available.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
