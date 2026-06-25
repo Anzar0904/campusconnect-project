@@ -2,7 +2,7 @@
 
 import { Flame, Trophy, Award, Calendar, Zap, Star, ShieldAlert, Sparkles, Check, ChevronRight, Lock } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -10,6 +10,14 @@ import { triggerConfetti } from '@/lib/confetti'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
 
 const ACHIEVEMENT_COLORS: Record<string, string> = {
   FIRST_POST: '#c3c0ff',
@@ -56,6 +64,15 @@ function formatRelativeTime(dateStr: string) {
 export default function RewardsClient({ userId, profile }: any) {
   const [tab, setTab] = useState<'overview' | 'badges' | 'leaderboard' | 'earn'>('overview')
   const [loading, setLoading] = useState(true)
+  const heroCardRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !heroCardRef.current) return
+    gsap.fromTo(heroCardRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: Easing.premium }
+    )
+  }, { scope: heroCardRef, dependencies: [loading] })
   const [stats, setStats] = useState({
     points: 0,
     rank: 0,
@@ -260,6 +277,8 @@ export default function RewardsClient({ userId, profile }: any) {
     )
   }
 
+
+
   const pointsForCurrentLevel = (stats.level - 1) * 500
   const pct = Math.min(100, Math.max(0, Math.round(((stats.points - pointsForCurrentLevel) / 500) * 100)))
   const ptsToNext = stats.nextLevelPoints - stats.points
@@ -331,9 +350,8 @@ export default function RewardsClient({ userId, profile }: any) {
       </div>
 
       {/* Premium Hero Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div 
+        ref={heroCardRef}
         className="card-premium p-6 sm:p-8 relative overflow-hidden rounded-3xl"
         style={{
           background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.03) 100%)',
@@ -360,7 +378,7 @@ export default function RewardsClient({ userId, profile }: any) {
               <h2 className="font-display font-bold text-xl text-zinc-100 flex items-center gap-2">
                 {profile?.full_name}
                 <span className="text-xs font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md border border-white/[0.04]">
-                  Rank #{stats.rank}
+                  Rank #<CountUp value={stats.rank} />
                 </span>
               </h2>
               <p className="text-xs font-mono text-zinc-500 mt-1">{profile?.branch || 'General Science'} · Verified IILM Student</p>
@@ -374,7 +392,7 @@ export default function RewardsClient({ userId, profile }: any) {
                     className="h-full bg-gradient-to-r from-indigo-500 to-violet-500" 
                   />
                 </div>
-                <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">{stats.points} / {stats.nextLevelPoints} XP</span>
+                <span className="text-xs font-mono text-zinc-400 whitespace-nowrap"><CountUp value={stats.points} /> / <CountUp value={stats.nextLevelPoints} /> XP</span>
               </div>
               <p className="text-[10px] font-mono text-zinc-500 mt-1.5">
                 {ptsToNext > 0 ? `${ptsToNext} XP required to reach Level ${stats.level + 1}` : 'Maximum tier achieved.'}
@@ -386,18 +404,18 @@ export default function RewardsClient({ userId, profile }: any) {
           <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4 border-t md:border-t-0 md:border-l border-white/[0.06] pt-4 md:pt-0 md:pl-8">
             <div className="text-left md:text-right">
               <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest block">Total Balance</span>
-              <span className="font-display font-black text-4xl text-zinc-100">{stats.points.toLocaleString()}</span>
+              <span className="font-display font-black text-4xl text-zinc-100"><CountUp value={stats.points} /></span>
               <span className="text-xs font-mono text-indigo-400 ml-1">XP</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.05)]">
               <Flame size={15} className="fill-orange-500" />
-              <span className="text-xs font-mono font-bold">{stats.streak} Day Streak</span>
+              <span className="text-xs font-mono font-bold"><CountUp value={stats.streak} /> Day Streak</span>
             </div>
           </div>
 
         </div>
-      </motion.div>
+      </div>
 
       {/* Tabs Menu Navigation */}
       <div className="flex gap-1 p-1 rounded-xl bg-zinc-900 border border-white/[0.05] w-fit">

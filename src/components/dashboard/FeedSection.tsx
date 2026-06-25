@@ -3,13 +3,14 @@
 import React, { useState } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { Image as ImageIcon, BarChart2, Calendar, FileText, Heart, MessageSquare, Share2, Check } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useGsapReveal } from '@/hooks/useGsapMotion'
 
 export const FeedSection: React.FC = () => {
   const [postText, setPostText] = useState('')
+  const containerRef = useGsapReveal({ stagger: 0.08, y: 15 }) as React.RefObject<HTMLDivElement>
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       <div className="glass-panel-base rounded-xl p-4">
         <div className="flex gap-3.5">
           <GlobalAvatar
@@ -59,9 +60,7 @@ export const FeedSection: React.FC = () => {
         <button className="text-neutral-500 hover:text-neutral-300 pb-2 px-1 transition-colors">Trending</button>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div 
         className="glass-panel-base rounded-xl p-4.5 space-y-3.5"
       >
         <div className="flex items-center justify-between">
@@ -119,7 +118,7 @@ export const FeedSection: React.FC = () => {
             <span>12 Shares</span>
           </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

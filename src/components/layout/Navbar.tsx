@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { 
   Home, 
@@ -42,6 +42,9 @@ import { format } from 'date-fns'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 
 interface NavbarProps {
   profile?: {
@@ -73,6 +76,15 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
   const pathname = usePathname()
   const router = useRouter()
+  const navRef = useRef<HTMLElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion()) return
+    gsap.fromTo(navRef.current,
+      { y: -20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: Easing.premium }
+    )
+  }, { scope: navRef })
 
   const handleLogout = async () => {
     try {
@@ -90,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none">
-      <nav className="pointer-events-auto h-16 w-full glass-panel-base rounded-2xl px-4 sm:px-6 flex items-center justify-between gap-4 transition-all duration-300">
+      <nav ref={navRef} className="pointer-events-auto h-16 w-full glass-panel-base rounded-2xl px-4 sm:px-6 flex items-center justify-between gap-4 transition-all duration-300">
         
         {/* Brand Logo */}
         <div className="flex items-center gap-2">

@@ -16,10 +16,18 @@ import { clsx } from 'clsx'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 
 const BRANCHES = ['BBA', 'MBA', 'BCA', 'MCA', 'B.Com', 'BA (H)', 'B.Sc', 'Law', 'B.Tech', 'Other']
 const HOSTELS = ['Boys Hostel A', 'Boys Hostel B', 'Girls Hostel A', 'Girls Hostel B', 'Day Scholar']
 const YEARS = [1, 2, 3, 4, 5]
+
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
 
 const PREDEFINED_BADGES = [
   { id: 'early_adopter', name: 'Early Adopter', icon: Trophy, desc: 'Joined in the first month', color: 'from-amber-400 to-yellow-500' },
@@ -92,6 +100,17 @@ export default function ProfileClient({
 
   const [coverPreset, setCoverPreset] = useState(0)
   const [showCoverPicker, setShowCoverPicker] = useState(false)
+
+  const coverBannerRef = useRef<HTMLDivElement>(null)
+  const avatarRef = useRef<HTMLDivElement>(null)
+  const profileHeaderRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion()) return
+    gsap.fromTo(coverBannerRef.current, { scaleY: 0.95, opacity: 0 }, { scaleY: 1, opacity: 1, duration: 0.7, ease: Easing.premium })
+    gsap.fromTo(avatarRef.current, { scale: 0.8, rotate: -3, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 0.8, ease: Easing.backOut, delay: 0.15 })
+    gsap.fromTo(profileHeaderRef.current?.children || [], { opacity: 0, y: 15 }, { opacity: 1, y: 0, stagger: 0.06, duration: 0.5, ease: Easing.premium, delay: 0.25 })
+  }, { scope: avatarRef })
 
   // Local storage lists for Skills & Interests
   const [skills, setSkills] = useState<string[]>([])
@@ -704,7 +723,7 @@ export default function ProfileClient({
       {/* Flagship Header Box */}
       <div className="relative rounded-3xl border border-white/[0.04] bg-[#18181B] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
         {/* Cover Image banner presets */}
-        <div className={clsx("h-36 sm:h-52 w-full transition-all duration-700 relative", COVER_PRESETS[coverPreset].class)}>
+        <div ref={coverBannerRef} className={clsx("h-36 sm:h-52 w-full transition-all duration-700 relative", COVER_PRESETS[coverPreset].class)}>
           {/* Overlay mask */}
           <div className="absolute inset-0 bg-black/10 pointer-events-none" />
           
@@ -742,9 +761,9 @@ export default function ProfileClient({
         </div>
 
         {/* Profile Card Header Info */}
-        <div className="px-6 pb-6 pt-0 sm:px-8 relative z-10 flex flex-col md:flex-row md:items-end gap-5">
+        <div ref={profileHeaderRef} className="px-6 pb-6 pt-0 sm:px-8 relative z-10 flex flex-col md:flex-row md:items-end gap-5">
           {/* Avatar Area with overlap */}
-          <div className="relative shrink-0 -mt-16 sm:-mt-24 mx-auto md:mx-0 group">
+          <div ref={avatarRef} className="relative shrink-0 -mt-16 sm:-mt-24 mx-auto md:mx-0 group">
             {/* Outline Glow ring */}
             <div className="absolute -inset-1 bg-gradient-to-tr from-blue-400 via-emerald-400 to-indigo-600 rounded-3xl opacity-35 blur group-hover:opacity-60 transition duration-500 group-hover:scale-105" />
             
@@ -1031,7 +1050,7 @@ export default function ProfileClient({
                         <Icon size={12} />
                       </div>
                     </div>
-                    <p className="text-lg font-black text-white">{item.value}</p>
+                    <p className="text-lg font-black text-white"><CountUp value={item.value} /></p>
                     <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-tight mt-0.5">{item.label}</p>
                   </div>
                 )
@@ -1043,7 +1062,7 @@ export default function ProfileClient({
           <div className="space-y-2 pt-2 border-t border-white/[0.04]">
             <div className="flex justify-between items-center text-[10px] font-semibold text-zinc-400">
               <span className="flex items-center gap-1"><Sparkles size={11} className="text-amber-400 animate-pulse" /> Level {Math.floor(stats.points / 500) + 1}</span>
-              <span>{stats.points % 500} / 500 XP</span>
+              <span><CountUp value={stats.points % 500} /> / 500 XP</span>
             </div>
             <div className="h-1.5 w-full bg-white/[0.02] border border-white/[0.04] rounded-full overflow-hidden">
               <div 

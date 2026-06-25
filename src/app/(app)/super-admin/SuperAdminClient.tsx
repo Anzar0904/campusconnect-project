@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
 import { CardSkeleton, Skeleton } from '@/components/ui/Skeleton'
@@ -9,12 +9,21 @@ import { X, Trophy, Calendar, Sparkles, BookOpen, FileText, User, Users, Shield,
 import { useRouter } from 'next/navigation'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { cn } from '@/lib/utils'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
 
 export default function SuperAdminClient({ userId, ownerEmail }: { userId: string, ownerEmail: string }) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [parentUsers] = useAutoAnimate()
   const [parentDating] = useAutoAnimate()
+  const overviewRef = useRef<HTMLDivElement>(null)
   const [parentReports] = useAutoAnimate()
   const [activeTab, setActiveTab] = useState<
   'overview'|'users'|'colleges'|'admins'|'moderation'|'dating'|'audit'
@@ -29,6 +38,14 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   const [invites, setInvites] = useState<any[]>([])
   const [datingRequests, setDatingRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !overviewRef.current) return
+    gsap.fromTo(overviewRef.current.children,
+      { opacity: 0, scale: 0.95, y: 15 },
+      { opacity: 1, scale: 1, y: 0, stagger: 0.08, duration: 0.5, ease: Easing.premium }
+    )
+  }, { scope: overviewRef, dependencies: [activeTab, metrics] })
 
   // User Inspector state
   const [selectedUserInspectorId, setSelectedUserInspectorId] = useState<string | null>(null)
@@ -288,34 +305,34 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
       {/* Overview Tab */}
       {activeTab === 'overview' && metrics && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div ref={overviewRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Total Users</span>
               <Users size={16} className="text-blue-400" />
             </div>
-            <p className="font-display text-3xl font-bold text-white">{metrics.totalUsers}</p>
+            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalUsers} /></p>
           </div>
           <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Verified Students</span>
               <ShieldCheck size={16} className="text-emerald-400" />
             </div>
-            <p className="font-display text-3xl font-bold text-white">{metrics.verifiedUsers}</p>
+            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.verifiedUsers} /></p>
           </div>
           <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Active Colleges</span>
               <BookOpen size={16} className="text-purple-400" />
             </div>
-            <p className="font-display text-3xl font-bold text-white">{metrics.totalColleges}</p>
+            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalColleges} /></p>
           </div>
           <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Pending Reports</span>
               <Trash2 size={16} className="text-red-400" />
             </div>
-            <p className="font-display text-3xl font-bold text-white">{metrics.pendingReports}</p>
+            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.pendingReports} /></p>
           </div>
         </div>
       )}

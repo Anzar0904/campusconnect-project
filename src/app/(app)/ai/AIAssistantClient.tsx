@@ -13,6 +13,9 @@ import { clsx } from 'clsx'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 
 interface ChatMessage {
   id: string
@@ -297,6 +300,15 @@ export default function AIAssistantClient() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const suggestionGridRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !suggestionGridRef.current) return
+    gsap.fromTo(suggestionGridRef.current.children,
+      { opacity: 0, scale: 0.95, y: 10 },
+      { opacity: 1, scale: 1, y: 0, stagger: 0.05, duration: 0.4, ease: Easing.premium }
+    )
+  }, { scope: suggestionGridRef, dependencies: [] })
 
   const [parentThreads] = useAutoAnimate()
   const [parentMessages] = useAutoAnimate()
@@ -2321,7 +2333,7 @@ Type any of these commands to start!`
               </p>
 
               {/* Suggested campus actions grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full mt-8">
+              <div ref={suggestionGridRef} className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full mt-8">
                 {CAMPUS_PROMPTS.map((p, idx) => (
                   <button
                     key={idx}

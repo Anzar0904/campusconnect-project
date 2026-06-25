@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { createClient, checkRateLimit } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
@@ -15,6 +15,9 @@ import { Navbar } from '@/components/layout/Navbar'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { ModuleSection } from '@/components/home/ModuleSection'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 import { 
   Heart, 
   MessageSquare, 
@@ -723,7 +726,24 @@ interface DashboardHeroProps {
   onCreatePostClick: () => void
 }
 
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
+
 const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreatePostClick }) => {
+  const heroRef = useRef<HTMLDivElement>(null)
+  const cardsRef = useRef<HTMLDivElement>(null)
+  const actionsRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion()) return
+    const tl = gsap.timeline({ defaults: { ease: Easing.premium } })
+    tl.fromTo(heroRef.current, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6 })
+      .fromTo(cardsRef.current?.children || [], { opacity: 0, scale: 0.95, y: 10 }, { opacity: 1, scale: 1, y: 0, stagger: 0.05, duration: 0.5 }, '-=0.4')
+      .fromTo(actionsRef.current?.children || [], { opacity: 0, x: -10 }, { opacity: 1, x: 0, stagger: 0.04, duration: 0.4 }, '-=0.3')
+  }, { scope: heroRef })
+
   const getGreeting = () => {
     const hr = new Date().getHours()
     if (hr < 12) return 'Good Morning'
@@ -735,35 +755,44 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
   const summaryCards = [
     {
       label: 'Internships',
-      value: stats.internshipsCount > 0 ? `${stats.internshipsCount} Matches` : 'No matches',
+      count: stats.internshipsCount,
+      suffix: ' Matches',
+      emptyText: 'No matches',
       icon: Briefcase,
       color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
       href: '/internships'
     },
     {
       label: 'Upcoming Events',
-      value: stats.upcomingEventsCount > 0 ? `${stats.upcomingEventsCount} Scheduled` : 'No events',
+      count: stats.upcomingEventsCount,
+      suffix: ' Scheduled',
+      emptyText: 'No events',
       icon: CalendarIcon,
       color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
       href: '/events'
     },
     {
       label: 'Friends Connected',
-      value: stats.friendsCount > 0 ? `${stats.friendsCount} Active` : '0 Active',
+      count: stats.friendsCount,
+      suffix: ' Active',
+      emptyText: '0 Active',
       icon: Users,
       color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
       href: '/friends'
     },
     {
       label: 'Communities',
-      value: stats.communitiesCount > 0 ? `${stats.communitiesCount} Joined` : '0 Joined',
+      count: stats.communitiesCount,
+      suffix: ' Joined',
+      emptyText: '0 Joined',
       icon: MessageCircle,
       color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
       href: '/community'
     },
     {
       label: 'Campus Rank',
-      value: `Rank #${stats.currentRanking}`,
+      count: stats.currentRanking,
+      prefix: 'Rank #',
       subvalue: `Level ${stats.level}`,
       icon: Award,
       color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
@@ -771,7 +800,9 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
     },
     {
       label: 'Unread Messages',
-      value: stats.unreadMessagesCount > 0 ? `${stats.unreadMessagesCount} New` : 'Inbox clear',
+      count: stats.unreadMessagesCount,
+      suffix: ' New',
+      emptyText: 'Inbox clear',
       icon: MessageSquare,
       color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
       href: '/messages'
@@ -788,7 +819,7 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
   ]
 
   return (
-    <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6 select-none">
+    <div ref={heroRef} className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6 select-none">
       <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
         {/* Glow backdrop */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.015),transparent_60%)] pointer-events-none" />
@@ -809,14 +840,13 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
         </div>
 
         {/* Summary Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
+        <div ref={cardsRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
           {summaryCards.map((card, idx) => {
             const Icon = card.icon
             return (
               <Link href={card.href} key={idx}>
-                <motion.div
-                  whileHover={{ y: -2, border: '1px solid rgba(255, 255, 255, 0.08)' }}
-                  className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group"
+                <div
+                  className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group hover:y-[-2px] hover:border-white/[0.08]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">{card.label}</span>
@@ -825,19 +855,29 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight font-sans">{card.value}</p>
+                    <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight font-sans">
+                      {card.label === 'Campus Rank' ? (
+                        <>
+                          Rank #<CountUp value={card.count} />
+                        </>
+                      ) : card.count > 0 ? (
+                        <CountUp value={card.count} suffix={card.suffix} />
+                      ) : (
+                        card.emptyText
+                      )}
+                    </p>
                     {card.subvalue && (
                       <p className="text-[9px] text-zinc-500 font-mono mt-0.5">{card.subvalue}</p>
                     )}
                   </div>
-                </motion.div>
+                </div>
               </Link>
             )
           })}
         </div>
 
         {/* Quick Actions Row */}
-        <div className="flex flex-wrap items-center gap-2.5 mt-6 pt-5 border-t border-white/[0.04]">
+        <div ref={actionsRef} className="flex flex-wrap items-center gap-2.5 mt-6 pt-5 border-t border-white/[0.04]">
           <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mr-2">Quick Actions:</span>
           {quickActions.map((action, idx) => {
             const Icon = action.icon

@@ -1,10 +1,10 @@
-// src/components/dating/SwipeCard.tsx
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useGsapTilt } from '@/hooks/useGsapMotion'
 
 interface SwipeCardProps {
   profile: any // expects same shape as dating profile items
@@ -25,9 +25,12 @@ export default function SwipeCard({ profile }: SwipeCardProps) {
     )
   )
 
+  const cardRef = useGsapTilt(12) as React.RefObject<HTMLDivElement>
+
   return (
     <div
-      className={cn('relative w-full h-[460px] rounded-3xl overflow-hidden shadow-2xl', 'border border-white/[0.08]')}
+      ref={cardRef}
+      className={cn('relative w-full h-[460px] rounded-3xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing', 'border border-white/[0.08]')}
       style={{
         background: `linear-gradient(135deg, ${AVATAR_COLORS[cardColorIdx]}25 0%, ${AVATAR_COLORS[(cardColorIdx + 2) % 5]}25 100%)`
       }}
