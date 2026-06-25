@@ -29,14 +29,14 @@ Deno.serve(async (req) => {
     if (!email || typeof email !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Email is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     if (!acceptedTerms) {
       return new Response(
         JSON.stringify({ error: 'You must accept the Privacy Policy and Terms of Service to continue.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     if (atIndex === -1) {
       return new Response(
         JSON.stringify({ error: 'Invalid email format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     const domain = normalizedEmail.slice(atIndex + 1) // e.g. "iilm.edu"
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     if (!rateLimitOk) {
       return new Response(
         JSON.stringify({ error: 'Too many requests. Please try again in 15 minutes.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
           error: `"@${domain}" is not a registered college domain. Please use your official college email.`,
           domain_rejected: true,
         }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

@@ -118,19 +118,11 @@ VALUES
   ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02', 'f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 'member')
 ON CONFLICT (community_id, user_id) DO NOTHING;
 
--- 6. Insert Clubs
-INSERT INTO public.clubs (id, name, description, college_id, category, member_count, is_official, contact_email, lead_name)
-VALUES
-  ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c01', 'Coding Society', 'Solving daily algorithms, building web applications, and organizing monthly workshops.', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Technical', 60, true, 'codingsociety@iilm.edu', 'Rohan Sharma'),
-  ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c02', 'Dramatics & Cultural Society', 'Stage plays, street plays, street events, and choreography.', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Cultural', 40, true, 'dramatics@iilm.edu', 'Priya Patel'),
-  ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c03', 'Finance & Investment Club', 'Analyzing stock markets, investment portfolios, and running guest lectures.', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Career', 35, false, 'finance@iilm.edu', 'Vikram Singh')
-ON CONFLICT (id) DO NOTHING;
-
 -- 7. Insert Events
 INSERT INTO public.events (id, title, description, college_id, organizer_id, club_id, start_time, end_time, venue, category, attendee_count)
 VALUES
-  ('e0eebc99-9c0b-4ef8-bb6d-6bb9bd380e01', 'Campus Hackathon 2026', 'A 24-hour coding marathon where students collaborate and build amazing software solutions. Food and drinks provided!', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c01', now() + interval '5 days', now() + interval '6 days', 'Main Auditorium', 'Technical', 35),
-  ('e0eebc99-9c0b-4ef8-bb6d-6bb9bd380e02', 'DBMS Normalization Workshop', 'Deep dive into 1NF, 2NF, 3NF, BCNF with hands-on practice worksheets.', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '00eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380c01', now() + interval '10 days', now() + interval '10 days 2 hours', 'Lab 4, Block B', 'Academic', 18)
+  ('e0eebc99-9c0b-4ef8-bb6d-6bb9bd380e01', 'Campus Hackathon 2026', 'A 24-hour coding marathon where students collaborate and build amazing software solutions. Food and drinks provided!', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', NULL, now() + interval '5 days', now() + interval '6 days', 'Main Auditorium', 'Technical', 35),
+  ('e0eebc99-9c0b-4ef8-bb6d-6bb9bd380e02', 'DBMS Normalization Workshop', 'Deep dive into 1NF, 2NF, 3NF, BCNF with hands-on practice worksheets.', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '00eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', NULL, now() + interval '10 days', now() + interval '10 days 2 hours', 'Lab 4, Block B', 'Academic', 18)
 ON CONFLICT (id) DO NOTHING;
 
 -- 8. Insert Internships

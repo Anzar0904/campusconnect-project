@@ -1,5 +1,6 @@
 'use client'
-import { Check, Clock, MapPin, Users, Plus, Edit, Trash2, X, Calendar, Share2 } from 'lucide-react'
+import { Check, Clock, MapPin, Users, Plus, Edit, Trash2, X, Calendar, Share2, ChevronLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
 
 import { useState, useEffect } from 'react'
@@ -59,6 +60,7 @@ export default function EventsClient({
   profile?: any;
 }) {
   const supabase: any = createClient()
+  const router = useRouter()
   const [events, setEvents] = useState<Event[]>(dbEvents)
   const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming')
   const [cat, setCat] = useState('All')
@@ -66,6 +68,25 @@ export default function EventsClient({
   const now = new Date()
 
   const isAdmin = profile?.role?.toUpperCase() === 'SUPER_ADMIN' || profile?.role?.toUpperCase() === 'ADMIN'
+
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const id = params.get('id')
+      setSelectedEventId(id)
+    }
+  }, [events])
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/dashboard')
+    }
+    setSelectedEventId(null)
+  }
 
   // Modal / Creation States
   const [showAddModal, setShowAddModal] = useState(false)
@@ -354,8 +375,43 @@ export default function EventsClient({
     )
   }
 
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) : null
+
   return (
-    <div className="animate-fade-in space-y-8 pb-24">
+    <div className="animate-fade-in space-y-6 pb-24">
+      {/* Mobile back button & Desktop Breadcrumbs */}
+      <div className="flex items-center justify-between">
+        {selectedEventId ? (
+          <button 
+            onClick={handleBack}
+            className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={16} /> Back
+          </button>
+        ) : (
+          <button 
+            onClick={() => router.push('/dashboard')}
+            className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={16} /> Dashboard
+          </button>
+        )}
+
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
+          <span>&gt;</span>
+          {selectedEvent ? (
+            <>
+              <span className="cursor-pointer hover:text-white transition-colors" onClick={() => { setSelectedEventId(null); router.push('/events') }}>Events</span>
+              <span>&gt;</span>
+              <span className="text-white font-medium truncate max-w-[200px]">{selectedEvent.title}</span>
+            </>
+          ) : (
+            <span className="text-white font-medium">Events</span>
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <header className="space-y-1">
           <p className="section-label">Campus Calendar</p>
@@ -448,8 +504,8 @@ export default function EventsClient({
               <form onSubmit={handleSaveEvent} className="p-8 space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="display-heading text-xl">{editingEvent ? 'Edit Event' : 'Create Event'}</h2>
-                  <button type="button" onClick={()=>setShowAddModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white">
-                    <X size={15} />
+                  <button type="button" onClick={()=>setShowAddModal(false)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close modal">
+                    <X size={16} />
                   </button>
                 </div>
 

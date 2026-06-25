@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React, { useState, useEffect, useMemo } from 'react'
 import { createClient, checkRateLimit } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,9 +12,11 @@ import { clsx } from 'clsx'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { Navbar } from '@/components/layout/Navbar'
+import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { HeroSection } from '@/components/home/HeroSection'
 import { ModuleSection } from '@/components/home/ModuleSection'
 import { SecondarySidebar } from '@/components/dashboard/SecondarySidebar'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { 
   Heart, 
   MessageSquare, 
@@ -22,13 +25,21 @@ import {
   EyeOff, 
   Shield, 
   User, 
+  UserPlus, 
+  Plus, 
+  Sparkles, 
+  MessageCircle, 
+  Calendar, 
+  Briefcase, 
   BookOpen, 
   Store, 
-  Briefcase, 
-  MessageCircle, 
+  Users, 
+  Award, 
   MapPin, 
-  UserPlus, 
   ShieldCheck, 
+  Search, 
+  Trash2,
+  Clock,
   Check, 
   Lock, 
   Megaphone,
@@ -77,6 +88,7 @@ function PostCard({
   currentUserProfile,
   onCommentAdded,
   supabase,
+  onDelete,
 }: {
   post: Post
   currentUserId: string
@@ -85,6 +97,7 @@ function PostCard({
   currentUserProfile: Profile | null
   onCommentAdded: (postId: string) => void
   supabase: any
+  onDelete: (id: string) => void
 }) {
   const author = post.author
   const [showComments, setShowComments] = useState(false)
@@ -93,6 +106,24 @@ function PostCard({
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const executeDelete = async () => {
+    setDeleting(true)
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', post.id)
+    
+    if (error) {
+      toast.error('Failed to delete post: ' + error.message)
+      setDeleting(false)
+    } else {
+      toast.success('Post deleted successfully')
+      onDelete(post.id)
+    }
+  }
 
   const handleReport = async () => {
     const reasonInput = prompt(
@@ -199,6 +230,11 @@ function PostCard({
   const config = typeConfig[post.post_type] || typeConfig.post
   const TypeIcon = config.icon
 
+  const isOwner = post.author?.id === currentUserId
+  const isSuperAdmin = currentUserProfile?.role === 'SUPER_ADMIN'
+  const isCollegeAdmin = currentUserProfile?.role === 'COLLEGE_ADMIN' && author?.college_id === currentUserProfile?.college_id
+  const canDelete = isOwner || isSuperAdmin || isCollegeAdmin
+
   return (
     <motion.article 
       layout
@@ -231,9 +267,20 @@ function PostCard({
           </div>
         </div>
 
-        <div className={clsx("chip", config.color, "bg-white/[0.03] border-white/[0.05] flex items-center gap-1.5")}>
-          <TypeIcon size={12} />
-          <span className="font-mono text-[10px] uppercase tracking-wider">{config.label}</span>
+        <div className="flex items-center gap-2">
+          <div className={clsx("chip", config.color, "bg-white/[0.03] border-white/[0.05] flex items-center gap-1.5")}>
+            <TypeIcon size={12} />
+            <span className="font-mono text-[10px] uppercase tracking-wider">{config.label}</span>
+          </div>
+          {canDelete && (
+            <button
+              onClick={() => setShowConfirmDelete(true)}
+              className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors animate-fade-in"
+              title="Delete Post"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -271,11 +318,14 @@ function PostCard({
             onClick={handleReport}
             disabled={reporting}
             title="Report Post"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-50"
+            className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-50"
           >
             <Flag size={14} />
           </button>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-zinc-300 transition-colors">
+          <button 
+            className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-zinc-300 transition-colors"
+            aria-label="Share post"
+          >
             <Share2 size={16} />
           </button>
         </div>
@@ -340,6 +390,33 @@ function PostCard({
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowConfirmDelete(false)} />
+          <div className="card-premium max-w-sm w-full relative z-10 p-6 space-y-4 bg-[#090d16] border border-white/10 rounded-2xl animate-scale-up">
+            <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Are you sure you want to permanently delete this post? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                disabled={deleting}
+                className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-neutral-300 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -520,7 +597,7 @@ function CreatePost({ profile, onPost, supabase }: { profile: Profile | null; on
 }
 
 export default function DashboardClient({
-  profile,
+  profile: initialProfile,
   posts: initialPosts,
   events,
   currentUserId,
@@ -533,10 +610,92 @@ export default function DashboardClient({
   initialLikedIds?: string[]
 }) {
   const supabase = createClient()
+  const router = useRouter()
+  const { profile: currentProfile } = useCurrentProfile()
+  const profile = (currentProfile || initialProfile) as any
+
+  const [parentPosts] = useAutoAnimate()
+  const [parentEvents] = useAutoAnimate()
+  const [parentFriends] = useAutoAnimate()
+
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [likedPostIds, setLikedPostIds] = useState<string[]>(initialLikedIds)
   const [connections, setConnections] = useState<any[]>([])
   const [friends, setFriends] = useState<any[]>([])
+  const [friendships, setFriendships] = useState<any[]>([])
+  const [sendingId, setSendingId] = useState<string | null>(null)
+
+  const getRelation = (peerId: string) => {
+    const f = friendships.find(
+      (x: any) => 
+        (x.requester_id === peerId && x.addressee_id === currentUserId) ||
+        (x.requester_id === currentUserId && x.addressee_id === peerId)
+    )
+    if (!f) return 'none'
+    if (f.status === 'accepted') return 'friends'
+    if (f.requester_id === currentUserId) return 'sent'
+    return 'received'
+  }
+
+  const handleAddFriend = async (e: React.MouseEvent, peerId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (sendingId) return
+
+    setSendingId(peerId)
+
+    try {
+      const allowed = await checkRateLimit(supabase, 'friend_request', 10, '1 hour')
+      if (!allowed) {
+        toast.error('You have sent too many requests. Try again later.')
+        setSendingId(null)
+        return
+      }
+
+      // Check for duplicate records first
+      const { data: existing } = await supabase
+        .from('friendships')
+        .select('id, requester_id, addressee_id')
+        .or(`requester_id.eq.${currentUserId},addressee_id.eq.${currentUserId}`)
+
+      const alreadyExists = (existing || []).some(
+        (f: any) =>
+          (f.requester_id === currentUserId && f.addressee_id === peerId) ||
+          (f.requester_id === peerId && f.addressee_id === currentUserId)
+      )
+
+      if (alreadyExists) {
+        toast.error('A friendship request already exists.')
+        setSendingId(null)
+        return
+      }
+
+      const { error } = await supabase
+        .from('friendships')
+        .insert([
+          {
+            requester_id: currentUserId,
+            addressee_id: peerId,
+            status: 'pending',
+          }
+        ])
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success('Friend request sent successfully!')
+        setFriendships(prev => [
+          ...prev, 
+          { requester_id: currentUserId, addressee_id: peerId, status: 'pending' }
+        ])
+      }
+    } catch (err: any) {
+      toast.error('Failed to send request.')
+    } finally {
+      setSendingId(null)
+    }
+  }
 
   useEffect(() => {
     async function getCampusData() {
@@ -553,6 +712,16 @@ export default function DashboardClient({
 
         const { data: suggestions } = await queryBuilder.limit(3)
         if (suggestions) setConnections(suggestions)
+
+        // Fetch all friendships for connection status tracking
+        const { data: allRelations } = await supabase
+          .from('friendships')
+          .select('requester_id, addressee_id, status')
+          .or(`requester_id.eq.${currentUserId},addressee_id.eq.${currentUserId}`)
+
+        if (allRelations) {
+          setFriendships(allRelations)
+        }
 
         // Fetch accepted friends
         const { data: friendshipData } = await supabase
@@ -630,7 +799,7 @@ export default function DashboardClient({
         
         {/* Onboarding Banner */}
         {isProfileIncomplete && (
-          <div className="max-w-[1600px] w-full mx-auto px-6 sm:px-12 lg:px-20 pt-6">
+          <div className="max-w-[1600px] w-full mx-auto px-3 sm:px-12 lg:px-20 pt-4 sm:pt-6">
             <AnimatePresence>
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -661,13 +830,13 @@ export default function DashboardClient({
         )}
 
         <HeroSection />
-        
+
         <div className="my-4">
           <ModuleSection userRole={profile?.role} />
         </div>
 
         {/* Primary Functional Dashboard Node Grid */}
-        <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-20 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-12 lg:px-20 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
           
           {/* Feed Column */}
           <div className="lg:col-span-6 xl:col-span-6 space-y-4">
@@ -679,7 +848,7 @@ export default function DashboardClient({
               <button className="text-neutral-500 hover:text-neutral-300 pb-2 px-1 transition-colors">Trending</button>
             </div>
 
-            <div className="space-y-4">
+            <div ref={parentPosts} className="space-y-4">
               {posts.length === 0 ? (
                 <EmptyState 
                   title="The feed is silent"
@@ -701,6 +870,7 @@ export default function DashboardClient({
                       currentUserProfile={profile}
                       onCommentAdded={handleCommentAdded}
                       supabase={supabase}
+                      onDelete={(id) => setPosts(prev => prev.filter(post => post.id !== id))}
                     />
                   ))}
                 </AnimatePresence>
@@ -767,7 +937,7 @@ export default function DashboardClient({
                   <p className="text-neutral-500 text-xs italic font-medium">No events scheduled</p>
                 </div>
               ) : (
-                <div className="space-y-3.5">
+                <div ref={parentEvents} className="space-y-3.5">
                   {events.map(e => {
                     const { month, day } = formatEventDate(e.start_time)
                     return (
@@ -795,7 +965,7 @@ export default function DashboardClient({
               {/* Friends list */}
               <div>
                 <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block mb-3">My Connections ({friends.length})</span>
-                <div className="space-y-3">
+                <div ref={parentFriends} className="space-y-3">
                   {friends.length > 0 ? (
                     friends.map((f) => (
                       <div key={f.id} className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01]">
@@ -826,24 +996,87 @@ export default function DashboardClient({
                 <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block mb-3">Suggested Peers</span>
                 <div className="space-y-3">
                   {connections.length > 0 ? (
-                    connections.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01]">
-                        <div className="flex items-center gap-3">
-                          <GlobalAvatar profile={c} size="sm" />
-                          <div className="min-w-0 text-left">
-                            <Link href={`/profile?id=${c.id}`} className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors cursor-pointer tracking-tight block truncate max-w-[130px]">
-                              {c.full_name}
-                            </Link>
-                            <p className="text-[10px] text-neutral-500 font-medium mt-0.5 truncate max-w-[130px]">
-                              {c.branch ? `${c.branch}` : ''} {c.year ? `· Y${c.year}` : ''}
-                            </p>
+                    connections.map((c) => {
+                      const relation = getRelation(c.id)
+                      return (
+                        <div 
+                          key={c.id} 
+                          onClick={() => router.push(`/profile?id=${c.id}`)}
+                          className="flex items-center justify-between group p-1 -m-1 rounded-xl hover:bg-white/[0.01] cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3">
+                            <GlobalAvatar profile={c} size="sm" />
+                            <div className="min-w-0 text-left">
+                              <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors tracking-tight block truncate max-w-[130px]">
+                                {c.full_name}
+                              </p>
+                              <p className="text-[10px] text-neutral-500 font-medium mt-0.5 truncate max-w-[130px]">
+                                {c.branch ? `${c.branch}` : ''} {c.year ? `· Y${c.year}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="shrink-0 flex items-center"
+                          >
+                            {relation === 'none' && (
+                              <button
+                                onClick={(e) => handleAddFriend(e, c.id)}
+                                disabled={sendingId === c.id}
+                                className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 gap-1 text-[10px] font-bold whitespace-nowrap"
+                                title="Add Friend"
+                              >
+                                {sendingId === c.id ? (
+                                  <span className="w-3.5 h-3.5 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" />
+                                ) : (
+                                  <>
+                                    <UserPlus size={11} className="text-cyan-400" />
+                                    <span>Add Friend</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            {relation === 'sent' && (
+                              <button
+                                disabled
+                                className="p-1.5 bg-white/5 border border-white/5 text-neutral-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-bold whitespace-nowrap"
+                                title="Request Sent"
+                              >
+                                <Clock size={11} className="text-neutral-600" />
+                                <span>Pending</span>
+                              </button>
+                            )}
+
+                            {relation === 'friends' && (
+                              <button
+                                disabled
+                                className="p-1.5 bg-white/5 border border-white/5 text-emerald-400 rounded-lg cursor-not-allowed flex items-center justify-center gap-1 text-[10px] font-bold whitespace-nowrap"
+                                title="Connected"
+                              >
+                                <Check size={11} className="text-emerald-500" />
+                                <span>Friends</span>
+                              </button>
+                            )}
+
+                            {relation === 'received' && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  router.push('/friends')
+                                }}
+                                className="p-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-lg transition-all active:scale-95 flex items-center justify-center text-[10px] font-bold whitespace-nowrap"
+                                title="Accept Request"
+                              >
+                                Accept
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <Link href={`/profile?id=${c.id}`} className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg transition-all active:scale-95 flex items-center justify-center">
-                          <UserPlus size={13} className="text-cyan-400" />
-                        </Link>
-                      </div>
-                    ))
+                      )
+                    })
                   ) : (
                     <p className="text-[10px] text-neutral-500 italic">No suggestions.</p>
                   )}
@@ -856,67 +1089,14 @@ export default function DashboardClient({
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-white/[0.05] bg-[#01040a] z-10 pt-12 pb-6 px-6 sm:px-12 lg:px-20 mt-12">
-        <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 pb-10 text-xs font-medium text-neutral-400">
-          <div className="col-span-2 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <svg className="w-7 h-7 shrink-0 drop-shadow-[0_0_8px_rgba(6,182,212,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
-                  fill="url(#c-gradient-footer)"
-                  strokeWidth="1"
-                />
-                <defs>
-                  <linearGradient id="c-gradient-footer" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="50%" stopColor="#2563eb" />
-                    <stop offset="100%" stopColor="#6366f1" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <span className="text-white font-bold text-base tracking-tight">Campus<span className="text-neutral-400 font-normal">Connect</span></span>
-            </div>
-            <p className="text-neutral-500 max-w-sm text-[11px] leading-relaxed">
-              The comprehensive hyper-scalable Operating System custom engineered to organize student nodes, digital assets, and cross-functional connectivity paths.
-            </p>
-          </div>
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white text-[10px]">Architecture</h4>
-            <ul className="space-y-2 text-[11px]">
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors flex items-center gap-0.5">Core Kernel <ArrowUpRight size={10} className="opacity-40" /></li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">Distributed Feed</li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">Spatial Matching</li>
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white text-[10px]">Resources</h4>
-            <ul className="space-y-2 text-[11px]">
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">API Endpoint</li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">System Status</li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">Dev Documentation</li>
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white text-[10px]">Security</h4>
-            <ul className="space-y-2 text-[11px]">
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors flex items-center gap-1"><Shield size={10} className="text-emerald-400" /> AES-256 Auth</li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">Privacy Nodes</li>
-              <li className="hover:text-cyan-400 cursor-pointer transition-colors">Terms of Service</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="max-w-[1600px] mx-auto pt-6 border-t border-white/[0.03] flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] uppercase font-bold tracking-widest text-neutral-600">
+      <footer className="w-full border-t border-white/[0.05] bg-[#01040a] z-10 py-6 px-6 sm:px-12 lg:px-20 mt-12 text-center text-[10px] uppercase font-bold tracking-widest text-neutral-600">
+        <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <span>CampusConnect Architecture Suite</span>
             <span className="text-neutral-800">•</span>
             <span className="text-neutral-500 font-semibold lowercase">v2026.4.2 space-engine-optimized</span>
           </div>
-          <div className="flex items-center gap-1 hover:text-neutral-400 cursor-pointer transition-colors">
-            <span>Secured Node Stack</span>
-            <Heart size={10} className="text-rose-600 fill-rose-600" />
-            <span>Encrypted Connection</span>
-          </div>
+          <div>&copy; {new Date().getFullYear()} CampusConnect. All rights reserved.</div>
         </div>
       </footer>
     </div>

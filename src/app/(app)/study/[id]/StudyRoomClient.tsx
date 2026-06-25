@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { 
   Users, MessageSquare, Plus, X, Trash2, Shield, Calendar, MapPin, 
-  FileText, Link as LinkIcon, Download, Send, Search, UserPlus, LogOut, Check
+  FileText, Link as LinkIcon, Download, Send, Search, UserPlus, LogOut, Check, ChevronLeft
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
@@ -257,7 +257,7 @@ export default function StudyRoomClient({
 
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = `study/${group.id}/${Date.now()}.${fileExt}`
+      const fileName = `${currentUserId}/study/${group.id}/${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -340,7 +340,32 @@ export default function StudyRoomClient({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto pb-24 items-start animate-fade-in">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 animate-fade-in">
+      {/* Mobile back button & Desktop Breadcrumbs */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={() => {
+            if (window.history.length > 1) {
+              router.back()
+            } else {
+              router.push('/dashboard')
+            }
+          }}
+          className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
+
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
+          <span>&gt;</span>
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/study')}>Study Rooms</span>
+          <span>&gt;</span>
+          <span className="text-white font-medium">{group.name}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       
       {/* LEFT COL: Chat & Files */}
       <div className="lg:col-span-8 space-y-6">
@@ -641,8 +666,8 @@ export default function StudyRoomClient({
               <div className="p-8 space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="display-heading text-lg">Invite Members</h2>
-                  <button onClick={()=>setShowInviteModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white">
-                    <X size={15} />
+                  <button onClick={()=>setShowInviteModal(false)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close invite modal">
+                    <X size={16} />
                   </button>
                 </div>
 
@@ -690,6 +715,7 @@ export default function StudyRoomClient({
         )}
       </AnimatePresence>
 
+      </div>
     </div>
   )
 }

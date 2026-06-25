@@ -640,8 +640,8 @@ export default function InternshipsClient({
               <form onSubmit={handleSavePosting} className="p-8 space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="display-heading text-xl">{editingInternship ? 'Edit Posting' : 'Create Internship Posting'}</h2>
-                  <button type="button" onClick={()=>setShowAddModal(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white">
-                    <X size={15} />
+                  <button type="button" onClick={()=>setShowAddModal(false)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close modal">
+                    <X size={16} />
                   </button>
                 </div>
 

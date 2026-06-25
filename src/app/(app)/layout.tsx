@@ -17,14 +17,8 @@ const college = profileData?.colleges
   return (
     <AppShell
       collegeName={collegeName}
-      userName={profileData?.full_name}
-      userAvatar={profileData?.avatar_url}
-      isVerified={profileData?.is_verified}
-      userRole={profileData?.role}
       userId={user.id}
-      username={profileData?.username}
-      branch={profileData?.branch}
-      year={profileData?.year}
+      initialProfile={profileData}
     >
       {children}
     </AppShell>

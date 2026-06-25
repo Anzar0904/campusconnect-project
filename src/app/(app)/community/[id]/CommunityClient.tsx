@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { 
   Users, MessageCircle, Settings, X, Plus, LogOut, CheckCircle, 
-  Trash2, ShieldCheck, Award, GraduationCap, Edit2, Calendar
+  Trash2, ShieldCheck, Award, GraduationCap, Edit2, Calendar, ChevronLeft
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -22,7 +22,8 @@ export default function CommunityClient({
   initialPosts,
   initialMembers,
   currentUserId,
-  currentUserRole
+  currentUserRole,
+  currentUserProfile
 }: {
   community: any
   initialMembership: any
@@ -30,6 +31,7 @@ export default function CommunityClient({
   initialMembers: any[]
   currentUserId: string
   currentUserRole: string
+  currentUserProfile?: any
 }) {
   const supabase = createClient()
   const router = useRouter()
@@ -38,6 +40,27 @@ export default function CommunityClient({
   const [membership, setMembership] = useState<any>(initialMembership)
   const [posts, setPosts] = useState<any[]>(initialPosts)
   const [members, setMembers] = useState<any[]>(initialMembers)
+  
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const executeDeletePost = async () => {
+    if (!deletingPostId) return
+    setDeleting(true)
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', deletingPostId)
+    
+    if (error) {
+      toast.error('Failed to delete post: ' + error.message)
+    } else {
+      toast.success('Post deleted successfully')
+      setPosts(prev => prev.filter(p => p.id !== deletingPostId))
+      setDeletingPostId(null)
+    }
+    setDeleting(false)
+  }
   
   const [tab, setTab] = useState<'feed' | 'members'>('feed')
   
@@ -165,6 +188,30 @@ export default function CommunityClient({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24">
+      {/* Mobile back button & Desktop Breadcrumbs */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={() => {
+            if (window.history.length > 1) {
+              router.back()
+            } else {
+              router.push('/dashboard')
+            }
+          }}
+          className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
+
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
+          <span>&gt;</span>
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/community')}>Communities</span>
+          <span>&gt;</span>
+          <span className="text-white font-medium">{community.name}</span>
+        </div>
+      </div>
+
       {/* Community Detail Card */}
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
@@ -278,9 +325,22 @@ export default function CommunityClient({
                             </p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-mono text-zinc-600">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-zinc-600">
+                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                          </span>
+                          {(post.author_id === currentUserId ||
+                            currentUserRole === 'SUPER_ADMIN' ||
+                            (currentUserRole === 'COLLEGE_ADMIN' && post.author?.college_id === currentUserProfile?.college_id)) && (
+                            <button
+                              onClick={() => setDeletingPostId(post.id)}
+                              className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                              title="Delete Post"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <p className="text-xs leading-relaxed text-neutral-200 whitespace-pre-wrap">{post.content}</p>
@@ -345,8 +405,8 @@ export default function CommunityClient({
               <form onSubmit={handleSaveSettings} className="p-8 space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="display-heading text-xl">Community Settings</h2>
-                  <button type="button" onClick={()=>setShowSettings(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white">
-                    <X size={15} />
+                  <button type="button" onClick={()=>setShowSettings(false)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close settings">
+                    <X size={16} />
                   </button>
                 </div>
 
@@ -418,6 +478,33 @@ export default function CommunityClient({
           </div>
         )}
       </AnimatePresence>
+      {deletingPostId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDeletingPostId(null)} />
+          <div className="card-premium max-w-sm w-full relative z-10 p-6 space-y-4 bg-[#090d16] border border-white/10 rounded-2xl">
+            <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Are you sure you want to permanently delete this post? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => setDeletingPostId(null)}
+                disabled={deleting}
+                className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-neutral-300 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDeletePost}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

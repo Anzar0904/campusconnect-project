@@ -64,11 +64,18 @@ export async function GET(request: NextRequest) {
   if (sessionData?.user && safeNext === '/dashboard') {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('username, branch, bio')
+      .select('full_name, username, branch, year, roll_number')
       .eq('id', sessionData.user.id)
       .single()
 
-    if (profile && !profile.username && !profile.branch) {
+    const isProfileIncomplete = !profile ||
+      !profile.full_name?.trim() ||
+      !profile.username?.trim() ||
+      !profile.branch?.trim() ||
+      profile.year === null || profile.year === undefined ||
+      !profile.roll_number?.trim();
+
+    if (isProfileIncomplete) {
       return NextResponse.redirect(new URL('/profile?onboarding=1', requestUrl.origin))
     }
   }

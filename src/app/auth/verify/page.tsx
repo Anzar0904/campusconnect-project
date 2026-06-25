@@ -111,12 +111,12 @@ export default function VerifyPage() {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
       <Suspense fallback={
-        <div className="text-center">
+        <div className="text-center animate-pulse">
           <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #4f46e5, #4cd7f6)' }}>
             <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
           </div>
-          <p className="font-display text-lg font-semibold text-on-surface mt-4">Loading…</p>
+          <p className="font-display text-lg font-semibold text-on-surface mt-4">Verifying session…</p>
         </div>
       }>
         <VerifyContent />

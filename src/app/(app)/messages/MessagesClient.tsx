@@ -339,7 +339,7 @@ export default function MessagesClient({
       if (attachmentFile) {
         setUploadingAttachment(true)
         const fileExt = attachmentFile.name.split('.').pop()
-        const fileName = `messages/${currentUserId}/${Date.now()}.${fileExt}`
+        const fileName = `${currentUserId}/messages/${Date.now()}.${fileExt}`
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(fileName, attachmentFile)

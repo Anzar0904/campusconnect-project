@@ -67,7 +67,12 @@ export const RightWidgetsColumn: React.FC = () => {
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
             <span key={i} className="font-bold text-neutral-600 text-[9px]">{d}</span>
           ))}
-          {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => {
+          {/* Weekday offset buffer */}
+          {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() }).map((_, i) => (
+            <span key={`offset-${i}`} />
+          ))}
+          {/* Days of the month */}
+          {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map((day) => {
             const isToday = day === new Date().getDate()
             return (
               <span

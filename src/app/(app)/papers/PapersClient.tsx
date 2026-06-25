@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Download, FileText, Search, SearchX, Upload, X, Loader2, BookOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Skeleton } from '@/components/ui/Skeleton'
 import toast from 'react-hot-toast'
 
 interface Paper {
@@ -279,9 +280,24 @@ export default function PapersClient({ userId, collegeId }: { userId: string; co
 
       {/* Grid List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-2">
-          <Loader2 className="animate-spin text-cyan-400" size={32} />
-          <p className="text-xs font-mono text-zinc-500">Loading database records...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-zinc-950/45 border border-white/[0.05] rounded-2xl p-5 flex gap-4 items-start shadow-lg">
+              <Skeleton className="w-12 h-14 rounded-xl shrink-0" />
+              <div className="flex-1 space-y-4">
+                <Skeleton className="h-5 w-3/4 rounded-lg" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-4 w-12 rounded-md" />
+                  <Skeleton className="h-4 w-12 rounded-md" />
+                  <Skeleton className="h-4 w-12 rounded-md" />
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <Skeleton className="h-4 w-20 rounded-md" />
+                  <Skeleton className="h-8 w-24 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState

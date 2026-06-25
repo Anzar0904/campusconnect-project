@@ -62,13 +62,13 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
 
   return (
     <section className="w-full px-6 sm:px-12 lg:px-20 py-4 bg-[#030712]">
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-3.5">
+      <div className="flex overflow-x-auto lg:grid lg:grid-cols-11 gap-3.5 pb-2 lg:pb-0 snap-x snap-mandatory scroll-smooth scrollbar-none w-full">
         {filteredGrid.map((mod, idx) => {
           const IconComponent = mod.icon
           const active = pathname === mod.href || (mod.href !== '/dashboard' && pathname.startsWith(mod.href))
 
           return (
-            <Link key={idx} href={mod.href} className="block">
+            <Link key={idx} href={mod.href} className="snap-start shrink-0 min-w-[100px] lg:min-w-0 block">
               <motion.div
                 whileHover={{ scale: 1.06, y: -3 }}
                 whileTap={{ scale: 0.96 }}
@@ -109,7 +109,7 @@ export const ModuleSection: React.FC<ModuleSectionProps> = ({ userRole }) => {
         })}
         
         {/* More Button triggers slide-up panel / modal */}
-        <div onClick={() => setShowAll(true)} className="block">
+        <div onClick={() => setShowAll(true)} className="snap-start shrink-0 min-w-[100px] lg:min-w-0 block">
           <motion.div
             whileHover={{ scale: 1.06, y: -3 }}
             whileTap={{ scale: 0.96 }}

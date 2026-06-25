@@ -39,6 +39,8 @@ import { NavbarSearch } from './NavbarSearch'
 import { useNotifications } from '@/hooks/useNotifications'
 import { Clock, Check } from 'lucide-react'
 import { format } from 'date-fns'
+import { useCurrentProfile } from '@/hooks/useCurrentProfile'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 interface NavbarProps {
   profile?: {
@@ -109,11 +111,13 @@ const NAV_SECTIONS = [
   }
 ]
 
-export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
+export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const { profile: currentProfile } = useCurrentProfile()
+  const profile = currentProfile || initialProfile
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
 
   const handleLogout = async () => {
@@ -160,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
             <button 
               onClick={() => { setIsOpen(!isOpen); setShowNotifications(false) }}
               className={clsx(
-                "p-2 text-neutral-400 hover:text-white transition-all rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
+                "p-2 text-neutral-400 hover:text-white transition-all rounded-xl hover:bg-white/[0.03] flex items-center justify-center hidden md:flex",
                 isOpen && "text-white bg-white/[0.05]"
               )}
               aria-label="Toggle Navigation Grid"
@@ -173,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
               <button 
                 onClick={() => { setShowNotifications(!showNotifications); setIsOpen(false) }}
                 className={clsx(
-                  "relative p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
+                  "relative w-11 h-11 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
                   showNotifications && "text-white bg-white/[0.05]"
                 )}
                 aria-label="Notifications"
@@ -196,11 +200,11 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
               />
             </div>
 
-            <Link href="/messages" className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center">
+            <Link href="/messages" className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center hidden md:flex">
               <MessageSquare size={18} />
             </Link>
             
-            <div className="h-5 w-px bg-white/[0.08]" />
+            <div className="h-5 w-px bg-white/[0.08] hidden md:block" />
 
             <div className="relative">
               <button 
@@ -209,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile }) => {
                   setIsOpen(false)
                   setShowNotifications(false)
                 }}
-                className="flex items-center gap-3 pl-1 cursor-pointer group focus:outline-none"
+                className="w-11 h-11 lg:w-auto lg:h-auto flex items-center justify-center lg:justify-start gap-3 pl-1 cursor-pointer group focus:outline-none"
               >
                 <GlobalAvatar
                   avatarUrl={profile.avatar_url}
@@ -372,6 +376,7 @@ const NotificationsDropdown = React.memo(({
   markAsRead,
   markAllAsRead
 }: NotificationsDropdownProps) => {
+  const [parent] = useAutoAnimate()
   if (!showNotifications) return null
   return (
     <>
@@ -389,7 +394,7 @@ const NotificationsDropdown = React.memo(({
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[320px] custom-scrollbar pr-0.5">
+        <div ref={parent} className="flex flex-col gap-1.5 overflow-y-auto max-h-[320px] custom-scrollbar pr-0.5">
           {notifications.length === 0 ? (
             <div className="py-8 text-center">
               <Bell className="mx-auto text-zinc-700 mb-2" size={24} />

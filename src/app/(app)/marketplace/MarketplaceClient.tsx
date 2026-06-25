@@ -1,9 +1,10 @@
 'use client'
-import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X, Pencil, Trash2 } from 'lucide-react'
+import { Bookmark, Image as ImageIcon, ImagePlus, MessageSquare, PlusCircle, Search, Store, Tag, X, Pencil, Trash2, ChevronLeft } from 'lucide-react'
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -19,6 +20,7 @@ const CONDITION_LABELS: Record<string,string> = { new:'Brand New', like_new:'Lik
 const conditionColor: Record<string,string> = { new:'#86efac', like_new:'#4cd7f6', good:'#c3c0ff', fair:'#fbbf24' }
 
 export default function MarketplaceClient({ items, userId }: any) {
+  const router = useRouter()
   const [allItems, setAllItems] = useState<any[]>(items)
   const [category, setCategory] = useState('All')
   const [search, setSearch] = useState('')
@@ -326,8 +328,33 @@ export default function MarketplaceClient({ items, userId }: any) {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="card-premium max-w-lg w-full relative z-10 overflow-hidden shadow-2xl"
+              className="card-premium max-w-lg w-full relative z-10 overflow-hidden shadow-2xl bg-[#090d16]"
             >
+              {/* Back Navigation Bar inside Detail Modal */}
+              <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+                {/* Mobile Back Button */}
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white"
+                >
+                  <ChevronLeft size={16} /> Back
+                </button>
+                {/* Desktop Breadcrumbs */}
+                <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                  <span className="cursor-pointer hover:text-white" onClick={() => { setSelectedItem(null); router.push('/dashboard') }}>Dashboard</span>
+                  <span>&gt;</span>
+                  <span className="cursor-pointer hover:text-white" onClick={() => setSelectedItem(null)}>Marketplace</span>
+                  <span>&gt;</span>
+                  <span className="text-white font-medium truncate max-w-[150px]">{selectedItem.title}</span>
+                </div>
+                {/* Close Button on Desktop */}
+                <button 
+                  onClick={() => setSelectedItem(null)}
+                  className="hidden md:flex text-zinc-400 hover:text-white hover:opacity-80"
+                >
+                  <X size={16} />
+                </button>
+              </div>
               <div className="h-64 relative bg-zinc-950">
                 {selectedItem.images?.[0] ? (
                   <Image src={selectedItem.images[0]} alt={selectedItem.title} fill className="object-contain" />
@@ -410,7 +437,7 @@ export default function MarketplaceClient({ items, userId }: any) {
             <motion.div initial={{opacity:0,scale:0.9,y:20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.9,y:20}} className="card-premium max-w-md w-full relative z-10 p-8 space-y-5">
               <div className="flex items-center justify-between">
                 <h2 className="sub-heading text-lg">Edit Listing</h2>
-                <button onClick={() => setEditingItem(null)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white"><X size={15} /></button>
+                <button onClick={() => setEditingItem(null)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close edit listing"><X size={16} /></button>
               </div>
               <input value={editForm.title} onChange={e => setEditForm(f => ({...f, title: e.target.value}))} placeholder="Title" className="input-pro w-full" />
               <textarea value={editForm.description} onChange={e => setEditForm(f => ({...f, description: e.target.value}))} placeholder="Description" className="input-pro w-full h-24 resize-none" />

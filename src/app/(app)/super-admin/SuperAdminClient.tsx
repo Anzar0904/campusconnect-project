@@ -2,11 +2,19 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
+import { CardSkeleton, Skeleton } from '@/components/ui/Skeleton'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
+import { X, Trophy, Calendar, Sparkles, BookOpen, FileText, User, Users, Shield, Briefcase, Store, MessageSquare, Trash2, ChevronLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 export default function SuperAdminClient({ userId, ownerEmail }: { userId: string, ownerEmail: string }) {
+  const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const [parentUsers] = useAutoAnimate()
+  const [parentDating] = useAutoAnimate()
+  const [parentReports] = useAutoAnimate()
   const [activeTab, setActiveTab] = useState<
   'overview'|'users'|'colleges'|'admins'|'moderation'|'dating'|'audit'
 >('overview')
@@ -20,6 +28,35 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   const [invites, setInvites] = useState<any[]>([])
   const [datingRequests, setDatingRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // User Inspector state
+  const [selectedUserInspectorId, setSelectedUserInspectorId] = useState<string | null>(null)
+  const [inspectorData, setInspectorData] = useState<any>(null)
+  const [loadingInspector, setLoadingInspector] = useState(false)
+  const [inspectorActiveSubTab, setInspectorActiveSubTab] = useState<'profile'|'posts'|'friends'|'modules'|'rewards'>('profile')
+
+  const fetchInspectorData = async (targetId: string) => {
+    setLoadingInspector(true)
+    try {
+      const { data, error } = await supabase.rpc('get_user_inspector_data', { p_user_id: targetId })
+      if (error) {
+        toast.error('Failed to load user inspection details: ' + error.message)
+      } else {
+        setInspectorData(data)
+      }
+    } catch (e: any) {
+      toast.error('Error fetching user data: ' + e.message)
+    } finally {
+      setLoadingInspector(false)
+    }
+  }
+
+  const handleInspectUser = (targetId: string) => {
+    setSelectedUserInspectorId(targetId)
+    setInspectorData(null)
+    setInspectorActiveSubTab('profile')
+    fetchInspectorData(targetId)
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -73,7 +110,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
   async function handleVerifyUser(targetId: string, verify: boolean) {
     const { error } = await (supabase as any)
-      .from('profiles')
+      .from('profiles_secure')
       .update({
         is_verified: verify
       })
@@ -86,7 +123,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   async function handleSuspendUser(targetId: string, suspend: boolean) {
     if (!confirm(`Are you sure you want to ${suspend ? 'suspend' : 'reactivate'} this user?`)) return
     const { error } = await (supabase as any)
-  .from('profiles')
+  .from('profiles_secure')
   .update({
     is_suspended: suspend
   })
@@ -99,7 +136,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   async function handleUpdateRole(targetId: string, newRole: string) {
     if (!confirm(`Are you sure you want to promote this user to ${newRole}?`)) return
     const { error } = await (supabase as any)
-  .from('profiles')
+  .from('profiles_secure')
   .update({
     role: newRole
   })
@@ -157,7 +194,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   
 ) {
   const { error: profileError } = await (supabase as any)
-  .from('profiles')
+  .from('profiles_secure')
   .update({
     dating_verified: true
   })
@@ -204,7 +241,21 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
     fetchData()
   }
 
-  if (loading) return <div className="p-12 text-center text-on-surface-variant animate-pulse">Loading Platform Data...</div>
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-fade-in">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-64 rounded-xl" />
+          <Skeleton className="h-5 w-96 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-fade-in">
@@ -267,11 +318,11 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody ref={parentUsers} className="divide-y divide-white/5">
                   {users.filter(u => u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
                   <tr key={u.id} className="hover:bg-white/[0.02]">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-on-surface">{u.full_name}</p>
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => handleInspectUser(u.id)}>
+                      <p className="font-medium text-on-surface hover:text-cyan-400 transition-colors">{u.full_name}</p>
                       <p className="text-xs text-on-surface-variant">{u.email}</p>
                     </td>
                     <td className="px-6 py-4 text-on-surface-variant">{u.colleges?.name || 'No College'}</td>
@@ -369,7 +420,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
       {/* Audit Tab */}
       {activeTab === 'dating' && (
-  <div className="space-y-4">
+  <div ref={parentDating} className="space-y-4">
     <h2 className="text-2xl font-bold">
       Dating Verification Requests
     </h2>
@@ -509,7 +560,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
       {/* Moderation Tab */}
       {activeTab === 'moderation' && (
-        <div className="space-y-4">
+        <div ref={parentReports} className="space-y-4">
           {reports.length === 0 ? (
             <div className="glass-card rounded-xl p-12 text-center text-on-surface-variant">
               No pending abuse reports. Great job!
@@ -533,6 +584,313 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {selectedUserInspectorId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setSelectedUserInspectorId(null)} />
+          <div className="card-premium max-w-4xl w-full max-h-[85vh] relative z-10 flex flex-col bg-[#090d16] border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-scale-up">
+            <div className="p-6 border-b border-white/10 flex flex-col gap-4 bg-white/[0.01]">
+              {/* Back navigation & Breadcrumbs */}
+              <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                {/* Mobile Back Button */}
+                <button
+                  onClick={() => setSelectedUserInspectorId(null)}
+                  className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white"
+                >
+                  <ChevronLeft size={16} /> Back
+                </button>
+                {/* Desktop Breadcrumbs */}
+                <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                  <span className="cursor-pointer hover:text-white" onClick={() => { setSelectedUserInspectorId(null); router.push('/dashboard') }}>Dashboard</span>
+                  <span>&gt;</span>
+                  <span className="cursor-pointer hover:text-white" onClick={() => setSelectedUserInspectorId(null)}>Super Admin</span>
+                  <span>&gt;</span>
+                  <span className="text-white font-medium">User Inspector</span>
+                </div>
+                {/* Close Button on Desktop */}
+                <button 
+                  onClick={() => setSelectedUserInspectorId(null)}
+                  className="hidden md:block text-zinc-400 hover:text-white hover:opacity-80"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 overflow-hidden font-bold">
+                    {inspectorData?.profile?.avatar_url ? (
+                      <img src={inspectorData.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      inspectorData?.profile?.full_name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-display font-bold text-white text-lg flex items-center gap-2">
+                      {inspectorData ? inspectorData.profile.full_name : 'Loading User Profile...'}
+                      {inspectorData?.profile?.is_verified && (
+                        <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-mono font-bold">Verified</span>
+                      )}
+                    </h2>
+                    <p className="text-xs text-zinc-400 mt-0.5 font-mono">
+                      {inspectorData ? `@${inspectorData.profile.username || 'no_username'} · ${inspectorData.profile.email}` : 'Loading details...'}
+                    </p>
+                  </div>
+                </div>
+                {/* Mobile-only Close Button */}
+                <button onClick={() => setSelectedUserInspectorId(null)} className="md:hidden w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {loadingInspector ? (
+                <div className="space-y-6 animate-pulse">
+                  <div className="h-8 bg-white/5 rounded-xl w-1/4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="h-32 bg-white/5 rounded-2xl" />
+                    <div className="h-32 bg-white/5 rounded-2xl" />
+                  </div>
+                </div>
+              ) : inspectorData ? (
+                <>
+                  <div className="flex gap-1.5 p-1 rounded-xl bg-black/20 w-fit border border-white/[0.03]">
+                    {([
+                      ['profile', '👤 Profile'],
+                      ['posts', '📝 Posts'],
+                      ['friends', '👥 Friends'],
+                      ['modules', '📦 Modules'],
+                      ['rewards', '🏆 Rewards']
+                    ] as const).map(([tabId, label]) => (
+                      <button
+                        key={tabId}
+                        onClick={() => setInspectorActiveSubTab(tabId)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${inspectorActiveSubTab === tabId ? 'bg-white/[0.08] text-white border border-white/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {inspectorActiveSubTab === 'profile' && (
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                      <div className="md:col-span-5 space-y-4">
+                        <div className="glass-card rounded-2xl p-4.5 space-y-3.5 border border-white/5">
+                          <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase">Information</h3>
+                          <div className="space-y-2 text-xs">
+                            <p className="text-zinc-400"><strong>Branch:</strong> <span className="text-zinc-200">{inspectorData.profile.branch || 'Not set'}</span></p>
+                            <p className="text-zinc-400"><strong>Year:</strong> <span className="text-zinc-200">{inspectorData.profile.year ? `Year ${inspectorData.profile.year}` : 'Not set'}</span></p>
+                            <p className="text-zinc-400"><strong>College:</strong> <span className="text-zinc-200">{inspectorData.profile.college_name || 'No college linked'}</span></p>
+                            <p className="text-zinc-400"><strong>System Role:</strong> <span className="text-zinc-200 uppercase font-mono">{inspectorData.profile.role}</span></p>
+                            <p className="text-zinc-400"><strong>Join Date:</strong> <span className="text-zinc-200">{format(new Date(inspectorData.profile.created_at), 'PPP')}</span></p>
+                          </div>
+                        </div>
+                        <div className="glass-card rounded-2xl p-4.5 space-y-3 border border-white/5">
+                          <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase">Bio</h3>
+                          <p className="text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap">{inspectorData.profile.bio || 'No bio entered.'}</p>
+                        </div>
+                      </div>
+                      <div className="md:col-span-7 space-y-4">
+                        <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Activity Metrics</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {[
+                            { label: 'Posts', value: inspectorData.counts.total_posts, color: 'border-l-cyan-500' },
+                            { label: 'Friends', value: inspectorData.counts.total_friends, color: 'border-l-blue-500' },
+                            { label: 'Communities', value: inspectorData.counts.total_communities, color: 'border-l-indigo-500' },
+                            { label: 'Clubs Joined', value: inspectorData.counts.total_clubs, color: 'border-l-purple-500' },
+                            { label: 'Clubs Led', value: inspectorData.counts.total_clubs_led, color: 'border-l-pink-500' },
+                            { label: 'Events Joined', value: inspectorData.counts.total_events, color: 'border-l-amber-500' },
+                            { label: 'Study Groups', value: inspectorData.counts.total_study_groups, color: 'border-l-rose-500' },
+                            { label: 'Marketplace', value: inspectorData.counts.total_marketplace, color: 'border-l-emerald-500' },
+                            { label: 'Notes', value: inspectorData.counts.total_notes, color: 'border-l-violet-500' },
+                            { label: 'Papers', value: inspectorData.counts.total_papers, color: 'border-l-fuchsia-500' }
+                          ].map(metric => (
+                            <div key={metric.label} className={`glass-card rounded-xl p-3.5 border-l-4 ${metric.color} border border-white/5`}>
+                              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight leading-none mb-1">{metric.label}</p>
+                              <p className="font-display text-xl font-bold text-zinc-100">{metric.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {inspectorActiveSubTab === 'posts' && (
+                    <div className="space-y-3">
+                      {inspectorData.posts.length === 0 ? (
+                        <p className="text-zinc-500 text-xs italic py-6 text-center">No posts published by this user.</p>
+                      ) : (
+                        inspectorData.posts.map((p: any) => (
+                          <div key={p.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs space-y-2">
+                            <p className="text-zinc-300 whitespace-pre-wrap">{p.content}</p>
+                            <div className="flex gap-4 text-[10px] font-mono text-zinc-500 pt-1.5 border-t border-white/[0.02]">
+                              <span>❤️ {p.likes_count} likes</span>
+                              <span>💬 {p.comments_count} comments</span>
+                              <span className="ml-auto">{format(new Date(p.created_at), 'PPP')}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {inspectorActiveSubTab === 'friends' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {inspectorData.friends.length === 0 ? (
+                        <p className="col-span-full text-zinc-500 text-xs italic py-6 text-center">No active friends found.</p>
+                      ) : (
+                        inspectorData.friends.map((f: any) => (
+                          <div key={f.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-zinc-400 text-xs overflow-hidden shrink-0">
+                              {f.avatar_url ? (
+                                <img src={f.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                f.full_name?.charAt(0) || 'U'
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white text-xs truncate leading-tight">{f.full_name}</p>
+                              <p className="text-[10px] text-zinc-500 truncate mt-0.5">@{f.username || 'no_username'}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {inspectorActiveSubTab === 'modules' && (
+                    <div className="space-y-6">
+                      <div className="space-y-2.5">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Communities Joined ({inspectorData.communities.length})</h4>
+                        {inspectorData.communities.length === 0 ? (
+                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {inspectorData.communities.map((c: any) => (
+                              <div key={c.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                                <p className="font-bold text-white leading-tight">{c.name}</p>
+                                <span className="text-[9px] uppercase font-mono tracking-wider text-cyan-400 bg-cyan-500/5 px-1.5 py-0.5 rounded border border-cyan-500/10 mt-1.5 inline-block">{c.category}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2.5">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Clubs Joined & Led ({inspectorData.clubs.length})</h4>
+                        {inspectorData.clubs.length === 0 ? (
+                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {inspectorData.clubs.map((c: any) => (
+                              <div key={c.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs flex justify-between items-center">
+                                <div>
+                                  <p className="font-bold text-white leading-tight">{c.name}</p>
+                                  <span className="text-[9px] uppercase font-mono tracking-wider text-purple-400 bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10 mt-1.5 inline-block">{c.category}</span>
+                                </div>
+                                <span className={`text-[10px] font-mono capitalize px-2 py-0.5 rounded-full ${c.role === 'president' || c.role === 'leader' || c.role === 'lead' ? 'bg-pink-500/20 text-pink-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                  {c.role}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2.5">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Registered Events ({inspectorData.events.length})</h4>
+                        {inspectorData.events.length === 0 ? (
+                          <p className="text-zinc-600 text-xs italic pl-1">None registered</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {inspectorData.events.map((e: any) => (
+                              <div key={e.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                                <p className="font-bold text-white leading-tight truncate">{e.title}</p>
+                                <p className="text-[10px] text-zinc-500 mt-1">📍 {e.venue || 'Campus'} · {format(new Date(e.start_time), 'PPp')}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2.5">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Study Groups Joined ({inspectorData.study_groups.length})</h4>
+                        {inspectorData.study_groups.length === 0 ? (
+                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {inspectorData.study_groups.map((s: any) => (
+                              <div key={s.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                                <p className="font-bold text-white leading-tight">{s.name}</p>
+                                <p className="text-[10px] text-zinc-500 mt-1">📚 {s.subject}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2.5">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Marketplace Listings ({inspectorData.marketplace.length})</h4>
+                        {inspectorData.marketplace.length === 0 ? (
+                          <p className="text-zinc-600 text-xs italic pl-1">No listings active</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {inspectorData.marketplace.map((m: any) => (
+                              <div key={m.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs flex justify-between items-center">
+                                <div>
+                                  <p className="font-bold text-white leading-tight">{m.title}</p>
+                                  <p className="text-[10px] text-cyan-400 font-bold mt-1">₹{m.price}</p>
+                                </div>
+                                <span className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full ${m.status === 'available' ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                  {m.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {inspectorActiveSubTab === 'rewards' && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="glass-card rounded-2xl p-4.5 border-l-4 border-l-amber-500 border border-white/5">
+                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight mb-1">Current Points</p>
+                          <p className="font-display text-2xl font-bold text-zinc-100">{inspectorData.points_rank.total_points}</p>
+                        </div>
+                        <div className="glass-card rounded-2xl p-4.5 border-l-4 border-l-cyan-500 border border-white/5">
+                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight mb-1">Current Rank</p>
+                          <p className="font-display text-2xl font-bold text-zinc-100">#{inspectorData.points_rank.rank}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Achievements Earned ({inspectorData.achievements.length})</h4>
+                        {inspectorData.achievements.length === 0 ? (
+                          <p className="text-zinc-500 text-xs italic py-4 pl-1">No achievements unlocked yet.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {inspectorData.achievements.map((ac: any) => (
+                              <div key={ac.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3 border border-white/5">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-500 shadow-sm">
+                                  <Trophy size={18} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-zinc-100 text-xs leading-none">{ac.name}</p>
+                                  <p className="text-[10px] text-zinc-500 truncate mt-1">{ac.description}</p>
+                                  <span className="text-[9px] font-mono text-zinc-600 block mt-1.5">Unlocked {format(new Date(ac.unlocked_at), 'PPP')}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-zinc-500 text-xs text-center py-12">Failed to load inspect info.</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -35,7 +35,7 @@ export default async function RootPage() {
           </div>
 
           {/* Primary Functional Dashboard Node Grid */}
-          <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-12 lg:px-20 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-12 lg:px-20 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
             <div className="lg:col-span-6 xl:col-span-6">
               <FeedSection />
             </div>

@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 interface ChatMessage {
   id: string
@@ -141,6 +142,7 @@ export default function AIAssistantClient() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [parentMessages] = useAutoAnimate()
 
   useEffect(() => {
     // Restore chat history client-side to prevent Next.js hydration mismatch
@@ -1712,7 +1714,7 @@ Type any of these commands to start!`
       {/* Message stream */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gradient-to-b from-[#090d16]/10 to-[#030712]/30 flex flex-col justify-between">
         
-        <div className="space-y-6 flex-1">
+        <div ref={parentMessages} className="space-y-6 flex-1">
           <AnimatePresence initial={false}>
             {messages.map((m) => {
               const isBot = m.role === 'assistant'

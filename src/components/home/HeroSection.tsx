@@ -7,33 +7,32 @@ import Image from 'next/image'
 
 export const HeroSection: React.FC = () => {
   return (
-    <section className="relative w-full overflow-hidden bg-[#030712] pt-28 pb-20 px-6 sm:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+    <section className="relative w-full overflow-hidden bg-[#030712] pt-8 pb-6 lg:pt-24 lg:pb-16 px-4 sm:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-16 items-center">
       {/* Background Gradients */}
       <div className="absolute top-0 left-0 w-full h-full bg-ambient-blue opacity-100 pointer-events-none z-0" />
       <div className="absolute top-[5%] right-[5%] w-[900px] h-[900px] bg-ambient-hero pointer-events-none z-0 filter blur-[90px]" />
       <div className="absolute bottom-0 left-[10%] w-[650px] h-[650px] bg-ambient-purple opacity-100 pointer-events-none z-0" />
 
       {/* Hero Content Left */}
-      <div className="lg:col-span-5 flex flex-col justify-center space-y-8 z-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-full w-fit backdrop-blur-md shadow-inner">
+      <div className="lg:col-span-5 flex flex-col justify-center space-y-3.5 lg:space-y-6 z-10 text-center lg:text-left">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/[0.02] border border-white/[0.06] rounded-full w-fit mx-auto lg:mx-0 backdrop-blur-md shadow-inner">
           <Sparkles size={11} className="text-cyan-400 animate-pulse" />
           <span className="text-[10px] font-bold tracking-widest text-neutral-400 uppercase">Built for students. Loved by campuses.</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05]">
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.05]">
           One Campus. <br />
           Every <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent neon-glow-text">Connection.</span> <br />
           Limitless <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-indigo-400 bg-clip-text text-transparent">Possibilities.</span>
         </h1>
 
-        <p className="text-neutral-400 text-sm sm:text-base leading-relaxed max-w-lg font-medium">
+        <p className="text-neutral-400 text-xs sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
           CampusConnect is your all-in-one student OS built with 20+ powerful modules to learn, connect, build, and grow — exclusively engineered for college life.
         </p>
-
       </div>
 
       {/* Hero Interactive Space Right */}
-      <div className="lg:col-span-7 relative flex items-center justify-center min-h-[660px] z-10 select-none">
+      <div className="flex lg:col-span-7 relative items-center justify-center h-[260px] sm:h-[400px] lg:min-h-[660px] w-full z-10 select-none scale-[0.48] sm:scale-[0.68] lg:scale-100 origin-center my-[-100px] sm:my-[-40px] lg:my-0 overflow-visible">
         
         {/* Triple Orbit Layering */}
         <div className="absolute w-[520px] h-[520px] border border-white/[0.03] rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">

@@ -95,11 +95,11 @@ const { error } = await (supabase as any)
         <div className="col-span-8 glass-card rounded-xl p-5">
           {/* Month nav */}
           <div className="flex items-center justify-between mb-5">
-            <button onClick={()=>setCurrentMonth(subMonths(currentMonth,1))} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={()=>setCurrentMonth(subMonths(currentMonth,1))} className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors" aria-label="Previous month">
               <ChevronLeft size={20} />
             </button>
             <h2 className="font-display font-bold text-on-surface">{format(currentMonth,'MMMM yyyy')}</h2>
-            <button onClick={()=>setCurrentMonth(addMonths(currentMonth,1))} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors">
+            <button onClick={()=>setCurrentMonth(addMonths(currentMonth,1))} className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors" aria-label="Next month">
               <ChevronRight size={20} />
             </button>
           </div>

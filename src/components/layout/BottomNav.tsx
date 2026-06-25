@@ -93,7 +93,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden w-[90%] max-w-[400px]">
+      <nav className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden w-[90%] max-w-[400px]" style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-around px-2 py-1.5 rounded-2xl border border-white/[0.08] bg-zinc-950/90 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
           {MOBILE_NAV_ITEMS.map((item) => {
             const isMore = item.href === '#more'
@@ -164,9 +164,10 @@ export function BottomNav() {
                 </div>
                 <button 
                   onClick={() => setShowModules(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
+                  className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
+                  aria-label="Close"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
 

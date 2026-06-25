@@ -625,7 +625,7 @@ export function NavbarSearch() {
   }, [visibleItems, query])
 
   return (
-    <div className="flex-1 max-w-xl mx-8 relative hidden md:block">
+    <div className="md:flex-1 md:max-w-xl md:mx-8 relative">
       {/* Rotating neon outline border */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rotatingGlow {
@@ -656,10 +656,19 @@ export function NavbarSearch() {
         }
       `}} />
 
-      {/* Navbar Trigger Button */}
+      {/* Mobile search trigger */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="md:hidden w-11 h-11 text-neutral-400 hover:text-white transition-all rounded-xl hover:bg-white/[0.03] flex items-center justify-center border border-white/[0.05]"
+        aria-label="Search"
+      >
+        <Search size={18} />
+      </button>
+
+      {/* Navbar Trigger Button (Desktop) */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="w-full p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)] hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:scale-[1.005] active:scale-[0.995]"
+        className="hidden md:block w-full p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)] hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:scale-[1.005] active:scale-[0.995]"
       >
         <div className="bg-[#030712]/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
           <div className="flex items-center text-neutral-400">
@@ -693,7 +702,7 @@ export function NavbarSearch() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: -8 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="palette-blur bg-[#090d16]/85 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(6,182,212,0.15)] w-full max-w-[900px] h-[500px]"
+                className="palette-blur bg-[#090d16]/85 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(6,182,212,0.15)] w-full max-w-[900px] h-[500px] max-h-[80vh]"
               >
                 {/* Top Search Input */}
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.08] bg-zinc-950/40 relative">
@@ -713,9 +722,10 @@ export function NavbarSearch() {
                   {loading && <Loader2 className="animate-spin text-cyan-400 w-4 h-4 shrink-0 mr-2" />}
                   <button 
                     onClick={() => setIsOpen(false)}
-                    className="text-neutral-500 hover:text-white transition-colors"
+                    className="w-11 h-11 -mr-2 rounded-xl text-neutral-500 hover:text-white hover:bg-white/[0.03] transition-colors flex items-center justify-center"
+                    aria-label="Close search"
                   >
-                    <X size={16} />
+                    <X size={18} />
                   </button>
                 </div>
 
@@ -723,9 +733,9 @@ export function NavbarSearch() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                   {!query.trim() ? (
                     /* Empty state / Dashboard view: 2-column layout */
-                    <div className="grid grid-cols-12 gap-8 h-full">
+                    <div className="flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8 h-full">
                       {/* Left side: Suggested Actions & Recent Searches */}
-                      <div className="col-span-5 space-y-6">
+                      <div className="flex flex-col space-y-6 md:col-span-5">
                         {/* Suggested Actions */}
                         <div className="space-y-2.5">
                           <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1.5 flex items-center gap-1.5">
@@ -787,7 +797,7 @@ export function NavbarSearch() {
                       </div>
 
                       {/* Right side: Popular Modules */}
-                      <div className="col-span-7 space-y-2.5">
+                      <div className="flex flex-col space-y-2.5 md:col-span-7">
                         <h4 className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1.5 flex items-center gap-1.5">
                           <Command size={11} className="text-cyan-400" /> Popular Modules
                         </h4>

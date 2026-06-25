@@ -34,7 +34,7 @@ export default async function CommunityPage({
       .maybeSingle(),
     supabase
       .from('posts')
-      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
+      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified,college_id)')
       .eq('community_id', id)
       .order('created_at', { ascending: false }),
     supabase
@@ -43,7 +43,7 @@ export default async function CommunityPage({
       .eq('community_id', id),
     supabase
       .from('profiles')
-      .select('role')
+      .select('id, role, college_id')
       .eq('id', user.id)
       .single()
   ])
@@ -67,6 +67,7 @@ export default async function CommunityPage({
       initialMembers={members || []}
       currentUserId={user.id}
       currentUserRole={profile?.role || 'STUDENT'}
+      currentUserProfile={profile}
     />
   )
 }

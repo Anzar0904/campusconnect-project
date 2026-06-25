@@ -175,6 +175,7 @@ const MAPPING: Record<string, React.ComponentType<any>> = {
   'smart_toy': Bot,
   'sports_esports': Gamepad2,
   'star': Star,
+  'store': Store,
   'storefront': Store,
   'support_agent': Headphones,
   'thumb_up': ThumbsUp,

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardClient from './DashboardClient'
 import { NotificationProvider } from '@/hooks/useNotifications'
+import { ProfileProvider } from '@/hooks/useCurrentProfile'
 
 export const metadata = { title: 'Home Feed — IILM Connect' }
 
@@ -14,12 +15,12 @@ export default async function DashboardPage() {
   const [profileResult, postsResult, eventsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, username, branch, year, is_verified, college_id')
+      .select('id, full_name, avatar_url, username, branch, year, is_verified, role, bio, dating_verified, roll_number, hostel, phone, email, college_id, colleges(name, city)')
       .eq('id', user.id)
       .single(),
     (supabase as any)
       .from('posts')
-      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified)')
+      .select('*, author:profiles!posts_author_id_fkey(id,full_name,username,avatar_url,branch,year,is_verified,college_id)')
       .order('created_at', { ascending: false })
       .limit(30),
     supabase
@@ -48,14 +49,16 @@ export default async function DashboardPage() {
   const likedPostIds = (myLikes ?? []).map((l: any) => l.post_id)
 
   return (
-    <NotificationProvider userId={user.id}>
-      <DashboardClient
-        profile={profile}
-        posts={posts || []}
-        events={events || []}
-        currentUserId={user.id}
-        initialLikedIds={likedPostIds}
-      />
-    </NotificationProvider>
+    <ProfileProvider initialProfile={profile as any} userId={user.id}>
+      <NotificationProvider userId={user.id}>
+        <DashboardClient
+          profile={profile}
+          posts={posts || []}
+          events={events || []}
+          currentUserId={user.id}
+          initialLikedIds={likedPostIds}
+        />
+      </NotificationProvider>
+    </ProfileProvider>
   )
 }

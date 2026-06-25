@@ -1,16 +1,21 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { 
   Camera, CheckCircle, Edit2, GraduationCap, Save, X, Phone, 
   Mail, Award, BookOpen, Calendar, User, ShieldCheck, Home, 
-  FileText, Users, MessageCircle, Trophy, Activity, Lock, EyeOff, Check
+  FileText, Users, MessageCircle, Trophy, Activity, Lock, EyeOff, Check, ChevronLeft,
+  Clock
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, checkRateLimit } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
+import { useCurrentProfile } from '@/hooks/useCurrentProfile'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 const BRANCHES = ['BBA', 'MBA', 'BCA', 'MCA', 'B.Com', 'BA (H)', 'B.Sc', 'Law', 'B.Tech', 'Other']
 const HOSTELS = ['Boys Hostel A', 'Boys Hostel B', 'Girls Hostel A', 'Girls Hostel B', 'Day Scholar']
@@ -49,20 +54,30 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ 
-  profile, 
+  profile: initialProfile, 
   userId, 
   targetUserId,
   currentUserRole = 'STUDENT'
 }: ProfileClientProps) {
   const supabase = createClient()
+  const router = useRouter()
   const isOwner = userId === targetUserId
   const isSuperAdmin = currentUserRole?.toUpperCase() === 'SUPER_ADMIN' || currentUserRole?.toUpperCase() === 'ADMIN'
   const canViewSensitiveInfo = isOwner || isSuperAdmin
 
+  const { profile: currentProfile, refetch: refetchCurrentProfile, setProfile } = useCurrentProfile()
+  const [activeProfile, setActiveProfile] = useState<Profile | null>(initialProfile)
+  const profile = isOwner ? (currentProfile || activeProfile) : activeProfile
+
+  const [parentBio] = useAutoAnimate()
+  const [parentActions] = useAutoAnimate()
+  const [parentBioInfo] = useAutoAnimate()
+  const [parentBadges] = useAutoAnimate()
+
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(profile?.avatar_url)
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialProfile?.avatar_url)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -91,8 +106,7 @@ export default function ProfileClient({
     posts: 0,
     points: 0,
     communities: 0,
-    clubs: 0,
-    events: 0,
+    studyGroups: 0,
     badges: 0
   })
 
@@ -112,6 +126,251 @@ export default function ProfileClient({
   const [earnedBadges, setEarnedBadges] = useState<string[]>([])
   const [loadingActivity, setLoadingActivity] = useState(true)
 
+  const [friendship, setFriendship] = useState<any | null>(null)
+  const [friendshipLoading, setFriendshipLoading] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [mutualFriends, setMutualFriends] = useState<any[]>([])
+  const [showAllMutual, setShowAllMutual] = useState(false)
+
+  // Handle dropdown clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Mutual friends fetch helper
+  const fetchMutualFriends = useCallback(async () => {
+    try {
+      const { data: myFriendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+
+      const { data: targetFriendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`)
+
+      if (!myFriendships || !targetFriendships) return []
+
+      const myFriendsIds = new Set(
+        myFriendships.map((f: any) => f.requester_id === userId ? f.addressee_id : f.requester_id)
+      )
+
+      const targetFriendsIds = targetFriendships.map((f: any) => f.requester_id === targetUserId ? f.addressee_id : f.requester_id)
+
+      const mutualIds = targetFriendsIds.filter((id: string) => myFriendsIds.has(id))
+      
+      if (mutualIds.length === 0) return []
+
+      const { data: mutualProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, username, branch, year')
+        .in('id', mutualIds)
+
+      return mutualProfiles || []
+    } catch (e) {
+      console.error('Error fetching mutual friends:', e)
+      return []
+    }
+  }, [userId, targetUserId, supabase])
+
+  // Connection handlers
+  const handleAddConnection = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (friendshipLoading || isOwner) return
+    setFriendshipLoading(true)
+
+    try {
+      const allowed = await checkRateLimit(supabase, 'friend_request', 10, '1 hour')
+      if (!allowed) {
+        toast.error('You have sent too many requests. Try again later.')
+        return
+      }
+
+      const { data: existing } = await supabase
+        .from('friendships')
+        .select('id, requester_id, addressee_id')
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+
+      const alreadyExists = (existing || []).some(
+        (f: any) =>
+          (f.requester_id === userId && f.addressee_id === targetUserId) ||
+          (f.requester_id === targetUserId && f.addressee_id === userId)
+      )
+
+      if (alreadyExists) {
+        toast.error('A friendship request already exists.')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('friendships')
+        .insert({
+          requester_id: userId,
+          addressee_id: targetUserId,
+          status: 'pending'
+        })
+        .select('*')
+        .single()
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success('Connection request sent successfully!')
+        setFriendship(data)
+      }
+    } catch (err: any) {
+      toast.error('Failed to send request.')
+    } finally {
+      setFriendshipLoading(false)
+    }
+  }
+
+  const handleAcceptRequest = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (friendshipLoading || isOwner) return
+    setFriendshipLoading(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('friendships')
+        .update({ status: 'accepted' })
+        .eq('requester_id', targetUserId)
+        .eq('addressee_id', userId)
+        .select('*')
+        .single()
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success('Connection request accepted!')
+        setFriendship(data)
+        const mutuals = await fetchMutualFriends()
+        setMutualFriends(mutuals)
+      }
+    } catch (err: any) {
+      toast.error('Failed to accept request.')
+    } finally {
+      setFriendshipLoading(false)
+    }
+  }
+
+  const handleDeclineOrCancelRequest = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    if (friendshipLoading || isOwner) return
+    setFriendshipLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .or(`and(requester_id.eq.${userId},addressee_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},addressee_id.eq.${userId})`)
+
+      if (error) {
+        toast.error(error.message)
+      } else {
+        toast.success('Connection request declined/canceled.')
+        setFriendship(null)
+        const mutuals = await fetchMutualFriends()
+        setMutualFriends(mutuals)
+      }
+    } catch (err: any) {
+      toast.error('Failed to update request.')
+    } finally {
+      setFriendshipLoading(false)
+    }
+  }
+
+  const getRelation = () => {
+    if (!friendship) return 'none'
+    if (friendship.status === 'blocked') return 'blocked'
+    if (friendship.status === 'accepted') return 'friends'
+    if (friendship.requester_id === userId) return 'sent'
+    return 'received'
+  }
+  const relation = getRelation()
+
+  // Fetch friendship & Realtime subscription
+  useEffect(() => {
+    if (isOwner || !targetUserId) return
+
+    async function fetchFriendship() {
+      const { data, error } = await supabase
+        .from('friendships')
+        .select('*')
+        .or(`and(requester_id.eq.${userId},addressee_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},addressee_id.eq.${userId})`)
+        .maybeSingle()
+
+      if (!error && data) {
+        setFriendship(data)
+      } else {
+        setFriendship(null)
+      }
+    }
+
+    fetchFriendship()
+
+    const channel = supabase
+      .channel(`friendship_channel_${targetUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friendships',
+        },
+        (payload: any) => {
+          const reqId = payload.new?.requester_id || payload.old?.requester_id
+          const addId = payload.new?.addressee_id || payload.old?.addressee_id
+          
+          if (
+            (reqId === userId && addId === targetUserId) ||
+            (reqId === targetUserId && addId === userId)
+          ) {
+            if (payload.eventType === 'DELETE') {
+              setFriendship(null)
+            } else {
+              setFriendship(payload.new)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, targetUserId, isOwner, supabase])
+
+  // Fetch mutual connections
+  useEffect(() => {
+    if (isOwner || !targetUserId) return
+
+    async function getMutuals() {
+      const mutuals = await fetchMutualFriends()
+      setMutualFriends(mutuals)
+    }
+
+    getMutuals()
+  }, [userId, targetUserId, isOwner, fetchMutualFriends])
+
   // Fetch stats and activity
   useEffect(() => {
     async function fetchStatsAndActivity() {
@@ -123,7 +382,7 @@ export default function ProfileClient({
           postsRes,
           pointsRes,
           commsRes,
-          eventsRes,
+          studyGroupsRes,
           badgesRes,
           recentPostsRes,
           recentCommsRes,
@@ -135,7 +394,7 @@ export default function ProfileClient({
           supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', targetUserId),
           supabase.from('user_points').select('total_points').eq('user_id', targetUserId).maybeSingle(),
           supabase.from('community_members').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
-          supabase.from('event_attendees').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
+          supabase.from('study_group_members').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
           supabase.from('user_badges').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
           
           // activity data
@@ -145,16 +404,12 @@ export default function ProfileClient({
           supabase.from('user_badges').select('badge_id, earned_at').eq('user_id', targetUserId).order('earned_at', { ascending: false }).limit(5)
         ])
 
-        // Clubs count (where lead matches name)
-        const clubsRes = await supabase.from('clubs').select('*', { count: 'exact', head: true }).eq('lead_name', profile?.full_name || '')
-
         setStats({
           friends: friendsRes.count || 0,
           posts: postsRes.count || 0,
           points: pointsRes.data?.total_points || 0,
           communities: commsRes.count || 0,
-          clubs: clubsRes.count || 0,
-          events: eventsRes.count || 0,
+          studyGroups: studyGroupsRes.count || 0,
           badges: badgesRes.count || 0
         })
 
@@ -179,20 +434,21 @@ export default function ProfileClient({
 
   // Sync state if profile changes
   useEffect(() => {
-    if (profile) {
-      setCurrentAvatarUrl(profile.avatar_url)
+    const activeProf = isOwner ? (currentProfile || initialProfile) : initialProfile
+    if (activeProf) {
+      setCurrentAvatarUrl(activeProf.avatar_url)
       setForm({
-        full_name: profile.full_name || '',
-        username: profile.username || '',
-        bio: profile.bio || '',
-        branch: profile.branch || '',
-        year: profile.year || 1,
-        roll_number: profile.roll_number || '',
-        hostel: profile.hostel || '',
-        phone: profile.phone || '',
+        full_name: activeProf.full_name || '',
+        username: activeProf.username || '',
+        bio: activeProf.bio || '',
+        branch: activeProf.branch || '',
+        year: activeProf.year || 1,
+        roll_number: activeProf.roll_number || '',
+        hostel: activeProf.hostel || '',
+        phone: activeProf.phone || '',
       })
     }
-  }, [profile])
+  }, [initialProfile, currentProfile, isOwner])
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -226,13 +482,19 @@ export default function ProfileClient({
         .getPublicUrl(fileName)
 
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from('profiles_secure')
         .update({ avatar_url: publicUrl })
         .eq('id', userId)
 
       if (updateError) throw updateError
 
       setCurrentAvatarUrl(publicUrl)
+      if (activeProfile) {
+        setActiveProfile({ ...activeProfile, avatar_url: publicUrl })
+      }
+      if (isOwner && currentProfile) {
+        setProfile({ ...currentProfile, avatar_url: publicUrl })
+      }
       toast.success('Avatar updated successfully!', { id: toastId })
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload avatar', { id: toastId })
@@ -244,11 +506,31 @@ export default function ProfileClient({
 
   const handleSave = async () => {
     if (!isOwner) return
+    if (!form.full_name.trim()) {
+      toast.error('Full Name is required')
+      return
+    }
+    if (!form.username.trim()) {
+      toast.error('Username is required')
+      return
+    }
+    if (!form.branch.trim()) {
+      toast.error('Branch is required for campus onboarding')
+      return
+    }
+    if (!form.year || form.year < 1 || form.year > 5) {
+      toast.error('Current Year must be between 1 and 5')
+      return
+    }
+    if (!form.roll_number.trim()) {
+      toast.error('Roll Number is required for campus onboarding')
+      return
+    }
     try {
       setSaving(true)
 
       const { error } = await supabase
-        .from('profiles')
+        .from('profiles_secure')
         .update({
           full_name: form.full_name,
           username: form.username || null,
@@ -267,11 +549,26 @@ export default function ProfileClient({
         return
       }
 
+      // Refetch profile directly from Supabase to sync local states immediately after save
+      const { data: updatedProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, username, branch, year, is_verified, role, bio, dating_verified, roll_number, hostel, phone, email, college_id, colleges(name, city)')
+        .eq('id', userId)
+        .single()
+
+      if (!fetchError && updatedProfile) {
+        setActiveProfile(updatedProfile as any)
+        if (isOwner) {
+          setProfile(updatedProfile as any)
+        }
+      }
+
+      if (isOwner) {
+        await refetchCurrentProfile()
+      }
+
       toast.success('Profile updated successfully')
       setEditing(false)
-      setTimeout(() => {
-        window.location.reload()
-      }, 500)
 
     } catch (err) {
       console.error(err)
@@ -293,7 +590,28 @@ export default function ProfileClient({
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-24">
+    <div className="space-y-6 max-w-7xl mx-auto pb-24">
+      {/* Mobile back button & Desktop Breadcrumbs */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={() => {
+            if (window.history.length > 1) {
+              router.back()
+            } else {
+              router.push('/dashboard')
+            }
+          }}
+          className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
+
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+          <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
+          <span>&gt;</span>
+          <span className="text-white font-medium">Profile ({profile?.full_name || 'User'})</span>
+        </div>
+      </div>
       {/* Profile Hero Section with Futuristic Glow & Animations */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -354,7 +672,7 @@ export default function ProfileClient({
 
           {/* User Bio and Meta Information */}
           <div className="flex-1 text-center md:text-left space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div ref={parentBio} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 {editing ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl text-left">
@@ -395,13 +713,14 @@ export default function ProfileClient({
               </div>
 
               {/* Edit / Action controls */}
-              {isOwner && (
-                <div className="flex justify-center md:justify-start gap-3">
-                  {editing ? (
+              {/* Edit / Action controls */}
+              <div ref={parentActions} className="flex flex-col sm:flex-row justify-center md:justify-start gap-3 w-full sm:w-auto">
+                {isOwner ? (
+                  editing ? (
                     <>
                       <button 
                         onClick={() => setEditing(false)} 
-                        className="px-4 py-2 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-neutral-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                        className="px-4 h-11 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-neutral-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto cursor-pointer"
                       >
                         <X size={14} />
                         Cancel
@@ -409,7 +728,7 @@ export default function ProfileClient({
                       <button 
                         onClick={handleSave} 
                         disabled={saving || !form.full_name}
-                        className="px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 text-white transition-all hover:scale-105 active:scale-95 shadow-lg border border-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500"
+                        className="px-5 h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:scale-105 active:scale-95 shadow-lg border border-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500 w-full sm:w-auto cursor-pointer"
                       >
                         {saving ? (
                           <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -422,18 +741,141 @@ export default function ProfileClient({
                   ) : (
                     <button 
                       onClick={() => setEditing(true)} 
-                      className="px-5 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center gap-2"
+                      className="px-5 h-11 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
                     >
                       <Edit2 size={13} />
                       Edit Profile
                     </button>
-                  )}
-                </div>
-              )}
+                  )
+                ) : (
+                  relation !== 'blocked' && (
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                      {/* Message Button */}
+                      <Link
+                        href={relation === 'friends' ? `/messages?userId=${targetUserId}` : '#'}
+                        className={clsx(
+                          "px-5 h-11 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 border w-full sm:w-auto select-none",
+                          relation === 'friends'
+                            ? "bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/20 text-blue-400 cursor-pointer active:scale-95"
+                            : "bg-white/[0.02] border-white/[0.04] text-neutral-500 cursor-not-allowed"
+                        )}
+                        aria-disabled={relation !== 'friends'}
+                        onClick={(e) => {
+                          if (relation !== 'friends') {
+                            e.preventDefault()
+                          }
+                        }}
+                      >
+                        <MessageCircle size={14} />
+                        Message
+                      </Link>
+
+                      {/* Connection Action Button */}
+                      {relation === 'none' && (
+                        <button
+                          onClick={handleAddConnection}
+                          disabled={friendshipLoading}
+                          className="px-5 h-11 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 border border-cyan-500/20 shadow-lg shadow-cyan-600/10 active:scale-95 w-full sm:w-auto cursor-pointer"
+                        >
+                          {friendshipLoading ? (
+                            <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <>
+                              <span>+ Add Connection</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {relation === 'sent' && (
+                        <button
+                          disabled
+                          className="px-5 h-11 bg-white/5 border border-white/5 text-neutral-500 rounded-xl text-xs font-bold tracking-wide cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
+                        >
+                          <Clock size={14} className="text-neutral-600" />
+                          Pending
+                        </button>
+                      )}
+
+                      {relation === 'received' && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={handleAcceptRequest}
+                            disabled={friendshipLoading}
+                            className="px-4 h-11 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 border border-emerald-500/20 w-full sm:w-auto cursor-pointer"
+                          >
+                            {friendshipLoading ? (
+                              <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <>
+                                <Check size={14} />
+                                Accept
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeclineOrCancelRequest()}
+                            disabled={friendshipLoading}
+                            className="px-4 h-11 bg-red-600/10 hover:bg-red-600/20 disabled:opacity-50 border border-red-600/20 text-red-400 rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 w-full sm:w-auto cursor-pointer"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
+                      {relation === 'friends' && (
+                        <div className="relative dropdown-container w-full sm:w-auto" ref={dropdownRef}>
+                          <button
+                            onClick={() => setShowDropdown(!showDropdown)}
+                            className="px-5 h-11 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/20 text-emerald-400 rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
+                          >
+                            <Check size={14} />
+                            Connected ✓
+                          </button>
+
+                          {showDropdown && (
+                            <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#090d16] border border-white/10 shadow-2xl p-1.5 z-30 animate-fade-in font-sans">
+                              <Link
+                                href={`/messages?userId=${targetUserId}`}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-neutral-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left"
+                                onClick={() => setShowDropdown(false)}
+                              >
+                                <MessageCircle size={13} />
+                                Message
+                              </Link>
+                              {mutualFriends.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setShowDropdown(false)
+                                    setShowAllMutual(true)
+                                  }}
+                                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-neutral-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left font-medium cursor-pointer"
+                                >
+                                  <Users size={13} />
+                                  View Mutual Friends
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  setShowDropdown(false)
+                                  handleDeclineOrCancelRequest(e)
+                                }}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left font-bold border-t border-white/[0.04] mt-1 pt-2 cursor-pointer"
+                              >
+                                Remove Connection
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
             </div>
 
             {/* Bio info */}
-            <div className="max-w-2xl">
+            <div ref={parentBioInfo} className="max-w-2xl">
               {editing ? (
                 <div className="space-y-1 text-left">
                   <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Short Bio</span>
@@ -567,8 +1009,14 @@ export default function ProfileClient({
                   <span className="text-xs text-white font-bold">{profile?.year ? `Year ${profile.year}` : 'Not set'}</span>
                 </div>
                 <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium">Campus Housing</span>
-                  <span className="text-xs text-white font-bold">{profile?.hostel || 'Not set'}</span>
+                  <span className="text-xs text-neutral-400 font-medium flex items-center gap-1">
+                    Campus Housing {!canViewSensitiveInfo && <EyeOff size={11} className="text-neutral-500" />}
+                  </span>
+                  {canViewSensitiveInfo ? (
+                    <span className="text-xs text-white font-bold">{profile?.hostel || 'Not set'}</span>
+                  ) : (
+                    <span className="text-xs text-neutral-500 italic flex items-center gap-1"><Lock size={12} /> Locked</span>
+                  )}
                 </div>
 
                 {/* SENSITIVE DATA RULES ENFORCED HERE */}
@@ -622,12 +1070,12 @@ export default function ProfileClient({
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'Friends', value: stats.friends, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
                 { label: 'Posts', value: stats.posts, icon: FileText, color: 'text-purple-400 bg-purple-500/10' },
-                { label: 'Points', value: stats.points, icon: Trophy, color: 'text-amber-400 bg-amber-500/10' },
-                { label: 'Groups', value: stats.communities, icon: MessageCircle, color: 'text-cyan-400 bg-cyan-500/10' },
-                { label: 'Clubs Lead', value: stats.clubs, icon: GraduationCap, color: 'text-rose-400 bg-rose-500/10' },
-                { label: 'Events RSVP', value: stats.events, icon: Calendar, color: 'text-emerald-400 bg-emerald-500/10' },
+                { label: 'Connections', value: stats.friends, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
+                { label: 'Communities', value: stats.communities, icon: MessageCircle, color: 'text-cyan-400 bg-cyan-500/10' },
+                { label: 'Study Groups', value: stats.studyGroups, icon: BookOpen, color: 'text-rose-400 bg-rose-500/10' },
+                { label: 'Achievements', value: stats.badges, icon: Trophy, color: 'text-indigo-400 bg-indigo-500/10' },
+                { label: 'Points', value: stats.points, icon: Award, color: 'text-amber-400 bg-amber-500/10' },
               ].map((stat, idx) => {
                 const IconComp = stat.icon
                 return (
@@ -644,6 +1092,44 @@ export default function ProfileClient({
               })}
             </div>
           </motion.div>
+
+          {/* Mutual Connections Card */}
+          {!isOwner && mutualFriends.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-4 font-sans"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="font-display font-bold text-sm text-white flex items-center gap-2.5">
+                  <Users className="text-cyan-400 shrink-0" size={18} />
+                  Mutual Connections ({mutualFriends.length})
+                </h3>
+                {mutualFriends.length > 5 && (
+                  <button 
+                    onClick={() => setShowAllMutual(true)}
+                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {mutualFriends.slice(0, 5).map((f) => (
+                  <Link 
+                    key={f.id} 
+                    href={`/profile?id=${f.id}`}
+                    title={f.full_name}
+                    className="relative shrink-0 hover:scale-105 transition-transform"
+                  >
+                    <GlobalAvatar profile={f} size="sm" />
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Right Side: Activity & Achievements Section (2/3 width) */}
@@ -666,7 +1152,7 @@ export default function ProfileClient({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div ref={parentBadges} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {PREDEFINED_BADGES.map((badge) => {
                 const isEarned = earnedBadges.includes(badge.id)
                 const BadgeIcon = badge.icon
@@ -810,6 +1296,49 @@ export default function ProfileClient({
         </div>
 
       </div>
+
+      {showAllMutual && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in font-sans">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAllMutual(false)} />
+          <div className="glass-panel-base max-w-md w-full relative z-10 p-6 space-y-4 bg-[#090d16] border border-white/10 rounded-2xl animate-scale-up max-h-[80vh] flex flex-col font-sans">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h3 className="font-display font-bold text-white text-base">Mutual Connections</h3>
+              <button onClick={() => setShowAllMutual(false)} className="text-neutral-400 hover:text-white transition-colors cursor-pointer p-1">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-2">
+              {mutualFriends.map((f) => (
+                <div key={f.id} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                  <div className="flex items-center gap-3">
+                    <GlobalAvatar profile={f} size="sm" />
+                    <div className="min-w-0 text-left">
+                      <Link 
+                        href={`/profile?id=${f.id}`}
+                        onClick={() => setShowAllMutual(false)}
+                        className="text-xs font-bold text-white hover:text-blue-400 transition-colors tracking-tight block truncate max-w-[180px]"
+                      >
+                        {f.full_name}
+                      </Link>
+                      <p className="text-[10px] text-neutral-500 font-medium">
+                        {f.branch ? `${f.branch}` : ''} {f.year ? `· Y${f.year}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <Link 
+                    href={`/profile?id=${f.id}`}
+                    onClick={() => setShowAllMutual(false)}
+                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-bold transition-all text-center"
+                  >
+                    View
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

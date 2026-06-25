@@ -39,11 +39,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Check for suspension on authenticated routes
+  // Check for suspension and profile completeness on authenticated routes
+  const isProfilePage = pathname === '/profile'
+  const isApiRoute = pathname.startsWith('/api/')
+
   if (user && !isPublic) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('is_suspended')
+      .select('is_suspended, full_name, username, branch, year, roll_number')
       .eq('id', user.id)
       .single()
 
@@ -59,6 +62,21 @@ export async function middleware(request: NextRequest) {
       supabaseResponse = NextResponse.redirect(suspendedUrl)
       supabaseResponse.cookies.delete('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token')
       return supabaseResponse
+    } else if (
+      profile && 
+      !isProfilePage && 
+      !isApiRoute && (
+        !profile.full_name?.trim() ||
+        !profile.username?.trim() ||
+        !profile.branch?.trim() ||
+        profile.year === null || profile.year === undefined ||
+        !profile.roll_number?.trim()
+      )
+    ) {
+      const onboardingUrl = request.nextUrl.clone()
+      onboardingUrl.pathname = '/profile'
+      onboardingUrl.searchParams.set('onboarding', '1')
+      return NextResponse.redirect(onboardingUrl)
     }
   }
 
