@@ -352,7 +352,7 @@ const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLog
           <span>View Profile</span>
         </LinkComponent>
         <LinkComponent
-          href="/profile?edit=true"
+          href="/settings"
           onClick={() => setShowProfileMenu(false)}
           className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
         >

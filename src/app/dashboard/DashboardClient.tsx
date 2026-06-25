@@ -1237,7 +1237,7 @@ export default function DashboardClient({
                       </p>
                     </div>
                   </div>
-                  <Link href="/profile" className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95">
+                  <Link href="/settings" className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95">
                     Finish Setup
                   </Link>
                 </div>

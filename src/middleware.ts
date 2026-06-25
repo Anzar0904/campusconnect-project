@@ -41,6 +41,7 @@ export async function middleware(request: NextRequest) {
 
   // Check for suspension and profile completeness on authenticated routes
   const isProfilePage = pathname === '/profile'
+  const isSettingsPage = pathname === '/settings'
   const isApiRoute = pathname.startsWith('/api/')
 
   if (user && !isPublic) {
@@ -65,6 +66,7 @@ export async function middleware(request: NextRequest) {
     } else if (
       profile && 
       !isProfilePage && 
+      !isSettingsPage &&
       !isApiRoute && (
         !profile.full_name?.trim() ||
         !profile.username?.trim() ||
@@ -74,7 +76,7 @@ export async function middleware(request: NextRequest) {
       )
     ) {
       const onboardingUrl = request.nextUrl.clone()
-      onboardingUrl.pathname = '/profile'
+      onboardingUrl.pathname = '/settings'
       onboardingUrl.searchParams.set('onboarding', '1')
       return NextResponse.redirect(onboardingUrl)
     }
