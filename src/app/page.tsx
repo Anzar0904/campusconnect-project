@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import React from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { NotificationProvider } from '@/hooks/useNotifications'
+import { ProfileProvider } from '@/hooks/useCurrentProfile'
 import { HeroSection } from '@/components/home/HeroSection'
 import { ModuleSection } from '@/components/home/ModuleSection'
 import { FeedSection } from '@/components/dashboard/FeedSection'
@@ -23,8 +24,9 @@ export default async function RootPage() {
   }
 
   return (
-    <NotificationProvider userId="">
-      <div className="min-h-screen bg-[#030712] text-neutral-100 flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-white overflow-x-hidden">
+    <ProfileProvider initialProfile={null} userId="">
+      <NotificationProvider userId="">
+        <div className="min-h-screen bg-[#030712] text-neutral-100 flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-white overflow-x-hidden">
         <Navbar />
 
         <main className="flex-1 flex flex-col w-full z-10">
@@ -176,6 +178,7 @@ export default async function RootPage() {
           </div>
         </footer>
       </div>
-    </NotificationProvider>
+      </NotificationProvider>
+    </ProfileProvider>
   )
 }

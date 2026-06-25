@@ -48,6 +48,10 @@ export function ProfileProvider({
   const supabase = createClient()
 
   const fetchProfile = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -68,6 +72,11 @@ export function ProfileProvider({
   }, [supabase, userId])
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     // If we don't have initialProfile, fetch it immediately
     if (!initialProfile) {
       fetchProfile()
