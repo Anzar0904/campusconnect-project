@@ -1184,13 +1184,13 @@ export default function ProfileClient({
             </div>
 
             {/* Custom Tab Toggles */}
-            <div className="flex gap-1 p-0.5 rounded-lg bg-zinc-900 border border-white/[0.04] select-none">
+            <div className="flex gap-1 p-1 rounded-xl bg-zinc-900 border border-white/[0.04] select-none">
               {(['posts', 'communities', 'events'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveActivityTab(tab)}
                   className={clsx(
-                    "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                    "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
                     activeActivityTab === tab
                       ? "bg-white/5 border border-white/[0.04] text-white shadow-sm"
                       : "text-zinc-500 hover:text-zinc-300"

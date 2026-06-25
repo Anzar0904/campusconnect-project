@@ -536,7 +536,7 @@ function CreatePost({
           animate={{ opacity: 1, height: 'auto' }}
           className="space-y-4 overflow-hidden"
         >
-          <div className="flex gap-1 p-0.5 rounded-lg bg-[#1B1F24] w-fit select-none border border-white/[0.04]">
+          <div className="flex gap-1 p-1 rounded-xl bg-[#1B1F24] w-fit select-none border border-white/[0.04]">
             {typeOptions.map(t => {
               const Icon = t.icon
               const isSelected = postType === t.value
@@ -549,7 +549,7 @@ function CreatePost({
                     if (t.value === 'confession') setAnon(true)
                   }}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-md text-[10px] font-semibold tracking-wide transition-all flex items-center gap-1.5",
+                    "px-3.5 py-1.5 rounded-lg text-[10px] font-semibold tracking-wide transition-all flex items-center gap-1.5",
                     isSelected 
                       ? "bg-white/[0.06] text-brand-400 border border-white/[0.04] shadow-sm" 
                       : "text-zinc-400 hover:text-zinc-200"
