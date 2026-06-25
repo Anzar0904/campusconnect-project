@@ -6,7 +6,7 @@ import {
   Camera, CheckCircle, Edit2, GraduationCap, Save, X, Phone, 
   Mail, Award, BookOpen, Calendar, User, ShieldCheck, Home, 
   FileText, Users, MessageCircle, Trophy, Activity, Lock, EyeOff, Check, ChevronLeft,
-  Clock
+  Clock, Hash, MapPin, Sparkles, Heart, Plus
 } from 'lucide-react'
 import { createClient, checkRateLimit } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -30,6 +30,14 @@ const PREDEFINED_BADGES = [
   { id: 'mentor', name: 'Verified Mentor', icon: ShieldCheck, desc: 'Helping other students', color: 'from-violet-400 to-fuchsia-500' },
 ]
 
+const COVER_PRESETS = [
+  { id: 0, class: 'bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950', name: 'Deep Space' },
+  { id: 1, class: 'bg-gradient-to-r from-emerald-950 via-zinc-900 to-teal-950', name: 'Emerald Aura' },
+  { id: 2, class: 'bg-gradient-to-r from-amber-950 via-stone-900 to-orange-950', name: 'Cosmic Gold' },
+  { id: 3, class: 'bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900', name: 'Midnight Charcoal' },
+  { id: 4, class: 'bg-gradient-to-r from-purple-950 via-zinc-900 to-rose-950', name: 'Velvet Rose' }
+]
+
 interface Profile {
   id: string
   full_name: string
@@ -44,6 +52,10 @@ interface Profile {
   email: string
   role?: string | null
   is_verified?: boolean
+  colleges?: {
+    name: string
+    city: string
+  } | null
 }
 
 interface ProfileClientProps {
@@ -69,9 +81,7 @@ export default function ProfileClient({
   const [activeProfile, setActiveProfile] = useState<Profile | null>(initialProfile)
   const profile = isOwner ? (currentProfile || activeProfile) : activeProfile
 
-  const [parentBio] = useAutoAnimate()
-  const [parentActions] = useAutoAnimate()
-  const [parentBioInfo] = useAutoAnimate()
+  const [parentStats] = useAutoAnimate()
   const [parentBadges] = useAutoAnimate()
 
   const [editing, setEditing] = useState(false)
@@ -80,14 +90,14 @@ export default function ProfileClient({
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState(initialProfile?.avatar_url)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('edit') === 'true' || params.get('onboarding') === '1') {
-        setEditing(true)
-      }
-    }
-  }, [])
+  const [coverPreset, setCoverPreset] = useState(0)
+  const [showCoverPicker, setShowCoverPicker] = useState(false)
+
+  // Local storage lists for Skills & Interests
+  const [skills, setSkills] = useState<string[]>([])
+  const [interests, setInterests] = useState<string[]>([])
+  const [newSkill, setNewSkill] = useState('')
+  const [newInterest, setNewInterest] = useState('')
 
   const [form, setForm] = useState({
     full_name: profile?.full_name || '',
@@ -132,6 +142,24 @@ export default function ProfileClient({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [mutualFriends, setMutualFriends] = useState<any[]>([])
   const [showAllMutual, setShowAllMutual] = useState(false)
+
+  const [activeActivityTab, setActiveActivityTab] = useState<'posts' | 'communities' | 'events'>('posts')
+
+  // Validation States
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Fetch local storage properties on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedSkills = localStorage.getItem(`cc_skills_${targetUserId}`)
+      const storedInterests = localStorage.getItem(`cc_interests_${targetUserId}`)
+      const storedCover = localStorage.getItem(`cc_cover_preset_${targetUserId}`)
+
+      setSkills(storedSkills ? JSON.parse(storedSkills) : ['React', 'TypeScript', 'TailwindCSS', 'Next.js', 'Python'])
+      setInterests(storedInterests ? JSON.parse(storedInterests) : ['Open Source', 'UI/UX Design', 'Hackathons', 'Artificial Intelligence'])
+      setCoverPreset(storedCover ? parseInt(storedCover, 10) : 0)
+    }
+  }, [targetUserId])
 
   // Handle dropdown clicking outside
   useEffect(() => {
@@ -258,6 +286,7 @@ export default function ProfileClient({
       } else {
         toast.success('Connection request accepted!')
         setFriendship(data)
+        setStats(prev => ({ ...prev, friends: prev.friends + 1 }))
         const mutuals = await fetchMutualFriends()
         setMutualFriends(mutuals)
       }
@@ -286,8 +315,9 @@ export default function ProfileClient({
       if (error) {
         toast.error(error.message)
       } else {
-        toast.success('Connection request declined/canceled.')
+        toast.success('Connection updated successfully.')
         setFriendship(null)
+        setStats(prev => ({ ...prev, friends: Math.max(0, prev.friends - 1) }))
         const mutuals = await fetchMutualFriends()
         setMutualFriends(mutuals)
       }
@@ -392,7 +422,7 @@ export default function ProfileClient({
           // stats counts
           supabase.from('friendships').select('*', { count: 'exact', head: true }).eq('status', 'accepted').or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`),
           supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', targetUserId),
-          supabase.from('user_points').select('total_points').eq('user_id', targetUserId).maybeSingle(),
+          supabase.from('user_points').select('total').eq('user_id', targetUserId).maybeSingle(),
           supabase.from('community_members').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
           supabase.from('study_group_members').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
           supabase.from('user_badges').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId),
@@ -407,7 +437,7 @@ export default function ProfileClient({
         setStats({
           friends: friendsRes.count || 0,
           posts: postsRes.count || 0,
-          points: pointsRes.data?.total_points || 0,
+          points: pointsRes.data?.total || 0,
           communities: commsRes.count || 0,
           studyGroups: studyGroupsRes.count || 0,
           badges: badgesRes.count || 0
@@ -504,28 +534,37 @@ export default function ProfileClient({
     }
   }
 
-  const handleSave = async () => {
-    if (!isOwner) return
+  // Live Validations
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
     if (!form.full_name.trim()) {
-      toast.error('Full Name is required')
-      return
+      errors.full_name = 'Full name is required.'
     }
     if (!form.username.trim()) {
-      toast.error('Username is required')
-      return
+      errors.username = 'Username is required.'
+    } else if (!/^[a-zA-Z0-9_]{3,15}$/.test(form.username)) {
+      errors.username = 'Username must be 3-15 chars & alphanumeric/underscores.'
     }
     if (!form.branch.trim()) {
-      toast.error('Branch is required for campus onboarding')
-      return
-    }
-    if (!form.year || form.year < 1 || form.year > 5) {
-      toast.error('Current Year must be between 1 and 5')
-      return
+      errors.branch = 'Branch is required.'
     }
     if (!form.roll_number.trim()) {
-      toast.error('Roll Number is required for campus onboarding')
+      errors.roll_number = 'Roll Number is required.'
+    }
+    if (form.phone.trim() && !/^\+?[0-9\s-]{10,15}$/.test(form.phone)) {
+      errors.phone = 'Please provide a valid phone format.'
+    }
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleSave = async () => {
+    if (!isOwner) return
+    if (!validateForm()) {
+      toast.error('Please resolve validation errors before saving.')
       return
     }
+
     try {
       setSaving(true)
 
@@ -549,6 +588,11 @@ export default function ProfileClient({
         return
       }
 
+      // Save tags and presets local state
+      localStorage.setItem(`cc_skills_${userId}`, JSON.stringify(skills))
+      localStorage.setItem(`cc_interests_${userId}`, JSON.stringify(interests))
+      localStorage.setItem(`cc_cover_preset_${userId}`, coverPreset.toString())
+
       // Refetch profile directly from Supabase to sync local states immediately after save
       const { data: updatedProfile, error: fetchError } = await supabase
         .from('profiles')
@@ -567,7 +611,7 @@ export default function ProfileClient({
         await refetchCurrentProfile()
       }
 
-      toast.success('Profile updated successfully')
+      toast.success('Profile saved successfully!')
       setEditing(false)
 
     } catch (err) {
@@ -587,11 +631,53 @@ export default function ProfileClient({
       ?.slice(0, 2) || 'CC'
   }
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: string, v: any) => {
+    setForm(f => ({ ...f, [k]: v }))
+    // Clear validation error dynamically
+    if (validationErrors[k]) {
+      setValidationErrors(prev => {
+        const copy = { ...prev }
+        delete copy[k]
+        return copy
+      })
+    }
+  }
+
+  // Tags Helpers
+  const addSkill = () => {
+    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+      setSkills(prev => [...prev, newSkill.trim()])
+      setNewSkill('')
+    }
+  }
+
+  const removeSkill = (index: number) => {
+    setSkills(prev => prev.filter((_, idx) => idx !== index))
+  }
+
+  const addInterest = () => {
+    if (newInterest.trim() && !interests.includes(newInterest.trim())) {
+      setInterests(prev => [...prev, newInterest.trim()])
+      setNewInterest('')
+    }
+  }
+
+  const removeInterest = (index: number) => {
+    setInterests(prev => prev.filter((_, idx) => idx !== index))
+  }
+
+  const handlePresetSelect = (id: number) => {
+    setCoverPreset(id)
+    if (isOwner) {
+      localStorage.setItem(`cc_cover_preset_${userId}`, id.toString())
+    }
+    setShowCoverPicker(false)
+  }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-24">
-      {/* Mobile back button & Desktop Breadcrumbs */}
+    <div className="space-y-8 max-w-7xl mx-auto pb-24 font-sans select-none">
+      
+      {/* Navigation Breadcrumb header */}
       <div className="flex items-center justify-between">
         <button 
           onClick={() => {
@@ -606,58 +692,89 @@ export default function ProfileClient({
           <ChevronLeft size={16} /> Back
         </button>
 
-        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+        <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-zinc-500">
           <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
           <span>&gt;</span>
-          <span className="text-white font-medium">Profile ({profile?.full_name || 'User'})</span>
+          <span className="text-white font-semibold">Profiles</span>
+          <span>&gt;</span>
+          <span className="text-zinc-300 font-medium">{profile?.full_name || 'User'}</span>
         </div>
       </div>
-      {/* Profile Hero Section with Futuristic Glow & Animations */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-8 backdrop-blur-2xl shadow-2xl"
-      >
-        {/* Animated ambient mesh gradients */}
-        <div className="absolute -left-20 -top-20 w-80 h-80 rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none animate-pulse" />
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none animate-pulse" />
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-purple-500/5 opacity-40 pointer-events-none" />
 
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
+      {/* Flagship Header Box */}
+      <div className="relative rounded-3xl border border-white/[0.04] bg-[#18181B] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        {/* Cover Image banner presets */}
+        <div className={clsx("h-36 sm:h-52 w-full transition-all duration-700 relative", COVER_PRESETS[coverPreset].class)}>
+          {/* Overlay mask */}
+          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
           
-          {/* Avatar Upload / Status Area */}
-          <div className="relative shrink-0 group">
-            {/* Glow ring animation */}
-            <div className="absolute -inset-1 bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600 rounded-3xl opacity-40 blur-md group-hover:opacity-80 transition-all duration-500 group-hover:scale-105" />
+          {/* Change Cover Trigger (Owner only) */}
+          {isOwner && (
+            <div className="absolute top-4 right-4 z-20">
+              <button
+                onClick={() => setShowCoverPicker(!showCoverPicker)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/[0.08] text-[10px] font-bold text-zinc-300 hover:text-white hover:bg-black/80 transition-all select-none active:scale-95 cursor-pointer"
+              >
+                <Camera size={12} />
+                Customize Cover
+              </button>
+
+              {showCoverPicker && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1c1c22] border border-white/[0.08] shadow-2xl p-2 z-30 space-y-1">
+                  <p className="text-[9px] font-mono font-bold text-zinc-500 uppercase px-2 py-1">Select Preset</p>
+                  {COVER_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => handlePresetSelect(preset.id)}
+                      className={clsx(
+                        "w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2",
+                        coverPreset === preset.id && "bg-white/5 font-semibold text-white"
+                      )}
+                    >
+                      <span className={clsx("w-3 h-3 rounded-full border border-white/20 shrink-0", preset.class)} />
+                      <span>{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Profile Card Header Info */}
+        <div className="px-6 pb-6 pt-0 sm:px-8 relative z-10 flex flex-col md:flex-row md:items-end gap-5">
+          {/* Avatar Area with overlap */}
+          <div className="relative shrink-0 -mt-16 sm:-mt-24 mx-auto md:mx-0 group">
+            {/* Outline Glow ring */}
+            <div className="absolute -inset-1 bg-gradient-to-tr from-blue-400 via-emerald-400 to-indigo-600 rounded-3xl opacity-35 blur group-hover:opacity-60 transition duration-500 group-hover:scale-105" />
             
-            <div className="relative rounded-3xl bg-[#030712] p-1.5 border border-white/[0.08] overflow-hidden">
+            <div className="relative rounded-3xl bg-[#18181B] p-1.5 border border-white/[0.04]">
               {currentAvatarUrl ? (
                 <img 
                   src={currentAvatarUrl} 
                   alt={profile?.full_name || 'Avatar'} 
-                  className="w-32 h-32 rounded-2xl object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-2xl bg-gradient-to-tr from-cyan-900/30 to-purple-900/30 border border-white/[0.04] flex items-center justify-center text-3xl font-extrabold text-cyan-400 group-hover:scale-105 transition-transform duration-500">
-                  {getInitials(profile?.full_name || 'Campus Connect')}
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-gradient-to-tr from-blue-900/40 to-slate-900 border border-white/[0.04] flex items-center justify-center text-4xl font-extrabold text-blue-400">
+                  {getInitials(profile?.full_name || 'CC')}
                 </div>
               )}
-
-              {/* Online Indicator Badge */}
-              <div className="absolute bottom-2.5 right-2.5 w-4 h-4 bg-emerald-500 border-[3px] border-[#030712] rounded-full shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse" />
+              {/* Online pulse green dot */}
+              <div className="absolute bottom-2.5 right-2.5 w-4 h-4 bg-[#22C55E] border-[3px] border-[#18181B] rounded-full shadow-[0_0_12px_rgba(34,197,94,0.6)]" />
             </div>
 
             {editing && isOwner && (
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-50 shadow-lg border border-white/10 bg-gradient-to-tr from-cyan-500 to-indigo-600"
-                aria-label="Upload Avatar"
+                className="absolute -bottom-2 -right-2 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-lg border border-white/10 bg-brand-500 hover:bg-brand-600 text-white cursor-pointer"
+                title="Change Avatar"
               >
                 {uploading ? (
-                  <span className="w-4.5 h-4.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <Camera className="text-white" size={16} />
+                  <Camera size={14} />
                 )}
               </button>
             )}
@@ -670,658 +787,783 @@ export default function ProfileClient({
             />
           </div>
 
-          {/* User Bio and Meta Information */}
-          <div className="flex-1 text-center md:text-left space-y-4">
-            <div ref={parentBio} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                {editing ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl text-left">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Full Name *</span>
-                      <input 
-                        value={form.full_name} 
-                        onChange={e => set('full_name', e.target.value)} 
-                        className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium" 
-                        placeholder="John Doe" 
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Username</span>
-                      <input 
-                        value={form.username} 
-                        onChange={e => set('username', e.target.value)} 
-                        className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium" 
-                        placeholder="johndoe" 
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <h1 className="font-display text-3xl font-black text-white tracking-tight flex items-center justify-center md:justify-start gap-2.5">
-                      {profile?.full_name}
-                      {profile?.is_verified && (
-                        <span className="inline-flex items-center justify-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-md text-[10px] font-black tracking-widest uppercase">
-                          Verified
-                        </span>
-                      )}
-                    </h1>
-                    {profile?.username && (
-                      <p className="text-xs font-mono text-cyan-400">@{profile.username}</p>
-                    )}
-                  </div>
+          {/* Identity details and Action buttons */}
+          <div className="flex-1 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-none font-sans">
+                  {profile?.full_name}
+                </h1>
+                {profile?.is_verified && (
+                  <span className="inline-flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md text-[9px] font-black tracking-widest uppercase">
+                    Verified Student
+                  </span>
                 )}
               </div>
+              <p className="text-xs font-mono text-zinc-500">@{profile?.username || 'user'}</p>
+              
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1.5 text-xs text-zinc-400 mt-1 font-medium">
+                <span className="flex items-center gap-1">
+                  <GraduationCap size={13} className="text-zinc-500" />
+                  <span>{profile?.colleges?.name || 'IILM University'}</span>
+                </span>
+                <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                <span>{profile?.branch}</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                <span>Year {profile?.year}</span>
+              </div>
+            </div>
 
-              {/* Edit / Action controls */}
-              {/* Edit / Action controls */}
-              <div ref={parentActions} className="flex flex-col sm:flex-row justify-center md:justify-start gap-3 w-full sm:w-auto">
-                {isOwner ? (
-                  editing ? (
-                    <>
-                      <button 
-                        onClick={() => setEditing(false)} 
-                        className="px-4 h-11 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-neutral-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto cursor-pointer"
+            {/* Profile Action Triggers */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
+              {isOwner ? (
+                <button 
+                  onClick={() => setEditing(true)} 
+                  className="px-5 h-10 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1] text-zinc-200 hover:text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Edit2 size={13} />
+                  Edit Profile
+                </button>
+              ) : (
+                relation !== 'blocked' && (
+                  <>
+                    {/* Message Action */}
+                    <Link
+                      href={relation === 'friends' ? `/messages?userId=${targetUserId}` : '#'}
+                      className={clsx(
+                        "px-5 h-10 rounded-xl text-xs font-semibold tracking-wide transition-all select-none flex items-center justify-center gap-2 border active:scale-95",
+                        relation === 'friends'
+                          ? "bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/20 text-blue-400 cursor-pointer"
+                          : "bg-white/[0.01] border-white/[0.04] text-zinc-600 cursor-not-allowed"
+                      )}
+                      onClick={(e) => relation !== 'friends' && e.preventDefault()}
+                    >
+                      <MessageCircle size={14} />
+                      Message
+                    </Link>
+
+                    {/* Friend relationship actions */}
+                    {relation === 'none' && (
+                      <button
+                        onClick={handleAddConnection}
+                        disabled={friendshipLoading}
+                        className="px-5 h-10 bg-blue-500 hover:bg-blue-600 border border-blue-500/20 text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md shadow-blue-500/10 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <X size={14} />
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={handleSave} 
-                        disabled={saving || !form.full_name}
-                        className="px-5 h-11 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:scale-105 active:scale-95 shadow-lg border border-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500 w-full sm:w-auto cursor-pointer"
-                      >
-                        {saving ? (
+                        {friendshipLoading ? (
                           <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                         ) : (
-                          <Save size={14} />
+                          <>
+                            <span>+ Add Connection</span>
+                          </>
                         )}
-                        Save Info
                       </button>
-                    </>
-                  ) : (
-                    <button 
-                      onClick={() => setEditing(true)} 
-                      className="px-5 h-11 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
-                    >
-                      <Edit2 size={13} />
-                      Edit Profile
-                    </button>
-                  )
-                ) : (
-                  relation !== 'blocked' && (
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                      {/* Message Button */}
-                      <Link
-                        href={relation === 'friends' ? `/messages?userId=${targetUserId}` : '#'}
-                        className={clsx(
-                          "px-5 h-11 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 border w-full sm:w-auto select-none",
-                          relation === 'friends'
-                            ? "bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/20 text-blue-400 cursor-pointer active:scale-95"
-                            : "bg-white/[0.02] border-white/[0.04] text-neutral-500 cursor-not-allowed"
-                        )}
-                        aria-disabled={relation !== 'friends'}
-                        onClick={(e) => {
-                          if (relation !== 'friends') {
-                            e.preventDefault()
-                          }
-                        }}
-                      >
-                        <MessageCircle size={14} />
-                        Message
-                      </Link>
+                    )}
 
-                      {/* Connection Action Button */}
-                      {relation === 'none' && (
+                    {relation === 'sent' && (
+                      <button
+                        onClick={() => handleDeclineOrCancelRequest()}
+                        disabled={friendshipLoading}
+                        className="px-5 h-10 bg-white/[0.02] border border-white/[0.04] text-zinc-400 hover:text-red-400 hover:border-red-500/20 rounded-xl text-xs font-semibold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {friendshipLoading ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Clock size={13} className="animate-pulse" />
+                            <span>Request Sent</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {relation === 'received' && (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={handleAddConnection}
+                          onClick={handleAcceptRequest}
                           disabled={friendshipLoading}
-                          className="px-5 h-11 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition-all duration-300 flex items-center justify-center gap-2 border border-cyan-500/20 shadow-lg shadow-cyan-600/10 active:scale-95 w-full sm:w-auto cursor-pointer"
+                          className="px-4 h-10 bg-emerald-500 hover:bg-emerald-600 border border-emerald-500/20 text-white rounded-xl text-xs font-semibold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           {friendshipLoading ? (
                             <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                           ) : (
                             <>
-                              <span>+ Add Connection</span>
+                              <Check size={13} />
+                              Accept
                             </>
                           )}
                         </button>
-                      )}
-
-                      {relation === 'sent' && (
                         <button
-                          disabled
-                          className="px-5 h-11 bg-white/5 border border-white/5 text-neutral-500 rounded-xl text-xs font-bold tracking-wide cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
+                          onClick={() => handleDeclineOrCancelRequest()}
+                          disabled={friendshipLoading}
+                          className="px-4 h-10 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-semibold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <Clock size={14} className="text-neutral-600" />
-                          Pending
+                          Decline
                         </button>
-                      )}
+                      </div>
+                    )}
 
-                      {relation === 'received' && (
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <button
-                            onClick={handleAcceptRequest}
-                            disabled={friendshipLoading}
-                            className="px-4 h-11 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 border border-emerald-500/20 w-full sm:w-auto cursor-pointer"
-                          >
-                            {friendshipLoading ? (
-                              <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                            ) : (
-                              <>
-                                <Check size={14} />
-                                Accept
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeclineOrCancelRequest()}
-                            disabled={friendshipLoading}
-                            className="px-4 h-11 bg-red-600/10 hover:bg-red-600/20 disabled:opacity-50 border border-red-600/20 text-red-400 rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-1.5 w-full sm:w-auto cursor-pointer"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
+                    {relation === 'friends' && (
+                      <div className="relative dropdown-container" ref={dropdownRef}>
+                        <button
+                          onClick={() => setShowDropdown(!showDropdown)}
+                          className="px-5 h-10 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Check size={13} />
+                          Connected ✓
+                        </button>
 
-                      {relation === 'friends' && (
-                        <div className="relative dropdown-container w-full sm:w-auto" ref={dropdownRef}>
-                          <button
-                            onClick={() => setShowDropdown(!showDropdown)}
-                            className="px-5 h-11 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/20 text-emerald-400 rounded-xl text-xs font-bold tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
-                          >
-                            <Check size={14} />
-                            Connected ✓
-                          </button>
-
-                          {showDropdown && (
-                            <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#090d16] border border-white/10 shadow-2xl p-1.5 z-30 animate-fade-in font-sans">
-                              <Link
-                                href={`/messages?userId=${targetUserId}`}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-neutral-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left"
-                                onClick={() => setShowDropdown(false)}
-                              >
-                                <MessageCircle size={13} />
-                                Message
-                              </Link>
-                              {mutualFriends.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setShowDropdown(false)
-                                    setShowAllMutual(true)
-                                  }}
-                                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-neutral-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left font-medium cursor-pointer"
-                                >
-                                  <Users size={13} />
-                                  View Mutual Friends
-                                </button>
-                              )}
-                              <button
-                                onClick={(e) => {
-                                  setShowDropdown(false)
-                                  handleDeclineOrCancelRequest(e)
-                                }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left font-bold border-t border-white/[0.04] mt-1 pt-2 cursor-pointer"
-                              >
-                                Remove Connection
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Bio info */}
-            <div ref={parentBioInfo} className="max-w-2xl">
-              {editing ? (
-                <div className="space-y-1 text-left">
-                  <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Short Bio</span>
-                  <textarea 
-                    value={form.bio || ''} 
-                    onChange={e => set('bio', e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium resize-none h-20" 
-                    placeholder="Tell the campus your story..." 
-                  />
-                </div>
-              ) : (
-                profile?.bio ? (
-                  <p className="text-sm text-neutral-300 leading-relaxed font-medium">
-                    {profile.bio}
-                  </p>
-                ) : (
-                  <p className="text-xs text-neutral-500 italic">No biography written yet.</p>
+                        {showDropdown && (
+                          <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1c1c22] border border-white/[0.08] shadow-2xl p-1.5 z-30 font-sans">
+                            <button
+                              onClick={(e) => {
+                                setShowDropdown(false)
+                                handleDeclineOrCancelRequest(e)
+                              }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left font-bold cursor-pointer"
+                            >
+                              Remove Connection
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )
               )}
             </div>
 
-            {/* Verification & Badges block */}
-            {!editing && (
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-2">
-                {profile?.role && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 tracking-wider uppercase">
-                    Role: {profile.role}
+          </div>
+        </div>
+      </div>
+
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* Box 1: About */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+            <User size={16} className="text-blue-400" />
+            <h3 className="text-sm font-bold text-white tracking-tight uppercase">About Student</h3>
+          </div>
+          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-normal text-left whitespace-pre-wrap">
+            {profile?.bio || 'Biography details have not been updated yet.'}
+          </p>
+        </div>
+
+        {/* Box 2: Academic Journey */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+            <GraduationCap size={16} className="text-blue-400" />
+            <h3 className="text-sm font-bold text-white tracking-tight uppercase">Academic Details</h3>
+          </div>
+          
+          <div className="space-y-3.5 text-left">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium">Program</span>
+              <span className="text-zinc-200 font-semibold">{profile?.branch || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium">Semester / Year</span>
+              <span className="text-zinc-200 font-semibold">{profile?.year ? `Year ${profile.year}` : 'Not set'}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium flex items-center gap-1">
+                Roll Number {!canViewSensitiveInfo && <EyeOff size={11} className="text-zinc-600" />}
+              </span>
+              {canViewSensitiveInfo ? (
+                <span className="text-zinc-200 font-semibold font-mono">{profile?.roll_number || 'Not set'}</span>
+              ) : (
+                <span className="text-zinc-600 font-medium italic flex items-center gap-1 text-[11px]"><Lock size={10} /> Locked</span>
+              )}
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium flex items-center gap-1">
+                Campus Housing {!canViewSensitiveInfo && <EyeOff size={11} className="text-zinc-600" />}
+              </span>
+              {canViewSensitiveInfo ? (
+                <span className="text-zinc-200 font-semibold">{profile?.hostel || 'Not set'}</span>
+              ) : (
+                <span className="text-zinc-600 font-medium italic flex items-center gap-1 text-[11px]"><Lock size={10} /> Locked</span>
+              )}
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium flex items-center gap-1">
+                Contact Phone {!canViewSensitiveInfo && <EyeOff size={11} className="text-zinc-600" />}
+              </span>
+              {canViewSensitiveInfo ? (
+                <span className="text-zinc-200 font-semibold font-mono">{profile?.phone || 'Not set'}</span>
+              ) : (
+                <span className="text-zinc-600 font-medium italic flex items-center gap-1 text-[11px]"><Lock size={10} /> Locked</span>
+              )}
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-500 font-medium flex items-center gap-1">
+                Email Address {!canViewSensitiveInfo && <EyeOff size={11} className="text-zinc-600" />}
+              </span>
+              {canViewSensitiveInfo ? (
+                <span className="text-zinc-200 font-semibold truncate max-w-[160px]">{profile?.email || 'Not set'}</span>
+              ) : (
+                <span className="text-zinc-600 font-medium italic flex items-center gap-1 text-[11px]"><Lock size={10} /> Locked</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Box 3: Live Stats & Level Progression */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-5 justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+              <Award size={16} className="text-blue-400" />
+              <h3 className="text-sm font-bold text-white tracking-tight uppercase">Reputation & Stats</h3>
+            </div>
+
+            <div ref={parentStats} className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: 'Posts', value: stats.posts, icon: FileText, color: 'text-indigo-400 bg-indigo-500/10' },
+                { label: 'Network', value: stats.friends, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
+                { label: 'Badges', value: stats.badges, icon: Trophy, color: 'text-amber-400 bg-amber-500/10' },
+              ].map((item, idx) => {
+                const Icon = item.icon
+                return (
+                  <div key={idx} className="bg-white/[0.01] border border-white/[0.04] p-3 rounded-2xl text-center">
+                    <div className="flex justify-center mb-1">
+                      <div className={clsx("w-6 h-6 rounded-md flex items-center justify-center", item.color)}>
+                        <Icon size={12} />
+                      </div>
+                    </div>
+                    <p className="text-lg font-black text-white">{item.value}</p>
+                    <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-tight mt-0.5">{item.label}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Level Points Progression */}
+          <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+            <div className="flex justify-between items-center text-[10px] font-semibold text-zinc-400">
+              <span className="flex items-center gap-1"><Sparkles size={11} className="text-amber-400 animate-pulse" /> Level {Math.floor(stats.points / 500) + 1}</span>
+              <span>{stats.points % 500} / 500 XP</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/[0.02] border border-white/[0.04] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+                style={{ width: `${((stats.points % 500) / 500) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Box 4: Skills & Interests */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+            <Hash size={16} className="text-blue-400" />
+            <h3 className="text-sm font-bold text-white tracking-tight uppercase">Skills & Interests</h3>
+          </div>
+
+          <div className="space-y-4 text-left">
+            <div>
+              <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-2">Technical Skills</p>
+              <div className="flex flex-wrap gap-1.5">
+                {skills.map((s, idx) => (
+                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-semibold">
+                    {s}
                   </span>
-                )}
-                {profile?.branch && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 tracking-wider uppercase">
-                    {profile.branch}
+                ))}
+                {skills.length === 0 && <span className="text-xs text-zinc-600 italic">No skills listed</span>}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-2">Interests</p>
+              <div className="flex flex-wrap gap-1.5">
+                {interests.map((i, idx) => (
+                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
+                    {i}
                   </span>
-                )}
-                {profile?.year && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono bg-purple-500/10 border border-purple-500/20 text-purple-400 tracking-wider uppercase">
-                    Year {profile.year}
-                  </span>
-                )}
-                {profile?.hostel && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 tracking-wider uppercase">
-                    {profile.hostel}
-                  </span>
-                )}
+                ))}
+                {interests.length === 0 && <span className="text-xs text-zinc-600 italic">No interests listed</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Box 5: Achievements Badges */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4">
+          <div className="flex justify-between items-center pb-3 border-b border-white/[0.04]">
+            <div className="flex items-center gap-2">
+              <Trophy size={16} className="text-amber-400" />
+              <h3 className="text-sm font-bold text-white tracking-tight uppercase">Badges Earned</h3>
+            </div>
+            <span className="text-[10px] font-bold font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+              {stats.badges} Earned
+            </span>
+          </div>
+
+          <div ref={parentBadges} className="grid grid-cols-2 gap-2 text-left">
+            {PREDEFINED_BADGES.map((badge) => {
+              const isEarned = earnedBadges.includes(badge.id)
+              const BadgeIcon = badge.icon
+              return (
+                <div 
+                  key={badge.id}
+                  className={clsx(
+                    "flex items-center gap-2 p-2 rounded-xl border transition-all duration-300 relative overflow-hidden group",
+                    isEarned 
+                      ? "bg-white/[0.01] border-white/[0.08]" 
+                      : "bg-white/[0.01] border-white/[0.02] opacity-35"
+                  )}
+                  title={badge.desc}
+                >
+                  <div className={clsx(
+                    "w-7 h-7 rounded-lg flex items-center justify-center border shrink-0",
+                    isEarned 
+                      ? `bg-gradient-to-tr ${badge.color} text-zinc-950 border-transparent` 
+                      : "bg-zinc-900 text-zinc-600 border-white/[0.04]"
+                  )}>
+                    <BadgeIcon size={12} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={clsx(
+                      "text-[10px] font-bold truncate",
+                      isEarned ? "text-zinc-200" : "text-zinc-600"
+                    )}>
+                      {badge.name}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Box 6: Connections Mutual or Facepile */}
+        <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4 justify-between">
+          <div>
+            <div className="flex justify-between items-center pb-3 border-b border-white/[0.04]">
+              <div className="flex items-center gap-2">
+                <Users size={16} className="text-blue-400" />
+                <h3 className="text-sm font-bold text-white tracking-tight uppercase">Network</h3>
+              </div>
+              <Link href="/friends" className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">
+                Manage
+              </Link>
+            </div>
+            
+            {/* Show mutual friends if visiting another profile, or showcase connections */}
+            {!isOwner && mutualFriends.length > 0 ? (
+              <div className="mt-4 text-left">
+                <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-2">Mutual Connections ({mutualFriends.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {mutualFriends.slice(0, 5).map((f) => (
+                    <Link key={f.id} href={`/profile?id=${f.id}`} className="hover:scale-105 transition-transform" title={f.full_name}>
+                      <GlobalAvatar profile={f} size="sm" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 text-left">
+                <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest mb-3">Recent connections</p>
+                <p className="text-zinc-500 text-xs italic">Manage connections tab to view all peers.</p>
               </div>
             )}
           </div>
-        </div>
-      </motion.div>
 
-      {/* Main Content Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* Left Side: Academic & Statistics Card */}
-        <div className="lg:col-span-1 space-y-8">
-          
-          {/* Academic Details Card */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-6"
-          >
-            <h3 className="font-display font-bold text-lg text-white flex items-center gap-2.5">
-              <GraduationCap className="text-cyan-400 shrink-0" size={20} />
-              Academic Info
-            </h3>
-
-            {editing ? (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Branch / Program</label>
-                  <select 
-                    value={form.branch} 
-                    onChange={e => set('branch', e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium cursor-pointer"
-                  >
-                    <option value="" className="bg-[#030712]">Select branch</option>
-                    {BRANCHES.map(b => <option key={b} value={b} className="bg-[#030712]">{b}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Current Year</label>
-                  <select 
-                    value={form.year} 
-                    onChange={e => set('year', +e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium cursor-pointer"
-                  >
-                    {YEARS.map(y => <option key={y} value={y} className="bg-[#030712]">Year {y}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Roll Number</label>
-                  <input 
-                    value={form.roll_number} 
-                    onChange={e => set('roll_number', e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium" 
-                    placeholder="IILM2024BBA001" 
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Hostel Room / Campus Housing</label>
-                  <select 
-                    value={form.hostel} 
-                    onChange={e => set('hostel', e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium cursor-pointer"
-                  >
-                    <option value="" className="bg-[#030712]">Select hostel</option>
-                    {HOSTELS.map(h => <option key={h} value={h} className="bg-[#030712]">{h}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Phone Contact</label>
-                  <input 
-                    value={form.phone} 
-                    onChange={e => set('phone', e.target.value)} 
-                    className="w-full bg-[#0d121f]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium" 
-                    placeholder="+91 99999 99999" 
-                    type="tel" 
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium">Branch</span>
-                  <span className="text-xs text-white font-bold">{profile?.branch || 'Not set'}</span>
-                </div>
-                <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium">Current Year</span>
-                  <span className="text-xs text-white font-bold">{profile?.year ? `Year ${profile.year}` : 'Not set'}</span>
-                </div>
-                <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                    Campus Housing {!canViewSensitiveInfo && <EyeOff size={11} className="text-neutral-500" />}
-                  </span>
-                  {canViewSensitiveInfo ? (
-                    <span className="text-xs text-white font-bold">{profile?.hostel || 'Not set'}</span>
-                  ) : (
-                    <span className="text-xs text-neutral-500 italic flex items-center gap-1"><Lock size={12} /> Locked</span>
-                  )}
-                </div>
-
-                {/* SENSITIVE DATA RULES ENFORCED HERE */}
-                <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                    Roll Number {!canViewSensitiveInfo && <EyeOff size={11} className="text-neutral-500" />}
-                  </span>
-                  {canViewSensitiveInfo ? (
-                    <span className="text-xs text-white font-bold font-mono">{profile?.roll_number || 'Not set'}</span>
-                  ) : (
-                    <span className="text-xs text-neutral-500 italic flex items-center gap-1"><Lock size={12} /> Locked</span>
-                  )}
-                </div>
-
-                <div className="flex justify-between items-center py-2.5 border-b border-white/[0.04]">
-                  <span className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                    Phone {!canViewSensitiveInfo && <EyeOff size={11} className="text-neutral-500" />}
-                  </span>
-                  {canViewSensitiveInfo ? (
-                    <span className="text-xs text-white font-bold font-mono">{profile?.phone || 'Not set'}</span>
-                  ) : (
-                    <span className="text-xs text-neutral-500 italic flex items-center gap-1"><Lock size={12} /> Locked</span>
-                  )}
-                </div>
-
-                <div className="flex justify-between items-center py-2.5">
-                  <span className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-                    Email {!canViewSensitiveInfo && <EyeOff size={11} className="text-neutral-500" />}
-                  </span>
-                  {canViewSensitiveInfo ? (
-                    <span className="text-xs text-white font-bold truncate max-w-[180px]">{profile?.email || 'Not set'}</span>
-                  ) : (
-                    <span className="text-xs text-neutral-500 italic flex items-center gap-1"><Lock size={12} /> Locked</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Statistics Card */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-6"
-          >
-            <h3 className="font-display font-bold text-lg text-white flex items-center gap-2.5">
-              <Award className="text-purple-400 shrink-0" size={20} />
-              Statistics
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Posts', value: stats.posts, icon: FileText, color: 'text-purple-400 bg-purple-500/10' },
-                { label: 'Connections', value: stats.friends, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
-                { label: 'Communities', value: stats.communities, icon: MessageCircle, color: 'text-cyan-400 bg-cyan-500/10' },
-                { label: 'Study Groups', value: stats.studyGroups, icon: BookOpen, color: 'text-rose-400 bg-rose-500/10' },
-                { label: 'Achievements', value: stats.badges, icon: Trophy, color: 'text-indigo-400 bg-indigo-500/10' },
-                { label: 'Points', value: stats.points, icon: Award, color: 'text-amber-400 bg-amber-500/10' },
-              ].map((stat, idx) => {
-                const IconComp = stat.icon
-                return (
-                  <div key={idx} className="p-4 rounded-2xl bg-[#030712]/50 border border-white/[0.04] text-center hover:border-cyan-500/20 transition-all duration-300">
-                    <div className="flex justify-center mb-1.5">
-                      <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-white/[0.04]", stat.color)}>
-                        <IconComp size={15} />
-                      </div>
-                    </div>
-                    <p className="text-2xl font-black text-white leading-tight">{stat.value}</p>
-                    <p className="text-[10px] font-mono uppercase text-neutral-500 mt-1 leading-none tracking-tight">{stat.label}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-
-          {/* Mutual Connections Card */}
-          {!isOwner && mutualFriends.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-4 font-sans"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="font-display font-bold text-sm text-white flex items-center gap-2.5">
-                  <Users className="text-cyan-400 shrink-0" size={18} />
-                  Mutual Connections ({mutualFriends.length})
-                </h3>
-                {mutualFriends.length > 5 && (
-                  <button 
-                    onClick={() => setShowAllMutual(true)}
-                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                  >
-                    View All
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {mutualFriends.slice(0, 5).map((f) => (
-                  <Link 
-                    key={f.id} 
-                    href={`/profile?id=${f.id}`}
-                    title={f.full_name}
-                    className="relative shrink-0 hover:scale-105 transition-transform"
-                  >
-                    <GlobalAvatar profile={f} size="sm" />
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-          )}
+          <Link href="/friends" className="w-full py-2 bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] rounded-xl text-xs font-semibold text-zinc-300 hover:text-white text-center transition-all">
+            Open Connections Suite
+          </Link>
         </div>
 
-        {/* Right Side: Activity & Achievements Section (2/3 width) */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Achievements (Badges) Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-6"
-          >
-            <div className="flex justify-between items-center">
-              <h3 className="font-display font-bold text-lg text-white flex items-center gap-2.5">
-                <Trophy className="text-amber-400 shrink-0" size={20} />
-                Unlocked Achievements
-              </h3>
-              <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                {stats.badges} / {PREDEFINED_BADGES.length} Badges
-              </span>
+        {/* Box 7: Campus Activity & Recent Posts (Col Span 2) */}
+        <div className="md:col-span-2 bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 shadow-md flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-white/[0.04]">
+            <div className="flex items-center gap-2">
+              <Activity size={16} className="text-blue-400" />
+              <h3 className="text-sm font-bold text-white tracking-tight uppercase">Recent Campus Activity</h3>
             </div>
 
-            <div ref={parentBadges} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {PREDEFINED_BADGES.map((badge) => {
-                const isEarned = earnedBadges.includes(badge.id)
-                const BadgeIcon = badge.icon
-                return (
-                  <div 
-                    key={badge.id}
-                    className={clsx(
-                      "flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group",
-                      isEarned 
-                        ? "bg-[#090d16]/80 border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.05)]" 
-                        : "bg-white/[0.01] border-white/[0.04] opacity-50"
-                    )}
-                  >
-                    {isEarned && (
-                      <div className="absolute top-0 right-0 w-8 h-8 rounded-full bg-cyan-500/5 blur-md" />
-                    )}
-                    
-                    <div className={clsx(
-                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
-                      isEarned 
-                        ? `bg-gradient-to-tr ${badge.color} text-zinc-950 border-transparent shadow-md` 
-                        : "bg-zinc-900 text-neutral-600 border-white/[0.04]"
-                    )}>
-                      <BadgeIcon size={18} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className={clsx(
-                        "text-xs font-bold leading-tight flex items-center gap-1.5",
-                        isEarned ? "text-white" : "text-neutral-500"
-                      )}>
-                        {badge.name}
-                        {isEarned && <Check size={12} className="text-cyan-400 font-black shrink-0" />}
-                      </p>
-                      <p className="text-[10px] text-neutral-400 mt-1 leading-normal">{badge.desc}</p>
-                    </div>
-                  </div>
-                )
-              })}
+            {/* Custom Tab Toggles */}
+            <div className="flex gap-1 p-0.5 rounded-lg bg-zinc-900 border border-white/[0.04] select-none">
+              {(['posts', 'communities', 'events'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveActivityTab(tab)}
+                  className={clsx(
+                    "px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer",
+                    activeActivityTab === tab
+                      ? "bg-white/5 border border-white/[0.04] text-white shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Activity Logs Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-white/[0.08] bg-[#090d16]/40 p-6 backdrop-blur-2xl shadow-xl space-y-6"
-          >
-            <h3 className="font-display font-bold text-lg text-white flex items-center gap-2.5">
-              <Activity className="text-blue-400 shrink-0" size={20} />
-              Recent Campus Activity
-            </h3>
-
+          {/* Activity items body */}
+          <div className="min-h-[160px] flex flex-col gap-2 text-left">
             {loadingActivity ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-16 w-full rounded-2xl bg-white/[0.02] border border-white/[0.04] animate-pulse" />
-                ))}
+              <div className="space-y-2 animate-pulse">
+                {[1, 2].map(n => <div key={n} className="h-12 w-full rounded-xl bg-white/[0.02]" />)}
               </div>
             ) : (
-              <div className="space-y-4">
+              <>
                 {/* Posts Activity */}
-                {activities.posts.length > 0 && (
-                  <div className="space-y-2.5">
-                    <p className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1">Recent Posts</p>
-                    <div className="flex flex-col gap-2">
-                      {activities.posts.map((post) => (
-                        <div key={post.id} className="p-3.5 rounded-2xl bg-[#030712]/40 border border-white/[0.04] flex justify-between items-center">
+                {activeActivityTab === 'posts' && (
+                  <div className="space-y-2">
+                    {activities.posts.map(post => (
+                      <div key={post.id} className="p-3 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                        <div className="min-w-0 pr-4">
+                          <p className="text-xs text-zinc-300 truncate max-w-[450px] font-medium leading-relaxed">&ldquo;{post.content}&rdquo;</p>
+                          <span className="text-[9px] font-mono text-zinc-500 mt-1 block">
+                            {new Date(post.created_at).toLocaleDateString()} · {post.likes_count} Likes · {post.comments_count} Replies
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {activities.posts.length === 0 && (
+                      <p className="text-zinc-500 text-xs italic py-4 text-center">No posts shared yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Communities Activity */}
+                {activeActivityTab === 'communities' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {activities.communities.map((item, idx) => (
+                      <div key={idx} className="p-3 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                          <MessageCircle size={14} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-zinc-200 font-bold truncate">{item.communities?.name}</p>
+                          <p className="text-[9px] text-zinc-500 truncate mt-0.5">{item.communities?.description || 'Campus interest group'}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {activities.communities.length === 0 && (
+                      <p className="col-span-2 text-zinc-500 text-xs italic py-4 text-center">No communities joined yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Events Activity */}
+                {activeActivityTab === 'events' && (
+                  <div className="space-y-2">
+                    {activities.events.map((item, idx) => (
+                      <div key={idx} className="p-3 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex justify-between items-center hover:bg-white/[0.02] transition-colors">
+                        <div className="min-w-0 flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <Calendar size={14} />
+                          </div>
                           <div className="min-w-0">
-                            <p className="text-xs text-white font-medium truncate max-w-[400px]">
-                              &ldquo;{post.content}&rdquo;
-                            </p>
-                            <p className="text-[9px] font-mono text-neutral-500 mt-1.5">
-                              {new Date(post.created_at).toLocaleDateString()} · {post.likes_count} likes · {post.comments_count} comments
-                            </p>
+                            <p className="text-xs text-zinc-200 font-bold truncate">{item.events?.title}</p>
+                            <p className="text-[9px] text-zinc-500 truncate mt-0.5">{item.events?.description || 'RSVPd Event'}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        {item.events?.start_time && (
+                          <span className="text-[9px] font-mono text-zinc-400 bg-zinc-900 border border-white/[0.04] px-1.5 py-0.5 rounded">
+                            {new Date(item.events.start_time).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {activities.events.length === 0 && (
+                      <p className="text-zinc-500 text-xs italic py-4 text-center">No upcoming events RSVPd.</p>
+                    )}
                   </div>
                 )}
-
-                {/* Communities Joined Activity */}
-                {activities.communities.length > 0 && (
-                  <div className="space-y-2.5 pt-2">
-                    <p className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1">Communities Joined</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {activities.communities.map((item, idx) => (
-                        <div key={idx} className="p-3 rounded-2xl bg-[#030712]/40 border border-white/[0.04] flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-                            <MessageCircle size={15} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs text-white font-bold truncate">{item.communities?.name}</p>
-                            <p className="text-[9px] text-neutral-500 truncate mt-0.5">{item.communities?.description || 'Active interest group'}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Events RSVP'd Activity */}
-                {activities.events.length > 0 && (
-                  <div className="space-y-2.5 pt-2">
-                    <p className="text-[9px] font-mono font-bold tracking-widest text-neutral-500 uppercase px-1">Upcoming Events</p>
-                    <div className="flex flex-col gap-2">
-                      {activities.events.map((item, idx) => (
-                        <div key={idx} className="p-3.5 rounded-2xl bg-[#030712]/40 border border-white/[0.04] flex justify-between items-center">
-                          <div className="min-w-0 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                              <Calendar size={15} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs text-white font-bold truncate">{item.events?.title}</p>
-                              <p className="text-[9px] text-neutral-500 truncate mt-0.5">{item.events?.description || 'No description provided'}</p>
-                            </div>
-                          </div>
-                          {item.events?.start_time && (
-                            <span className="text-[10px] font-mono font-bold text-neutral-400 shrink-0">
-                              {new Date(item.events.start_time).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty State if absolutely nothing exists */}
-                {activities.posts.length === 0 && activities.communities.length === 0 && activities.events.length === 0 && (
-                  <div className="text-center py-8 text-neutral-500 text-xs italic">
-                    No recent activities recorded for this student node.
-                  </div>
-                )}
-              </div>
+              </>
             )}
-          </motion.div>
-
+          </div>
         </div>
 
       </div>
 
+      {/* Edit Profile Pane Overlay Modal (Premium Transition Layer) */}
+      <AnimatePresence>
+        {editing && isOwner && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop filter overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditing(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+
+            {/* Modal Body container */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="relative w-full max-w-2xl bg-[#1c1c22] border border-white/[0.06] rounded-3xl p-6 sm:p-8 shadow-2xl overflow-y-auto max-h-[85vh] scrollbar-none space-y-6"
+            >
+              {/* Header Title section */}
+              <div className="flex justify-between items-center border-b border-white/[0.04] pb-4">
+                <div className="text-left">
+                  <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                    <Edit2 size={16} className="text-blue-400" />
+                    Edit Campus Profile
+                  </h2>
+                  <p className="text-[11px] text-zinc-400 mt-1 font-medium">Keep your university credentials and social handles up-to-date.</p>
+                </div>
+                
+                <button 
+                  onClick={() => setEditing(false)}
+                  className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Form Input Blocks */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                {/* Full name block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Full Name *</span>
+                  <input 
+                    value={form.full_name} 
+                    onChange={e => set('full_name', e.target.value)} 
+                    className={clsx(
+                      "w-full bg-[#09090B] border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 transition-all font-medium",
+                      validationErrors.full_name ? "border-red-500 focus:ring-red-500" : "border-white/[0.06] focus:border-blue-500 focus:ring-blue-500"
+                    )} 
+                    placeholder="Enter full name" 
+                  />
+                  {validationErrors.full_name && (
+                    <span className="text-[9px] text-red-500 block font-semibold">{validationErrors.full_name}</span>
+                  )}
+                </div>
+
+                {/* Username block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Username *</span>
+                  <input 
+                    value={form.username} 
+                    onChange={e => set('username', e.target.value)} 
+                    className={clsx(
+                      "w-full bg-[#09090B] border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 transition-all font-medium",
+                      validationErrors.username ? "border-red-500 focus:ring-red-500" : "border-white/[0.06] focus:border-blue-500 focus:ring-blue-500"
+                    )} 
+                    placeholder="johndoe" 
+                  />
+                  {validationErrors.username && (
+                    <span className="text-[9px] text-red-500 block font-semibold">{validationErrors.username}</span>
+                  )}
+                </div>
+
+                {/* Branch block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Branch / Program *</span>
+                  <select 
+                    value={form.branch} 
+                    onChange={e => set('branch', e.target.value)} 
+                    className="w-full bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium cursor-pointer"
+                  >
+                    <option value="" className="bg-[#09090B]">Select branch</option>
+                    {BRANCHES.map(b => <option key={b} value={b} className="bg-[#09090B]">{b}</option>)}
+                  </select>
+                  {validationErrors.branch && (
+                    <span className="text-[9px] text-red-500 block font-semibold">{validationErrors.branch}</span>
+                  )}
+                </div>
+
+                {/* Year block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Current Year *</span>
+                  <select 
+                    value={form.year} 
+                    onChange={e => set('year', +e.target.value)} 
+                    className="w-full bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium cursor-pointer"
+                  >
+                    {YEARS.map(y => <option key={y} value={y} className="bg-[#09090B]">Year {y}</option>)}
+                  </select>
+                </div>
+
+                {/* Roll number block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Roll Number *</span>
+                  <input 
+                    value={form.roll_number} 
+                    onChange={e => set('roll_number', e.target.value)} 
+                    className={clsx(
+                      "w-full bg-[#09090B] border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 transition-all font-medium",
+                      validationErrors.roll_number ? "border-red-500 focus:ring-red-500" : "border-white/[0.06] focus:border-blue-500 focus:ring-blue-500"
+                    )} 
+                    placeholder="IILM2024BBA001" 
+                  />
+                  {validationErrors.roll_number && (
+                    <span className="text-[9px] text-red-500 block font-semibold">{validationErrors.roll_number}</span>
+                  )}
+                </div>
+
+                {/* Hostel block */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Hostel housing</span>
+                  <select 
+                    value={form.hostel} 
+                    onChange={e => set('hostel', e.target.value)} 
+                    className="w-full bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium cursor-pointer"
+                  >
+                    <option value="" className="bg-[#09090B]">Select housing option</option>
+                    {HOSTELS.map(h => <option key={h} value={h} className="bg-[#09090B]">{h}</option>)}
+                  </select>
+                </div>
+
+                {/* Phone contact */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Phone contact</span>
+                  <input 
+                    value={form.phone} 
+                    onChange={e => set('phone', e.target.value)} 
+                    className={clsx(
+                      "w-full bg-[#09090B] border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-1 transition-all font-medium",
+                      validationErrors.phone ? "border-red-500 focus:ring-red-500" : "border-white/[0.06] focus:border-blue-500 focus:ring-blue-500"
+                    )} 
+                    placeholder="+91 99999 99999" 
+                    type="tel"
+                  />
+                  {validationErrors.phone && (
+                    <span className="text-[9px] text-red-500 block font-semibold">{validationErrors.phone}</span>
+                  )}
+                </div>
+
+                {/* Short Bio Block */}
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Biography</span>
+                  <textarea 
+                    value={form.bio || ''} 
+                    onChange={e => set('bio', e.target.value)} 
+                    className="w-full bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium resize-none h-16" 
+                    placeholder="Tell the campus your story..." 
+                  />
+                </div>
+              </div>
+
+              {/* Skills and Interests tagging */}
+              <div className="border-t border-white/[0.04] pt-4 space-y-4 text-left">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Configure Tags</h3>
+                
+                {/* Skills tags builder */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Technical Skills</span>
+                  <div className="flex flex-wrap gap-1.5 p-2 rounded-xl bg-[#09090B] border border-white/[0.04] min-h-[40px]">
+                    {skills.map((tag, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold">
+                        <span>{tag}</span>
+                        <button type="button" onClick={() => removeSkill(idx)} className="hover:text-red-400 shrink-0">
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={newSkill}
+                      onChange={e => setNewSkill(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                      className="flex-1 bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium"
+                      placeholder="Type a skill (e.g. Next.js) and press enter"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={addSkill}
+                      className="px-3.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl flex items-center justify-center cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Interests tags builder */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Interests & Hobbies</span>
+                  <div className="flex flex-wrap gap-1.5 p-2 rounded-xl bg-[#09090B] border border-white/[0.04] min-h-[40px]">
+                    {interests.map((tag, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                        <span>{tag}</span>
+                        <button type="button" onClick={() => removeInterest(idx)} className="hover:text-red-400 shrink-0">
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={newInterest}
+                      onChange={e => setNewInterest(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInterest())}
+                      className="flex-1 bg-[#09090B] border border-white/[0.06] focus:border-blue-500 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all font-medium"
+                      placeholder="Type an interest (e.g. Hackathons) and press enter"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={addInterest}
+                      className="px-3.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl flex items-center justify-center cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.04]">
+                <button 
+                  onClick={() => setEditing(false)} 
+                  className="px-5 py-2.5 bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] text-zinc-300 rounded-xl text-xs font-semibold cursor-pointer active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={saving}
+                  className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-xl text-xs font-semibold cursor-pointer active:scale-95 transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                >
+                  {saving ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle size={14} />
+                  )}
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mutual Connections List Modal */}
       {showAllMutual && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in font-sans">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAllMutual(false)} />
-          <div className="glass-panel-base max-w-md w-full relative z-10 p-6 space-y-4 bg-[#090d16] border border-white/10 rounded-2xl animate-scale-up max-h-[80vh] flex flex-col font-sans">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+          <div className="max-w-md w-full relative z-10 p-6 space-y-4 bg-[#1c1c22] border border-white/[0.06] rounded-3xl shadow-2xl flex flex-col font-sans max-h-[80vh]">
+            <div className="flex justify-between items-center border-b border-white/[0.04] pb-3">
               <h3 className="font-display font-bold text-white text-base">Mutual Connections</h3>
-              <button onClick={() => setShowAllMutual(false)} className="text-neutral-400 hover:text-white transition-colors cursor-pointer p-1">
+              <button onClick={() => setShowAllMutual(false)} className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-1">
                 <X size={18} />
               </button>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-2">
               {mutualFriends.map((f) => (
-                <div key={f.id} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                <div key={f.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-[#09090B] border border-white/[0.04]">
                   <div className="flex items-center gap-3">
                     <GlobalAvatar profile={f} size="sm" />
                     <div className="min-w-0 text-left">
                       <Link 
                         href={`/profile?id=${f.id}`}
                         onClick={() => setShowAllMutual(false)}
-                        className="text-xs font-bold text-white hover:text-blue-400 transition-colors tracking-tight block truncate max-w-[180px]"
+                        className="text-xs font-bold text-white hover:text-blue-400 transition-colors block truncate max-w-[180px]"
                       >
                         {f.full_name}
                       </Link>
-                      <p className="text-[10px] text-neutral-500 font-medium">
+                      <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">
                         {f.branch ? `${f.branch}` : ''} {f.year ? `· Y${f.year}` : ''}
                       </p>
                     </div>
@@ -1329,7 +1571,7 @@ export default function ProfileClient({
                   <Link 
                     href={`/profile?id=${f.id}`}
                     onClick={() => setShowAllMutual(false)}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-bold transition-all text-center"
+                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-bold text-center"
                   >
                     View
                   </Link>
