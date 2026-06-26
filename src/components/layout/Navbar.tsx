@@ -168,57 +168,58 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
 
   return (
-    <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none">
-      <nav ref={navRef} className="pointer-events-auto h-20 w-full glass-panel-base rounded-2xl px-6 sm:px-8 flex items-center justify-between gap-6 transition-all duration-300">
+    <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
+      <nav ref={navRef} className="pointer-events-auto h-20 flex-1 glass-panel-base rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
         
-        {/* Brand Logo */}
-        <div className="flex items-center gap-2">
-          <LinkComponent href="/" className="flex items-center gap-2.5">
-            <svg className="w-8 h-8 shrink-0 drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
-                fill="url(#c-gradient-nav)"
-                strokeWidth="1"
-              />
-              <defs>
-                <linearGradient id="c-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="50%" stopColor="#8b5cf6" />
-                  <stop offset="100%" stopColor="#22d3ee" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="text-white font-display font-bold text-base tracking-tight hidden lg:block">
-              Campus<span className="text-zinc-400 font-normal">Connect</span>
-            </span>
-          </LinkComponent>
+        {/* Left: Navigation (Logo + Nav Links) */}
+        <div className="flex items-center gap-4 lg:gap-6 flex-1 justify-start min-w-0">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <LinkComponent href="/" className="flex items-center gap-2.5">
+              <svg className="w-8 h-8 shrink-0 drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
+                  fill="url(#c-gradient-nav)"
+                  strokeWidth="1"
+                />
+                <defs>
+                  <linearGradient id="c-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="50%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#22d3ee" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="text-white font-display font-bold text-base tracking-tight hidden lg:block">
+                Campus<span className="text-zinc-400 font-normal">Connect</span>
+              </span>
+            </LinkComponent>
+          </div>
+
+          {/* Desktop Primary Nav Tabs */}
+          {profile && (
+            <div className="hidden lg:flex items-center gap-4 shrink-0">
+              {PRIMARY_LINKS.map((link) => {
+                const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
+                return (
+                  <NavbarTab key={link.href} href={link.href} active={active}>
+                    {link.label}
+                  </NavbarTab>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Desktop Primary Nav Tabs */}
+        {/* Center: Search Bar */}
         {profile && (
-          <div className="hidden lg:flex items-center gap-4">
-            {PRIMARY_LINKS.map((link) => {
-              const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
-              return (
-                <NavbarTab key={link.href} href={link.href} active={active}>
-                  {link.label}
-                </NavbarTab>
-              )
-            })}
+          <div className="flex items-center justify-center shrink-0 md:flex-1 md:max-w-[430px] w-auto">
+            <NavbarSearch />
           </div>
         )}
 
-        {/* Flexible Spacer */}
-        {profile && <div className="flex-1 hidden md:block" />}
-
-        {/* Global Search input trigger (integrated beautifully & centered) */}
-        {profile && <NavbarSearch />}
-
-        {/* Flexible Spacer */}
-        {profile && <div className="flex-1 hidden md:block" />}
-
-        {/* Actions Menu */}
-        <div className="flex items-center gap-4 relative">
+        {/* Right: App Controls */}
+        <div className="flex items-center gap-3 sm:gap-4 justify-end flex-1 relative">
           {profile ? (
             <>
               {/* App Launcher Button */}
@@ -322,6 +323,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                   )}
                 </AnimatePresence>
               </div>
+
               {/* Dedicated Sparkly AI Shortcut */}
               <LinkComponent
                 href="/ai"
@@ -370,41 +372,6 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* Vertical line divider */}
-              <div className="h-5 w-px bg-white/[0.08] mx-1 hidden sm:block" />
-
-              {/* Profile Avatar Menu */}
-              <div className="relative">
-                <button 
-                  onClick={() => {
-                    setShowProfileMenu(!showProfileMenu)
-                    setShowQuickCreate(false)
-                    setShowNotifications(false)
-                  }}
-                  className="flex items-center gap-2 pl-1 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-brand-500/40 rounded-xl"
-                >
-                  <GlobalAvatar
-                    avatarUrl={profile.avatar_url}
-                    fullName={profile.full_name || undefined}
-                    username={profile.username || undefined}
-                    size="sm"
-                    className="border border-white/10"
-                  />
-                  <ChevronDown size={12} className="text-zinc-500 group-hover:text-zinc-300 transition-colors hidden sm:block" />
-                </button>
-
-                <AnimatePresence>
-                  {showProfileMenu && (
-                    <ProfileMenu 
-                      showProfileMenu={showProfileMenu} 
-                      setShowProfileMenu={setShowProfileMenu} 
-                      handleLogout={handleLogout} 
-                      isAdmin={isAdmin}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
             </>
           ) : (
             <LinkComponent href="/auth/login" className="btn-premium px-4 py-2 text-xs">
@@ -414,6 +381,40 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
           )}
         </div>
       </nav>
+
+      {/* Floating Profile Avatar Outside the Glass Nav Bar */}
+      {profile && (
+        <div className="pointer-events-auto relative shrink-0">
+          <button 
+            onClick={() => {
+              setShowProfileMenu(!showProfileMenu)
+              setShowQuickCreate(false)
+              setShowNotifications(false)
+            }}
+            className="flex items-center justify-center p-[1px] bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/[0.08] hover:border-white/[0.15] rounded-full transition-all shadow-premium select-none focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          >
+            <GlobalAvatar
+              avatarUrl={profile.avatar_url}
+              fullName={profile.full_name || undefined}
+              username={profile.username || undefined}
+              size="sm"
+              className="border border-white/15"
+            />
+          </button>
+
+          <AnimatePresence>
+            {showProfileMenu && (
+              <ProfileMenu 
+                showProfileMenu={showProfileMenu} 
+                setShowProfileMenu={setShowProfileMenu} 
+                handleLogout={handleLogout} 
+                isAdmin={isAdmin}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {profile && (
         <AppLauncher isOpen={isAppLauncherOpen} onClose={() => setIsAppLauncherOpen(false)} />
       )}

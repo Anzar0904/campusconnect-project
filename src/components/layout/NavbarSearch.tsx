@@ -648,7 +648,7 @@ export function NavbarSearch() {
   }, [visibleItems, query])
 
   return (
-    <div className="md:flex-grow md:max-w-[600px] md:min-w-[320px] lg:min-w-[480px] md:mx-6 relative">
+    <div className="md:w-full md:max-w-[430px] md:min-w-[380px] relative">
       {/* Rotating neon outline border */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rotatingGlow {
