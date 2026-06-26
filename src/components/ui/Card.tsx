@@ -17,9 +17,9 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const baseStyles = 'rounded-2xl transition-all duration-300 relative overflow-hidden group/card'
     
     const variantStyles = {
-      premium: 'border border-white/[0.08] bg-zinc-900/40 backdrop-blur-xl shadow-premium',
+      premium: 'border border-white/[0.08] bg-zinc-900/22 backdrop-blur-2xl shadow-premium',
       glass: 'border border-white/[0.05] bg-white/[0.02] backdrop-blur-md',
-      elevated: 'bg-zinc-900 border border-white/[0.04] shadow-premium-deep'
+      elevated: 'border border-white/[0.04] bg-zinc-900/35 backdrop-blur-xl shadow-premium-deep'
     }
 
     const [coords, setCoords] = React.useState({ x: 0, y: 0 })

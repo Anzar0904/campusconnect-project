@@ -172,7 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none">
-      <nav ref={navRef} className="pointer-events-auto h-16 w-full glass-panel-base rounded-2xl px-4 sm:px-6 flex items-center justify-between gap-4 transition-all duration-300">
+      <nav ref={navRef} className="pointer-events-auto h-20 w-full glass-panel-base rounded-2xl px-6 sm:px-8 flex items-center justify-between gap-6 transition-all duration-300">
         
         {/* Brand Logo */}
         <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
         {/* Desktop Primary Nav Tabs */}
         {profile && (
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-3">
             {PRIMARY_LINKS.map((link) => {
               const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
               return (
@@ -211,11 +211,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
           </div>
         )}
 
-        {/* Global Search input trigger (integrated beautifully) */}
+        {/* Flexible Spacer */}
+        {profile && <div className="flex-1 hidden md:block" />}
+
+        {/* Global Search input trigger (integrated beautifully & centered) */}
         {profile && <NavbarSearch />}
 
+        {/* Flexible Spacer */}
+        {profile && <div className="flex-1 hidden md:block" />}
+
         {/* Actions Menu */}
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-3 relative">
           {profile ? (
             <>
               {/* App Launcher Button */}
@@ -320,17 +326,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                 </AnimatePresence>
               </div>
 
-              {/* Dedicated Sparkly AI Shortcut */}
-              <LinkComponent
-                href="/ai"
-                className={clsx(
-                  "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-brand-500/10 hover:border-brand-500/20 hover:text-brand-400 transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
-                  pathname === '/ai' && "text-brand-400 bg-brand-500/10 border-brand-500/20"
-                )}
-                aria-label="AI Assistant"
-              >
-                <Sparkles size={16} className="animate-pulse" />
-              </LinkComponent>
+
 
               {/* Notifications Popover */}
               <div className="relative">

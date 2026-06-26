@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGsapMagnetic } from '@/hooks/useGsapMotion'
+import { useMotion } from '@/components/providers/MotionProvider'
 
 interface SearchResult {
   id: string
@@ -90,6 +91,7 @@ interface PaletteItem {
 
 export function NavbarSearch() {
   const searchBtnRef = useGsapMagnetic(0.12) as React.RefObject<HTMLButtonElement>
+  const { lenis } = useMotion()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -145,8 +147,10 @@ export function NavbarSearch() {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      if (lenis) lenis.stop()
     } else {
       document.body.style.overflow = ''
+      if (lenis) lenis.start()
     }
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -166,8 +170,9 @@ export function NavbarSearch() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown)
       document.body.style.overflow = ''
+      if (lenis) lenis.start()
     }
-  }, [isOpen])
+  }, [isOpen, lenis])
 
   // Auto-focus input when modal opens
   useEffect(() => {
@@ -686,14 +691,14 @@ export function NavbarSearch() {
       <button 
         ref={searchBtnRef}
         onClick={() => setIsOpen(true)}
-        className="hidden md:block w-full max-w-[200px] hover:max-w-[260px] p-[1.5px] rounded-full transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] relative glowing-border shadow-[0_0_10px_rgba(99,102,241,0.15)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-[1.005] active:scale-[0.995]"
+        className="hidden md:block w-[300px] lg:w-[450px] transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] hover:w-[320px] hover:lg:w-[485px] p-[1.5px] rounded-full relative glowing-border shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.25)] hover:scale-[1.01] active:scale-[0.99]"
       >
-        <div className="bg-zinc-900/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
+        <div className="bg-zinc-950/70 backdrop-blur-2xl rounded-full flex items-center justify-between relative pl-5 pr-4 py-2 w-full border border-white/[0.08] text-left">
           <div className="flex items-center text-zinc-400">
-            <Search size={13} strokeWidth={2.5} className="mr-2 shrink-0 text-zinc-400" />
-            <span className="text-[11px] text-zinc-500 font-semibold tracking-wide">Search campus...</span>
+            <Search size={14} strokeWidth={2.5} className="mr-2 shrink-0 text-zinc-400" />
+            <span className="text-[12px] text-zinc-400 font-medium tracking-wide">Search campus...</span>
           </div>
-          <div className="pointer-events-none text-[8px] font-mono font-bold text-zinc-400 tracking-wider bg-white/[0.04] border border-white/[0.08] rounded px-1.5 py-0.5 shadow-sm select-none">
+          <div className="pointer-events-none text-[9px] font-mono font-bold text-zinc-400 tracking-wider bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-0.5 shadow-sm select-none">
             ⌘ K
           </div>
         </div>
