@@ -94,13 +94,13 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     }
   }, [])
 
-  // Page Transition Animation on route change
+  // Page Transition Animation on route change (combining fade, scale, and blur)
   useGSAP(() => {
     if (getPrefersReducedMotion() || !contentRef.current) return
 
     gsap.fromTo(contentRef.current,
-      { opacity: 0, y: 15 },
-      { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out', clearProps: 'y' }
+      { opacity: 0, scale: 0.985, filter: 'blur(6px)', y: 10 },
+      { opacity: 1, scale: 1, filter: 'blur(0px)', y: 0, duration: 0.6, ease: 'power3.out', clearProps: 'all' }
     )
 
     if (lenis) {

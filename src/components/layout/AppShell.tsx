@@ -9,7 +9,7 @@ import { NotificationProvider, useNotifications } from '@/hooks/useNotifications
 import { ProfileProvider, useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { cn } from '@/lib/utils'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -126,9 +126,27 @@ function AppShellInner({
 }) {
   const { profile } = useCurrentProfile()
   const { unreadCount } = useNotifications()
+  const [routeLoading, setRouteLoading] = useState(false)
+
+  // Trigger glowing top loader on route navigation changes
+  useEffect(() => {
+    setRouteLoading(true)
+    const t = setTimeout(() => setRouteLoading(false), 380)
+    return () => clearTimeout(t)
+  }, [pathname])
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
+      {routeLoading && (
+        <motion.div
+          key={`loader-${pathname}`}
+          initial={{ width: '0%', opacity: 1 }}
+          animate={{ width: '100%', opacity: [1, 1, 0] }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+          className="fixed top-0 left-0 h-[2px] bg-gradient-to-r from-brand-500 via-cyan-400 to-indigo-500 z-[99999] shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+        />
+      )}
+
       <Sidebar 
         collegeName={collegeName}
         userName={profile?.full_name || undefined}
@@ -139,7 +157,7 @@ function AppShellInner({
       />
       <Navbar profile={profile} />
     
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative md:pl-64">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative main-content-layout">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname}

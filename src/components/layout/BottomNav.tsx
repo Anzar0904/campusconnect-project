@@ -124,27 +124,32 @@ export function BottomNav() {
             }
 
             return (
-              <Link
+              <motion.div
                 key={item.href}
-                href={item.href}
-                onClick={handleItemClick}
-                className={clsx(
-                  "relative flex flex-col items-center gap-1.5 p-2 min-w-[64px] rounded-xl transition-all duration-300",
-                  active ? "text-brand-400 font-semibold" : "text-zinc-400 hover:text-zinc-200"
-                )}
+                whileTap={{ scale: 0.92 }}
+                className="relative flex"
               >
-                {active && (
-                  <motion.div
-                    layoutId="mobile-nav-active"
-                    className="absolute inset-0 bg-brand-500/10 rounded-xl border border-brand-500/20"
-                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                  />
-                )}
-                <Icon size={18} className="relative z-10" />
-                <span className="text-[9px] font-display font-bold uppercase tracking-wider relative z-10">
-                  {item.label}
-                </span>
-              </Link>
+                <Link
+                  href={item.href}
+                  onClick={handleItemClick}
+                  className={clsx(
+                    "relative flex flex-col items-center gap-1.5 p-2 min-w-[64px] rounded-xl transition-all duration-300",
+                    active ? "text-brand-400 font-semibold" : "text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="mobile-nav-active"
+                      className="absolute inset-0 bg-brand-500/10 rounded-xl border border-brand-500/20"
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                    />
+                  )}
+                  <Icon size={18} className="relative z-10 animate-scale-up" />
+                  <span className="text-[9px] font-display font-bold uppercase tracking-wider relative z-10">
+                    {item.label}
+                  </span>
+                </Link>
+              </motion.div>
             )
           })}
         </div>
@@ -160,32 +165,43 @@ export function BottomNav() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowModules(false)}
-              className="fixed inset-0 bg-[#030712]/40 backdrop-blur-[2px] z-40 md:hidden"
+              className="fixed inset-0 bg-[#030712]/60 backdrop-blur-sm z-40 md:hidden"
             />
             
             {/* Slide-up panel */}
             <motion.div
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.85 }}
+              onDragEnd={(e, info) => {
+                if (info.offset.y > 140) {
+                  setShowModules(false)
+                }
+              }}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-[#09090b] border-t border-white/[0.08] rounded-t-[32px] p-6 pb-28 shadow-2xl z-40 overflow-y-auto custom-scrollbar md:hidden"
+              transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+              className="fixed bottom-0 left-0 right-0 max-h-[80vh] bg-[#09090b]/98 border-t border-white/[0.08] rounded-t-[32px] p-6 pb-28 shadow-2xl z-40 overflow-y-auto custom-scrollbar md:hidden flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
+              {/* Drag Handle Bar at top */}
+              <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-5 shrink-0 cursor-grab active:cursor-grabbing" />
+
+              <div className="flex justify-between items-center mb-6 shrink-0">
                 <div>
                   <h3 className="text-lg font-bold font-display text-white">Campus Modules</h3>
                   <p className="text-xs text-zinc-500">Explore all feature modules</p>
                 </div>
                 <button 
                   onClick={() => setShowModules(false)}
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                   aria-label="Close"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 flex-1">
                 {MODULE_SECTIONS.map((section) => (
                   <div key={section.label} className="space-y-2.5">
                     <p className="font-mono text-[9px] font-bold text-zinc-500 uppercase tracking-widest px-1">
@@ -219,7 +235,7 @@ export function BottomNav() {
                   </div>
                 ))}
                 
-                <div className="pt-4 border-t border-white/[0.08] flex flex-col gap-2">
+                <div className="pt-4 border-t border-white/[0.08] flex flex-col gap-2 shrink-0">
                   <button
                     onClick={() => {
                       setShowModules(false)

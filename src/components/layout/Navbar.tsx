@@ -45,8 +45,38 @@ import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
-import { Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import { Easing, getPrefersReducedMotion, useGsapMagnetic } from '@/hooks/useGsapMotion'
 import AppLauncher from './AppLauncher'
+
+const NavbarTab = ({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) => {
+  const ref = useGsapMagnetic(0.18) as React.RefObject<HTMLAnchorElement>
+  return (
+    <LinkComponent
+      ref={ref}
+      href={href}
+      className={clsx(
+        "relative px-3.5 py-1.5 rounded-xl text-xs font-semibold font-display tracking-wide transition-all duration-300 select-none",
+        active ? "text-brand-400 font-semibold" : "text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.03]"
+      )}
+    >
+      {active && (
+        <motion.div
+          layoutId="navbar-active-pill"
+          className="absolute inset-0 bg-brand-500/10 border border-brand-500/20 rounded-xl"
+          transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+        />
+      )}
+      {active && (
+        <motion.div
+          layoutId="navbar-active-underline"
+          className="absolute bottom-[-1.5px] left-3 right-3 h-[2px] bg-brand-500 rounded-full"
+          transition={{ type: "spring", bounce: 0.15, duration: 0.55 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
+    </LinkComponent>
+  )
+}
 
 interface NavbarProps {
   profile?: {
@@ -173,23 +203,9 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
             {PRIMARY_LINKS.map((link) => {
               const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
               return (
-                <LinkComponent
-                  key={link.href}
-                  href={link.href}
-                  className={clsx(
-                    "relative px-3.5 py-1.5 rounded-xl text-xs font-semibold font-display tracking-wide transition-all duration-300 select-none",
-                    active ? "text-brand-400" : "text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.03]"
-                  )}
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="navbar-active-pill"
-                      className="absolute inset-0 bg-brand-500/10 border border-brand-500/20 rounded-xl"
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-                    />
-                  )}
-                  <span className="relative z-10">{link.label}</span>
-                </LinkComponent>
+                <NavbarTab key={link.href} href={link.href} active={active}>
+                  {link.label}
+                </NavbarTab>
               )
             })}
           </div>

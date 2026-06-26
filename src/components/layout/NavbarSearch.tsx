@@ -686,7 +686,7 @@ export function NavbarSearch() {
       <button 
         ref={searchBtnRef}
         onClick={() => setIsOpen(true)}
-        className="hidden md:block w-full max-w-[240px] p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(99,102,241,0.15)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-[1.005] active:scale-[0.995]"
+        className="hidden md:block w-full max-w-[200px] hover:max-w-[260px] p-[1.5px] rounded-full transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] relative glowing-border shadow-[0_0_10px_rgba(99,102,241,0.15)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-[1.005] active:scale-[0.995]"
       >
         <div className="bg-zinc-900/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
           <div className="flex items-center text-zinc-400">

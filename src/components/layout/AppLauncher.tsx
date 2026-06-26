@@ -96,6 +96,39 @@ export default function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
   const itemsContainerRef = useRef<HTMLDivElement>(null)
   const categoryRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
+  const [shouldRender, setShouldRender] = useState(isOpen)
+
+  // Sync state and run transitions
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true)
+    } else if (shouldRender) {
+      if (getPrefersReducedMotion()) {
+        setShouldRender(false)
+        return
+      }
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setShouldRender(false)
+        }
+      })
+
+      tl.to(containerRef.current, {
+        opacity: 0,
+        scale: 0.93,
+        y: 20,
+        duration: 0.3,
+        ease: 'power2.inOut'
+      })
+      .to(backdropRef.current, {
+        opacity: 0,
+        duration: 0.25,
+        ease: 'power2.inOut'
+      }, 0)
+    }
+  }, [isOpen, shouldRender])
+
   // Load favorites & recently used from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -188,7 +221,7 @@ export default function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
 
   // GSAP Animations
   useGSAP(() => {
-    if (!isOpen) return
+    if (!isOpen || !shouldRender) return
     if (getPrefersReducedMotion()) {
       gsap.set(backdropRef.current, { opacity: 1 })
       gsap.set(containerRef.current, { opacity: 1, scale: 1, y: 0 })
@@ -224,7 +257,7 @@ export default function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
 
     // Auto-focus input
     setTimeout(() => inputRef.current?.focus(), 150)
-  }, { dependencies: [isOpen, selectedCategory] })
+  }, { dependencies: [isOpen, shouldRender, selectedCategory] })
 
   // Keyboard navigation & search handlers
   useEffect(() => {
@@ -275,7 +308,7 @@ export default function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
     setFocusedIndex(0)
   }, [selectedCategory, searchQuery])
 
-  if (!isOpen) return null
+  if (!shouldRender) return null
 
   // Card hover entry/leave animations using GSAP
   const handleCardMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {

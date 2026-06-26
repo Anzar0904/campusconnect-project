@@ -414,33 +414,48 @@ function PostCard({
         )}
       </AnimatePresence>
 
-      {showConfirmDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#0B0D10]/80 backdrop-blur-sm animate-fade-in" onClick={() => setShowConfirmDelete(false)} />
-          <div className="max-w-sm w-full relative z-10 p-6 space-y-4 bg-[#15181D] border border-white/[0.08] rounded-2xl shadow-premium animate-fade-in">
-            <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
-            <p className="text-zinc-400 text-xs leading-relaxed font-medium">
-              Are you sure you want to permanently delete this post? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                onClick={() => setShowConfirmDelete(false)}
-                disabled={deleting}
-                className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-neutral-300 transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeDelete}
-                disabled={deleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
+      <AnimatePresence>
+        {showConfirmDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-[#0B0D10]/80 backdrop-blur-md" 
+              onClick={() => setShowConfirmDelete(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className="max-w-sm w-full relative z-10 p-6 space-y-4 bg-[#15181D]/95 border border-white/[0.08] rounded-2xl shadow-premium"
+            >
+              <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
+              <p className="text-zinc-400 text-xs leading-relaxed font-medium">
+                Are you sure you want to permanently delete this post? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  onClick={() => setShowConfirmDelete(false)}
+                  disabled={deleting}
+                  className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-neutral-300 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDelete}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </motion.article>
   )
 }

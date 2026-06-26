@@ -331,6 +331,13 @@ body {
   background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
 }
 
+@media (min-width: 768px) {
+  .main-content-layout {
+    padding-left: var(--sidebar-width, 256px);
+    transition: padding-left 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+}
+
 /* ==========================================
    ACCESSIBILITY & REDUCED MOTION
    ========================================== */
