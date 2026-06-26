@@ -6,7 +6,7 @@ import {
   GraduationCap, BookOpen, Terminal, Sparkles, FileText, 
   Briefcase, Award, Trophy, Store, Calendar, Gamepad2, 
   Compass, MapPin, Heart, EyeOff, User, Settings, Palette, 
-  ShieldCheck, Bookmark, ShieldAlert, Search, X, Star
+  ShieldCheck, Bookmark, ShieldAlert, Search, X, Star, Rocket, UserCheck
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useGSAP } from '@gsap/react'
@@ -48,6 +48,8 @@ const ALL_MODULES: ModuleItem[] = [
 
   // Career
   { id: 'internships', label: 'Internships', href: '/internships', icon: Briefcase, desc: 'Apply to verified student internships', category: 'Career' },
+  { id: 'mentorship', label: 'Mentorship', href: '/mentorship', icon: UserCheck, desc: 'Connect with senior mentors and guides', category: 'Career' },
+  { id: 'placements', label: 'Placements', href: '/placements', icon: Briefcase, desc: 'View campus placement records and openings', category: 'Career' },
   { id: 'resume', label: 'Resume Builder', href: '#disabled', icon: Award, desc: 'Generate a professional resume (Coming Soon)', category: 'Career', disabled: true },
   { id: 'rewards', label: 'Rewards', href: '/rewards', icon: Award, desc: 'Earn points and redeem prizes', category: 'Career' },
   { id: 'leaderboard', label: 'Leaderboard', href: '/rewards?tab=leaderboard', icon: Trophy, desc: 'Compare your achievements with peers', category: 'Career' },
@@ -55,7 +57,9 @@ const ALL_MODULES: ModuleItem[] = [
   // Campus
   { id: 'marketplace', label: 'Marketplace', href: '/marketplace', icon: Store, desc: 'Buy and sell student items on campus', category: 'Campus' },
   { id: 'events', label: 'Events', href: '/events', icon: Calendar, desc: 'Discover upcoming college events', category: 'Campus' },
+  { id: 'calendar', label: 'Calendar', href: '/calendar', icon: Calendar, desc: 'View scheduled classes and academic dates', category: 'Campus' },
   { id: 'clubs', label: 'Clubs', href: '/clubs', icon: Gamepad2, desc: 'Browse student organizations and clubs', category: 'Campus' },
+  { id: 'startup', label: 'Startup Cell', href: '/startup', icon: Rocket, desc: 'Incubate and develop your business ideas', category: 'Campus' },
   { id: 'directory', label: 'Campus Directory', href: '/discover', icon: Compass, desc: 'Find other verified campus students', category: 'Campus' },
   { id: 'map', label: 'Campus Map', href: '#disabled', icon: MapPin, desc: 'Find campus buildings & venues (Coming Soon)', category: 'Campus', disabled: true },
 

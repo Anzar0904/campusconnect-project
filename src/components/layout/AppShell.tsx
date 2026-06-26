@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { Navbar } from './Navbar'
 import { BottomNav } from './BottomNav'
-import { Sidebar } from './Sidebar'
+
 import { NotificationProvider, useNotifications } from '@/hooks/useNotifications'
 import { ProfileProvider, useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { cn } from '@/lib/utils'
@@ -136,7 +136,7 @@ function AppShellInner({
   }, [pathname])
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
+    <div className="flex flex-col min-h-screen bg-transparent text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
       {routeLoading && (
         <motion.div
           key={`loader-${pathname}`}
@@ -147,14 +147,7 @@ function AppShellInner({
         />
       )}
 
-      <Sidebar 
-        collegeName={collegeName}
-        userName={profile?.full_name || undefined}
-        userAvatar={profile?.avatar_url || undefined}
-        isVerified={profile?.is_verified}
-        userRole={profile?.role || undefined}
-        notificationCount={unreadCount}
-      />
+
       <Navbar profile={profile} />
     
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative main-content-layout">

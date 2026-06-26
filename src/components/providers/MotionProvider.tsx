@@ -227,13 +227,13 @@ export default function MotionProvider({ children }: { children: React.ReactNode
       {/* Dynamic Ambient Background Layers */}
       <div 
         ref={backgroundRef}
-        className="fixed inset-0 pointer-events-none -z-50 overflow-hidden select-none bg-zinc-950"
+        className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none bg-zinc-950"
       >
         {/* Layer 0: Animated WebGL Environment */}
         <LivingBackground timeOfDay={timeOfDay} />
 
         {/* Layer 1: Soft Gradient Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-40 transition-all duration-[3000ms]`} />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-20 transition-all duration-[3000ms]`} />
 
         {/* Dot Pattern Overlay */}
         <div 
