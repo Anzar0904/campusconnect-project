@@ -227,7 +227,7 @@ export default function MotionProvider({ children }: { children: React.ReactNode
       {/* Dynamic Ambient Background Layers */}
       <div 
         ref={backgroundRef}
-        className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none bg-zinc-950"
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-zinc-950"
       >
         {/* Layer 0: Animated WebGL Environment */}
         <LivingBackground timeOfDay={timeOfDay} />

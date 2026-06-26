@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${hanken.variable} dark`}>
-      <body className="bg-surface text-on-surface antialiased font-body">
+      <body className="bg-transparent text-on-surface antialiased font-body">
         <MotionProvider>
           {children}
         </MotionProvider>
