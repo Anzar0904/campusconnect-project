@@ -781,7 +781,7 @@ const SummaryCard: React.FC<{
     <Link href={href}>
       <div
         ref={ref}
-        className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group hover:border-white/[0.08] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+        className="bg-zinc-900/40 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group hover:border-brand-500/30 hover:shadow-premium"
       >
         {children}
       </div>
@@ -1481,7 +1481,7 @@ export default function DashboardClient({
             <RightSidebar />
 
             {/* Marketplace Featured Widget */}
-            <div ref={marketCardRef} className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300 transformPerspective-800 reveal-marketplace">
+            <div ref={marketCardRef} className="bg-zinc-900/40 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 space-y-4 shadow-premium transition-all hover:border-brand-500/30 hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)] duration-300 transformPerspective-800 reveal-marketplace">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white tracking-tight">Marketplace Deals</span>
                 <Link href="/marketplace" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
@@ -1515,7 +1515,7 @@ export default function DashboardClient({
             </div>
 
             {/* Campus Connections & Suggestions */}
-            <div ref={connectCardRef} className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-5 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300 transformPerspective-800 reveal-communities">
+            <div ref={connectCardRef} className="bg-zinc-900/40 border border-white/[0.08] backdrop-blur-xl rounded-2xl p-5 space-y-5 shadow-premium transition-all hover:border-brand-500/30 hover:shadow-[0_8px_30px_rgba(99,102,241,0.06)] duration-300 transformPerspective-800 reveal-communities">
               {/* Connections list */}
               <div>
                 <span className="text-[9px] font-mono font-semibold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Classmate Connections ({friends.length})</span>

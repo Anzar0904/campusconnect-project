@@ -837,7 +837,7 @@ export default function ProfileClient({
             <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
               {isOwner ? (
                 <Link 
-                  href="/settings" 
+                  href="/profile/edit" 
                   className="px-5 h-10 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.1] text-zinc-200 hover:text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Edit2 size={13} />

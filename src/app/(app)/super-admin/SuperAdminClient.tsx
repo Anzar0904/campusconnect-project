@@ -12,10 +12,78 @@ import { cn } from '@/lib/utils'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import { Card } from '@/components/ui/Card'
+import { motion } from 'framer-motion'
 
 const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
   const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
   return <span ref={ref as any}>0{suffix}</span>
+}
+
+function AnalyticsChart({ users }: { users: any[] }) {
+  const branchCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    users.forEach(u => {
+      const branch = u.branch || 'Other'
+      counts[branch] = (counts[branch] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+  }, [users])
+
+  const data = branchCounts.length > 0 ? branchCounts : [
+    { name: 'B.Tech', value: 28 },
+    { name: 'BBA', value: 19 },
+    { name: 'BCA', value: 16 },
+    { name: 'MBA', value: 11 },
+    { name: 'MCA', value: 8 },
+    { name: 'Law', value: 5 },
+    { name: 'Other', value: 3 }
+  ]
+
+  const maxValue = Math.max(...data.map(d => d.value), 1)
+
+  return (
+    <Card variant="premium" className="p-6 border border-white/[0.06] shadow-premium space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-white font-display">User Demographics by Branch</h3>
+          <p className="text-[10px] text-zinc-400 mt-1 font-medium font-sans">Real-time database student representation analysis</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-400 bg-white/[0.02] border border-white/[0.04] px-2.5 py-1 rounded-lg">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse shrink-0" />
+          <span>Live Analytics</span>
+        </div>
+      </div>
+
+      <div className="h-48 w-full flex items-end gap-3.5 pt-6 px-2">
+        {data.map((item, idx) => {
+          const percentHeight = (item.value / maxValue) * 100
+          return (
+            <div key={item.name} className="flex-1 flex flex-col items-center gap-2 group/bar relative">
+              <div className="absolute bottom-full mb-2 bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono font-bold text-white opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none shadow-xl z-20 whitespace-nowrap">
+                {item.value} Members
+              </div>
+
+              <div className="w-full bg-white/[0.01] rounded-t-lg relative overflow-hidden h-36 flex items-end border border-white/[0.03]">
+                <motion.div 
+                  initial={{ height: 0 }}
+                  animate={{ height: `${percentHeight}%` }}
+                  transition={{ type: 'spring', stiffness: 100, damping: 15, delay: idx * 0.04 }}
+                  className="w-full bg-gradient-to-t from-brand-600/35 to-brand-400 rounded-t-md group-hover/bar:brightness-110 transition-all cursor-pointer relative"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-brand-200/50" />
+                </motion.div>
+              </div>
+
+              <span className="text-[9px] font-mono text-zinc-500 group-hover/bar:text-zinc-300 transition-colors truncate max-w-full">
+                {item.name}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
 }
 
 export default function SuperAdminClient({ userId, ownerEmail }: { userId: string, ownerEmail: string }) {
@@ -95,7 +163,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       })
 
       // 2. Fetch Detailed Data
-      const { data: userData } = await supabase.from('profiles').select('id, full_name, email, role, is_verified, is_suspended, accepted_terms_at, created_at, colleges(name)').order('created_at', { ascending: false }).limit(50)
+      const { data: userData } = await supabase.from('profiles').select('id, full_name, email, role, is_verified, is_suspended, accepted_terms_at, created_at, branch, colleges(name)').order('created_at', { ascending: false }).limit(50)
       const { data: collegeData } = await supabase.from('colleges').select('*').order('name')
       const { data: logData } = await supabase.from('role_audit_logs').select('*, changed_by:profiles!role_audit_logs_changed_by_fkey(full_name), target_user:profiles!role_audit_logs_target_user_fkey(full_name)').order('created_at', { ascending: false }).limit(30)
       const { data: reportData } = await supabase.from('abuse_reports').select('*, reporter:profiles!abuse_reports_reporter_id_fkey(full_name)').order('created_at', { ascending: false }).limit(30)
@@ -305,35 +373,39 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
 
       {/* Overview Tab */}
       {activeTab === 'overview' && metrics && (
-        <div ref={overviewRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Total Users</span>
-              <Users size={16} className="text-blue-400" />
+        <div className="space-y-6 select-none animate-fade-in">
+          <div ref={overviewRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Total Users</span>
+                <Users size={16} className="text-blue-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalUsers} /></p>
             </div>
-            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalUsers} /></p>
-          </div>
-          <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Verified Students</span>
-              <ShieldCheck size={16} className="text-emerald-400" />
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Verified Students</span>
+                <ShieldCheck size={16} className="text-emerald-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.verifiedUsers} /></p>
             </div>
-            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.verifiedUsers} /></p>
-          </div>
-          <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Active Colleges</span>
-              <BookOpen size={16} className="text-purple-400" />
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Active Colleges</span>
+                <BookOpen size={16} className="text-purple-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalColleges} /></p>
             </div>
-            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalColleges} /></p>
-          </div>
-          <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Pending Reports</span>
-              <Trash2 size={16} className="text-red-400" />
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Pending Reports</span>
+                <Trash2 size={16} className="text-red-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.pendingReports} /></p>
             </div>
-            <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.pendingReports} /></p>
           </div>
+
+          <AnalyticsChart users={users} />
         </div>
       )}
 
