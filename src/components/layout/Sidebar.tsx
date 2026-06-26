@@ -39,6 +39,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Notes Library', href: '/notes',    icon: 'menu_book' },
       { label: 'Past Papers',   href: '/papers',   icon: 'description' },
       { label: 'Study Hub',     href: '/study',    icon: 'school' },
+      { label: 'Coding Arena',  href: '/coding-arena', icon: 'terminal' },
       { label: 'Calendar',      href: '/calendar', icon: 'calendar_month' },
     ],
   },
@@ -53,6 +54,8 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Internships',  href: '/internships', icon: 'work_outline' },
       { label: 'Placements',   href: '/placements',  icon: 'business_center' },
+      { label: 'Mentorship',   href: '/mentorship',  icon: 'psychology' },
+      { label: 'Startup Cell', href: '/startup',     icon: 'rocket_launch' },
     ],
   },
   {

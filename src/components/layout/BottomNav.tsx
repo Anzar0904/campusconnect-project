@@ -24,6 +24,10 @@ import {
   Heart, 
   Terminal, 
   Sparkles,
+  Compass,
+  Users,
+  Brain,
+  Rocket,
   LogOut
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -36,6 +40,13 @@ const MOBILE_NAV_ITEMS = [
 ]
 
 const MODULE_SECTIONS = [
+  {
+    label: 'Social',
+    items: [
+      { label: 'Friends', href: '/friends', icon: Users, desc: 'Classmates & requests' },
+      { label: 'Discover', href: '/discover', icon: Compass, desc: 'Campus search & map' },
+    ]
+  },
   {
     label: 'Campus Life',
     items: [
@@ -50,6 +61,7 @@ const MODULE_SECTIONS = [
       { label: 'Notes Library', href: '/notes', icon: BookOpen, desc: 'Shared notes' },
       { label: 'Past Papers', href: '/papers', icon: FileText, desc: 'Exam archives' },
       { label: 'Study Hub', href: '/study', icon: GraduationCap, desc: 'Study rooms' },
+      { label: 'Coding Arena', href: '/coding-arena', icon: Terminal, desc: 'Code playground' },
       { label: 'Calendar', href: '/calendar', icon: Calendar, desc: 'Schedules' },
     ]
   },
@@ -64,6 +76,8 @@ const MODULE_SECTIONS = [
     items: [
       { label: 'Internships', href: '/internships', icon: Briefcase, desc: 'Intern openings' },
       { label: 'Placements', href: '/placements', icon: Award, desc: 'Jobs feed' },
+      { label: 'Mentorship', href: '/mentorship', icon: Brain, desc: 'Alumni mentors' },
+      { label: 'Startup Cell', href: '/startup', icon: Rocket, desc: 'Campus startups' },
     ]
   },
   {
