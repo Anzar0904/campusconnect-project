@@ -9,8 +9,8 @@ import { useGSAP } from '@gsap/react'
 import { getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 import dynamic from 'next/dynamic'
 
-// Dynamically load R3F WebGL Canvas to prevent SSR hydration errors
-const LivingBackground = dynamic(() => import('./LivingBackground'), { ssr: false })
+// Dynamically load SequenceBackground to prevent SSR hydration errors
+const SequenceBackground = dynamic(() => import('./SequenceBackground'), { ssr: false })
 
 // Register ScrollTrigger
 if (typeof window !== 'undefined') {
@@ -229,8 +229,8 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         ref={backgroundRef}
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-zinc-950"
       >
-        {/* Layer 0: Animated WebGL Environment */}
-        <LivingBackground timeOfDay={timeOfDay} />
+        {/* Layer 0: Animated Cinematic Sequence Background */}
+        <SequenceBackground />
 
         {/* Layer 1: Soft Gradient Overlay */}
         <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-20 transition-all duration-[3000ms]`} />
