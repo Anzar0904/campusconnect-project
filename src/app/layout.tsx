@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Hanken_Grotesk } from 'next/font/google'
 import './globals.css'
 import ToastProvider from '@/components/providers/ToastProvider'
+import MotionProvider from '@/components/providers/MotionProvider'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${hanken.variable} dark`}>
       <body className="bg-surface text-on-surface antialiased font-body">
-        {children}
+        <MotionProvider>
+          {children}
+        </MotionProvider>
         <ToastProvider />
       </body>
     </html>

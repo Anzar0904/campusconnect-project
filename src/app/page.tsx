@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import React from 'react'
+import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { NotificationProvider } from '@/hooks/useNotifications'
 import { ProfileProvider } from '@/hooks/useCurrentProfile'
@@ -103,13 +104,13 @@ export default async function RootPage() {
                 Join half a million students deployment infrastructure operating on the next-generation spatial engine structure layer.
               </p>
               <div className="pt-4 flex flex-wrap justify-center gap-4">
-                <button className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide transition-all duration-300 shadow-[0_4px_25px_rgba(37,99,235,0.45)] flex items-center gap-2 group">
+                <Link href="/auth/login" className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide transition-all duration-300 shadow-[0_4px_25px_rgba(37,99,235,0.45)] flex items-center gap-2 group cursor-pointer">
                   Deploy Now Free
                   <ArrowRight size={14} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="px-6 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-neutral-300 font-bold text-xs tracking-wide transition-all duration-300 backdrop-blur-md">
+                </Link>
+                <Link href="mailto:support@campusconnect.com" className="px-6 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-neutral-300 font-bold text-xs tracking-wide transition-all duration-300 backdrop-blur-md cursor-pointer">
                   Contact Core Systems
-                </button>
+                </Link>
               </div>
             </div>
           </section>

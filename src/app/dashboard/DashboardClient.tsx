@@ -747,9 +747,10 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
 
   const getGreeting = () => {
     const hr = new Date().getHours()
-    if (hr < 12) return 'Good Morning'
-    if (hr < 17) return 'Good Afternoon'
-    return 'Good Evening'
+    if (hr >= 5 && hr < 11) return 'Good Morning'
+    if (hr >= 11 && hr < 17) return 'Good Afternoon'
+    if (hr >= 17 && hr < 20) return 'Good Evening'
+    return 'Good Night'
   }
 
   // Cards configuration
