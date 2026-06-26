@@ -93,7 +93,6 @@ interface NavbarProps {
 const PRIMARY_LINKS = [
   { label: 'Feed', href: '/dashboard', icon: Home },
   { label: 'Communities', href: '/community', icon: MessageCircle },
-  { label: 'Study Hub', href: '/study', icon: GraduationCap },
 ]
 
 export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {

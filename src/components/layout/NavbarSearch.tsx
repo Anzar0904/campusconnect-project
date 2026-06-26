@@ -648,7 +648,7 @@ export function NavbarSearch() {
   }, [visibleItems, query])
 
   return (
-    <div className="md:flex-1 md:max-w-xl md:mx-8 relative">
+    <div className="md:flex-grow md:max-w-[600px] md:min-w-[320px] lg:min-w-[480px] md:mx-6 relative">
       {/* Rotating neon outline border */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rotatingGlow {
@@ -691,7 +691,7 @@ export function NavbarSearch() {
       <button 
         ref={searchBtnRef}
         onClick={() => setIsOpen(true)}
-        className="hidden md:block w-[320px] lg:w-[480px] transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] hover:w-[340px] hover:lg:w-[560px] p-[1.5px] rounded-full relative glowing-border shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.25)] hover:scale-[1.01] active:scale-[0.99]"
+        className="hidden md:block w-full transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] p-[1.5px] rounded-full relative glowing-border shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.25)] hover:scale-[1.01] active:scale-[0.99]"
       >
         <div className="bg-zinc-950/70 backdrop-blur-2xl rounded-full flex items-center justify-between relative pl-5 pr-4 py-2 w-full border border-white/[0.08] text-left">
           <div className="flex items-center text-zinc-400">
