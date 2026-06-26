@@ -46,7 +46,8 @@ import {
   Flag,
   ArrowRight,
   TrendingUp,
-  Award
+  Award,
+  Terminal
 } from 'lucide-react'
 
 interface Profile {
@@ -811,11 +812,13 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
 
   const quickActions = [
     { label: 'Create Post', icon: Plus, action: onCreatePostClick, isPrimary: true },
-    { label: 'Marketplace', icon: Store, href: '/marketplace' },
-    { label: 'Communities', icon: Users, href: '/community' },
-    { label: 'Study Hub', icon: BookOpen, href: '/study' },
+    { label: 'Messages', icon: MessageSquare, href: '/messages' },
+    { label: 'Dating', icon: Heart, href: '/dating' },
     { label: 'AI Assistant', icon: Sparkles, href: '/ai', isAi: true },
+    { label: 'Notes', icon: BookOpen, href: '/notes' },
+    { label: 'Marketplace', icon: Store, href: '/marketplace' },
     { label: 'Events', icon: CalendarIcon, href: '/events' },
+    { label: 'Coding Arena', icon: Terminal, href: '/coding-arena' },
   ]
 
   return (

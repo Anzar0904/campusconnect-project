@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { 
   Home, 
@@ -29,7 +29,8 @@ import {
   FolderPlus,
   Trash2,
   Inbox,
-  CheckCheck
+  CheckCheck,
+  LayoutGrid
 } from 'lucide-react'
 import Link from 'next/navigation'
 import { useRouter, usePathname } from 'next/navigation'
@@ -45,6 +46,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import AppLauncher from './AppLauncher'
 
 interface NavbarProps {
   profile?: {
@@ -70,6 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false)
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
   const { profile: currentProfile } = useCurrentProfile()
   const profile = currentProfile || initialProfile
@@ -77,6 +80,27 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const pathname = usePathname()
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const handleOpenNotifications = () => {
+      setShowNotifications(true)
+      setShowQuickCreate(false)
+      setShowProfileMenu(false)
+    }
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Toggle app launcher with Alt/Option + A or Ctrl + Space
+      if ((e.altKey && e.key === 'a') || (e.ctrlKey && e.code === 'Space')) {
+        e.preventDefault()
+        setIsAppLauncherOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('open-notifications', handleOpenNotifications)
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => {
+      window.removeEventListener('open-notifications', handleOpenNotifications)
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+    }
+  }, [])
 
   useGSAP(() => {
     if (getPrefersReducedMotion()) return
@@ -155,6 +179,24 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
         <div className="flex items-center gap-2 relative">
           {profile ? (
             <>
+              {/* App Launcher Button */}
+              <button
+                onClick={() => {
+                  setIsAppLauncherOpen(true)
+                  setShowQuickCreate(false)
+                  setShowNotifications(false)
+                  setShowProfileMenu(false)
+                }}
+                className={clsx(
+                  "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.04] transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                  isAppLauncherOpen && "text-white bg-white/[0.05]"
+                )}
+                aria-label="Apps Launcher"
+                title="Apps Launcher (Alt+A)"
+              >
+                <LayoutGrid size={18} />
+              </button>
+
               {/* Quick Create Dropdown Menu */}
               <div className="relative">
                 <button
@@ -331,6 +373,9 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
           )}
         </div>
       </nav>
+      {profile && (
+        <AppLauncher isOpen={isAppLauncherOpen} onClose={() => setIsAppLauncherOpen(false)} />
+      )}
     </div>
   )
 }
