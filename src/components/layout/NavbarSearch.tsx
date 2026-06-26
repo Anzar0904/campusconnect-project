@@ -139,17 +139,33 @@ export function NavbarSearch() {
     }
   }, [supabase])
 
-  // Handle Ctrl+K / Cmd+K shortcuts
+  // Handle Ctrl+K / Cmd+K shortcuts & lock body scroll
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setIsOpen(prev => !prev)
+        return
+      }
+
+      if (!isOpen) return
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setIsOpen(false)
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   // Auto-focus input when modal opens
   useEffect(() => {
@@ -692,7 +708,7 @@ export function NavbarSearch() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setIsOpen(false)}
-                className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[3px]"
+                className="absolute inset-0 bg-zinc-950/75 backdrop-blur-[12px]"
               />
 
               {/* Centered glassmorphic container */}

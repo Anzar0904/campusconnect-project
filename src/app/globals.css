@@ -61,28 +61,35 @@ body {
      PREMIUM CARDS
      ========================================== */
   .card-premium {
-    @apply rounded-2xl border border-white/[0.06] bg-zinc-900/40 backdrop-blur-xl transition-all duration-300;
+    @apply rounded-2xl border border-white/[0.06] bg-zinc-900/40 backdrop-blur-xl transition-all duration-300 ease-out;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    transform: translate3d(0, 0, 0);
   }
   .card-premium:hover {
-    @apply border-brand-500/20 bg-zinc-900/60 shadow-[0_0_20px_rgba(59,130,246,0.1)];
-    transform: translateY(-1px);
+    @apply border-brand-500/20 bg-zinc-900/60;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5), 0 0 24px rgba(99, 102, 241, 0.08);
+    transform: translate3d(0, -4px, 0) scale(1.01);
   }
 
   .card-glass {
-    @apply rounded-2xl border border-white/[0.04] bg-white/[0.01] backdrop-blur-md transition-all duration-300;
+    @apply rounded-2xl border border-white/[0.04] bg-white/[0.01] backdrop-blur-md transition-all duration-300 ease-out;
+    transform: translate3d(0, 0, 0);
   }
   .card-glass:hover {
-    @apply border-white/[0.06] bg-white/[0.02];
+    @apply border-white/[0.1] bg-white/[0.03];
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.02);
+    transform: translate3d(0, -3px, 0) scale(1.005);
   }
 
   .card-elevated {
-    @apply rounded-2xl bg-zinc-900 border border-white/[0.03] transition-all duration-300;
+    @apply rounded-2xl bg-zinc-900 border border-white/[0.03] transition-all duration-300 ease-out;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.03);
+    transform: translate3d(0, 0, 0);
   }
   .card-elevated:hover {
-    @apply border-white/[0.06];
-    transform: translateY(-1px);
+    @apply border-white/[0.08] bg-zinc-900/90;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.65), 0 0 24px rgba(59, 130, 246, 0.06);
+    transform: translate3d(0, -5px, 0) scale(1.01);
   }
 
   /* Legacy layout maps */

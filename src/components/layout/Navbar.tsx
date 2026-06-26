@@ -96,9 +96,25 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
     }
     window.addEventListener('open-notifications', handleOpenNotifications)
     window.addEventListener('keydown', handleGlobalKeyDown)
+
+    // Hide/show navbar on scroll
+    let lastScrollY = window.scrollY
+    const handleScroll = () => {
+      if (getPrefersReducedMotion()) return
+      const currentScrollY = window.scrollY
+      if (currentScrollY > 80 && currentScrollY > lastScrollY) {
+        gsap.to(navRef.current, { y: -100, opacity: 0, duration: 0.3, ease: 'power2.out' })
+      } else {
+        gsap.to(navRef.current, { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out' })
+      }
+      lastScrollY = currentScrollY
+    }
+    window.addEventListener('scroll', handleScroll)
+
     return () => {
       window.removeEventListener('open-notifications', handleOpenNotifications)
       window.removeEventListener('keydown', handleGlobalKeyDown)
+      window.removeEventListener('scroll', handleScroll)
     }
   }, [])
 
@@ -162,10 +178,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                   href={link.href}
                   className={clsx(
                     "relative px-3.5 py-1.5 rounded-xl text-xs font-semibold font-display tracking-wide transition-all duration-300 select-none",
-                    active ? "text-brand-400 bg-brand-500/10" : "text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.03]"
+                    active ? "text-brand-400" : "text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.03]"
                   )}
                 >
-                  {link.label}
+                  {active && (
+                    <motion.div
+                      layoutId="navbar-active-pill"
+                      className="absolute inset-0 bg-brand-500/10 border border-brand-500/20 rounded-xl"
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                    />
+                  )}
+                  <span className="relative z-10">{link.label}</span>
                 </LinkComponent>
               )
             })}
