@@ -55,7 +55,7 @@ export default function CodingArenaClient() {
   }, { scope: containerRef })
 
   return (
-    <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-6">
+    <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-6 reveal-coding-arena">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">

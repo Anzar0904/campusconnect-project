@@ -2069,7 +2069,7 @@ Type any of these commands to start!`
   }
 
   return (
-    <div className="h-[calc(100vh-130px)] border border-white/[0.08] bg-[#090d16]/30 backdrop-blur-3xl rounded-3xl overflow-hidden flex shadow-2xl relative select-none">
+    <div className="h-[calc(100vh-130px)] border border-white/[0.08] bg-[#090d16]/30 backdrop-blur-3xl rounded-3xl overflow-hidden flex shadow-2xl relative select-none reveal-ai-assistant">
       
       {/* Background radial soft light blobs */}
       <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full bg-cyan-500/5 blur-[90px] pointer-events-none" />

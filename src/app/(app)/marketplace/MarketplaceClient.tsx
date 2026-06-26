@@ -184,7 +184,7 @@ export default function MarketplaceClient({ items, userId }: any) {
   }
 
   return (
-    <div className="space-y-8 pb-24 text-zinc-50">
+    <div className="space-y-8 pb-24 text-zinc-50 reveal-marketplace">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.04] pb-6">
         <div className="space-y-2">
           <p className="section-label text-brand-400 font-mono tracking-widest text-[10px]">Campus Economy</p>

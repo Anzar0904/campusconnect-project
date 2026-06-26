@@ -7,6 +7,10 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import { getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import dynamic from 'next/dynamic'
+
+// Dynamically load R3F WebGL Canvas to prevent SSR hydration errors
+const LivingBackground = dynamic(() => import('./LivingBackground'), { ssr: false })
 
 // Register ScrollTrigger
 if (typeof window !== 'undefined') {
@@ -27,11 +31,11 @@ export const useMotion = () => useContext(MotionContext)
 
 // Seasonal helper based on month
 function getSeason(): 'spring' | 'summer' | 'autumn' | 'winter' {
-  const month = new Date().getMonth() // 0-indexed: 0=Jan, 11=Dec
-  if (month >= 2 && month <= 4) return 'spring'   // Mar, Apr, May
-  if (month >= 5 && month <= 7) return 'summer'   // Jun, Jul, Aug
-  if (month >= 8 && month <= 10) return 'autumn'  // Sep, Oct, Nov
-  return 'winter'                                 // Dec, Jan, Feb
+  const month = new Date().getMonth()
+  if (month >= 2 && month <= 4) return 'spring'
+  if (month >= 5 && month <= 7) return 'summer'
+  if (month >= 8 && month <= 10) return 'autumn'
+  return 'winter'
 }
 
 // Time of day helper
@@ -50,7 +54,6 @@ export default function MotionProvider({ children }: { children: React.ReactNode
   const timeOfDay = getTimeOfDay()
   const season = getSeason()
 
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const backgroundRef = useRef<HTMLDivElement>(null)
   const spotlightRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -95,29 +98,96 @@ export default function MotionProvider({ children }: { children: React.ReactNode
   useGSAP(() => {
     if (getPrefersReducedMotion() || !contentRef.current) return
 
-    // Centralised Page Transition Reveal
     gsap.fromTo(contentRef.current,
       { opacity: 0, y: 15 },
       { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out', clearProps: 'y' }
     )
 
-    // Reset scroll positions
     if (lenis) {
       lenis.scrollTo(0, { immediate: true })
     }
   }, { dependencies: [pathname, lenis], scope: contentRef })
 
-  // Mouse Spotlight Effect & Canvas Particle Loop
+  // Scroll Storytelling independent scroll reveals with 3D depth, translation, and blur
+  useGSAP(() => {
+    if (typeof window === 'undefined') return
+
+    // Allow DOM to finish mounting/hydrating
+    const timer = setTimeout(() => {
+      // Clear existing reveals to prevent double registration / leaks
+      ScrollTrigger.getAll().forEach(t => {
+        if (t.vars.id && t.vars.id.startsWith('reveal-')) {
+          t.kill()
+        }
+      })
+
+      if (getPrefersReducedMotion()) return
+
+      const specs = [
+        { selector: '.reveal-hero', y: 30, scale: 0.97, rotate: -0.5, blur: 8, delay: 0 },
+        { selector: '.reveal-quick-actions', y: 20, scale: 0.98, rotate: 0.5, blur: 6, delay: 0.05 },
+        { selector: '.reveal-feed', y: 35, scale: 1, rotate: 0, blur: 10, delay: 0.1 },
+        { selector: '.reveal-communities', y: 25, scale: 0.98, rotate: 0.5, blur: 6, delay: 0.15 },
+        { selector: '.reveal-study-hub', y: 30, scale: 0.97, rotate: -0.5, blur: 8, delay: 0 },
+        { selector: '.reveal-marketplace', y: 30, scale: 0.97, rotate: 0.8, blur: 8, delay: 0 },
+        { selector: '.reveal-coding-arena', y: 35, scale: 0.96, rotate: -1, blur: 10, delay: 0 },
+        { selector: '.reveal-ai-assistant', y: 25, scale: 0.98, rotate: 0.5, blur: 6, delay: 0 }
+      ]
+
+      specs.forEach(({ selector, y, scale, rotate, blur, delay }) => {
+        const elements = document.querySelectorAll(selector)
+        elements.forEach((el, idx) => {
+          // Initial visual state
+          gsap.set(el, {
+            opacity: 0,
+            y,
+            scale,
+            rotateX: rotate * 3,
+            rotateY: rotate * 3,
+            z: -40,
+            filter: `blur(${blur}px)`,
+            transformPerspective: 1000,
+          })
+
+          ScrollTrigger.create({
+            id: `reveal-${selector}-${idx}`,
+            trigger: el,
+            start: 'top 92%',
+            once: true,
+            onEnter: () => {
+              gsap.to(el, {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                rotateX: 0,
+                rotateY: 0,
+                z: 0,
+                filter: 'blur(0px)',
+                duration: 1.0,
+                delay,
+                ease: 'power3.out',
+                clearProps: 'transform,filter,rotateX,rotateY,z,scale,opacity',
+              })
+            }
+          })
+        })
+      })
+
+      ScrollTrigger.refresh()
+    }, 120)
+
+    return () => clearTimeout(timer)
+  }, { dependencies: [pathname], scope: contentRef })
+
+  // Mouse Spotlight Effect (desktop only)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // 1. Mouse Tracking for spotlight & ambient parallax
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY }
     }
     window.addEventListener('mousemove', handleMouseMove)
 
-    // Spotlights tick
     let spotTicker: number
     const updateSpotlight = () => {
       if (!getPrefersReducedMotion() && spotlightRef.current) {
@@ -131,219 +201,11 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     }
     updateSpotlight()
 
-    // 2. Canvas Particles Simulation (Subtle & high performance)
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    let animationFrameId: number
-    let width = (canvas.width = window.innerWidth)
-    let height = (canvas.height = window.innerHeight)
-
-    const handleResize = () => {
-      if (canvas) {
-        width = canvas.width = window.innerWidth
-        height = canvas.height = window.innerHeight
-      }
-    }
-    window.addEventListener('resize', handleResize)
-
-    // Setup seasonal particles
-    interface Particle {
-      x: number
-      y: number
-      size: number
-      speedX: number
-      speedY: number
-      opacity: number
-      color: string
-      angle?: number
-      spinSpeed?: number
-    }
-
-    const particles: Particle[] = []
-    const maxParticles = getPrefersReducedMotion() ? 0 : 35
-
-    const initParticle = (p: Partial<Particle> = {}): Particle => {
-      const size = Math.random() * 2 + 1
-      let color = 'rgba(255, 255, 255, 0.3)'
-
-      // Theme-specific colors
-      if (season === 'spring') {
-        color = `rgba(244, 180, 200, ${Math.random() * 0.3 + 0.15})` // Cherry blossom pink
-      } else if (season === 'summer') {
-        color = `rgba(253, 224, 71, ${Math.random() * 0.25 + 0.1})`  // Warm golden sunbeams
-      } else if (season === 'autumn') {
-        color = `rgba(${200 + Math.random() * 55}, ${100 + Math.random() * 100}, 40, ${Math.random() * 0.25 + 0.1})` // Auburn/Amber leaves
-      } else if (season === 'winter') {
-        color = `rgba(255, 255, 255, ${Math.random() * 0.4 + 0.2})`   // Snow crystal white
-      }
-
-      return {
-        x: p.x ?? Math.random() * width,
-        y: p.y ?? Math.random() * height,
-        size,
-        speedX: p.speedX ?? (Math.random() * 0.4 - 0.2) + (season === 'spring' || season === 'autumn' ? 0.3 : 0),
-        speedY: p.speedY ?? (Math.random() * 0.5 + 0.1) * (season === 'winter' ? 1.2 : 0.8),
-        opacity: Math.random() * 0.4 + 0.1,
-        color,
-        angle: Math.random() * Math.PI * 2,
-        spinSpeed: (Math.random() * 0.02 - 0.01),
-      }
-    }
-
-    // Populate initial particles
-    for (let i = 0; i < maxParticles; i++) {
-      particles.push(initParticle())
-    }
-
-    const drawParticles = () => {
-      ctx.clearRect(0, 0, width, height)
-
-      if (document.visibilityState === 'visible') {
-        // 1. Time-of-Day background rendering layers
-        if (timeOfDay === 'morning') {
-          // Sunrise golden rays from top-left
-          const time = Date.now() * 0.0003
-          ctx.save()
-          for (let i = 0; i < 5; i++) {
-            const angle = (i * Math.PI) / 8 + Math.sin(time + i) * 0.04
-            ctx.fillStyle = 'rgba(251, 146, 60, 0.02)'
-            ctx.beginPath()
-            ctx.moveTo(0, 0)
-            ctx.arc(0, 0, Math.max(width, height) * 0.8, angle, angle + Math.PI / 20)
-            ctx.closePath()
-            ctx.fill()
-          }
-          ctx.restore()
-        } else if (timeOfDay === 'evening') {
-          // Aurora wave styling
-          const time = Date.now() * 0.0006
-          ctx.save()
-          ctx.strokeStyle = 'rgba(168, 85, 247, 0.012)'
-          ctx.lineWidth = 80
-          ctx.beginPath()
-          for (let x = 0; x < width + 40; x += 40) {
-            const y = height * 0.4 + Math.sin(x * 0.002 + time) * 35
-            if (x === 0) ctx.moveTo(x, y)
-            else ctx.lineTo(x, y)
-          }
-          ctx.stroke()
-
-          ctx.strokeStyle = 'rgba(249, 115, 22, 0.008)'
-          ctx.lineWidth = 100
-          ctx.beginPath()
-          for (let x = 0; x < width + 40; x += 40) {
-            const y = height * 0.5 + Math.cos(x * 0.0015 - time * 0.8) * 30
-            if (x === 0) ctx.moveTo(x, y)
-            else ctx.lineTo(x, y)
-          }
-          ctx.stroke()
-          ctx.restore()
-        } else if (timeOfDay === 'night') {
-          // Moon glow shader
-          ctx.save()
-          const moonGrad = ctx.createRadialGradient(width * 0.85, height * 0.15, 0, width * 0.85, height * 0.15, 140)
-          moonGrad.addColorStop(0, 'rgba(186, 230, 253, 0.035)')
-          moonGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
-          ctx.fillStyle = moonGrad
-          ctx.beginPath()
-          ctx.arc(width * 0.85, height * 0.15, 140, 0, Math.PI * 2)
-          ctx.fill()
-          ctx.restore()
-
-          // Draw constellations connecting stars
-          ctx.save()
-          for (let i = 0; i < particles.length; i++) {
-            const p1 = particles[i]
-            for (let j = i + 1; j < particles.length; j++) {
-              const p2 = particles[j]
-              const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y)
-              if (dist < 120) {
-                ctx.strokeStyle = `rgba(224, 242, 254, ${(1 - dist / 120) * 0.045})`
-                ctx.lineWidth = 0.5
-                ctx.beginPath()
-                ctx.moveTo(p1.x, p1.y)
-                ctx.lineTo(p2.x, p2.y)
-                ctx.stroke()
-              }
-            }
-          }
-          ctx.restore()
-        }
-
-        // 2. Draw active particles
-        particles.forEach((p, idx) => {
-          p.y += p.speedY
-          p.x += p.speedX
-          if (p.angle !== undefined && p.spinSpeed !== undefined) {
-            p.angle += p.spinSpeed
-          }
-
-          if (p.y > height + 20) {
-            particles[idx] = initParticle({ y: -10 })
-          } else if (p.x > width + 20) {
-            particles[idx] = initParticle({ x: -10 })
-          } else if (p.x < -20) {
-            particles[idx] = initParticle({ x: width + 10 })
-          }
-
-          if (timeOfDay === 'night') {
-            p.opacity = Math.max(0.15, Math.min(0.65, p.opacity + (Math.random() * 0.06 - 0.03)))
-          }
-
-          ctx.save()
-          
-          if (timeOfDay === 'afternoon') {
-            const blobGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 18)
-            blobGrad.addColorStop(0, `rgba(56, 189, 248, ${p.opacity * 0.18})`)
-            blobGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
-            ctx.fillStyle = blobGrad
-            ctx.beginPath()
-            ctx.arc(p.x, p.y, p.size * 18, 0, Math.PI * 2)
-            ctx.fill()
-          } else if (timeOfDay === 'morning' && season !== 'winter' && season !== 'spring') {
-            ctx.translate(p.x, p.y)
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 0.08})`
-            ctx.beginPath()
-            ctx.arc(0, 0, p.size * 22, 0, Math.PI * 2)
-            ctx.fill()
-          } else {
-            ctx.translate(p.x, p.y)
-            ctx.rotate(p.angle || 0)
-            ctx.fillStyle = p.color
-            ctx.shadowBlur = season === 'summer' || season === 'winter' ? 5 : 0
-            ctx.shadowColor = p.color
-
-            if (season === 'spring' || season === 'autumn') {
-              ctx.beginPath()
-              ctx.ellipse(0, 0, p.size * 2, p.size, 0, 0, Math.PI * 2)
-              ctx.fill()
-            } else {
-              ctx.beginPath()
-              ctx.arc(0, 0, p.size, 0, Math.PI * 2)
-              ctx.fill()
-            }
-          }
-          ctx.restore()
-        })
-      }
-
-      animationFrameId = requestAnimationFrame(drawParticles)
-    }
-
-    if (maxParticles > 0) {
-      drawParticles()
-    }
-
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('resize', handleResize)
       cancelAnimationFrame(spotTicker)
-      cancelAnimationFrame(animationFrameId)
     }
-  }, [season, timeOfDay])
+  }, [])
 
   // Get dynamic background gradient configurations based on Time of Day
   const getAmbientGradient = () => {
@@ -362,46 +224,46 @@ export default function MotionProvider({ children }: { children: React.ReactNode
 
   return (
     <MotionContext.Provider value={{ lenis, timeOfDay, season }}>
-      {/* Dynamic Ambient Background Nodes */}
+      {/* Dynamic Ambient Background Layers */}
       <div 
         ref={backgroundRef}
         className="fixed inset-0 pointer-events-none -z-50 overflow-hidden select-none bg-zinc-950"
       >
-        {/* Living Time-based Layered CSS Gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-80 transition-all duration-[3000ms]`} />
+        {/* Layer 0: Animated WebGL Environment */}
+        <LivingBackground timeOfDay={timeOfDay} />
 
-        {/* Dynamic Vercel-like Dot Pattern */}
+        {/* Layer 1: Soft Gradient Overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-40 transition-all duration-[3000ms]`} />
+
+        {/* Dot Pattern Overlay */}
         <div 
-          className="absolute inset-0 opacity-[0.05]" 
+          className="absolute inset-0 opacity-[0.03]" 
           style={{
-            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
             backgroundSize: '24px 24px'
           }}
         />
 
-        {/* Ambient Aurora blobs */}
-        <div className="absolute inset-0 opacity-[0.03]">
+        {/* Layer 2: Aurora Blobs */}
+        <div className="absolute inset-0 opacity-[0.02]">
           <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-brand-500 blur-[150px] animate-pulse" style={{ animationDuration: '10s' }} />
           <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] rounded-full bg-cyan-500 blur-[150px] animate-pulse" style={{ animationDuration: '14s' }} />
         </div>
 
-        {/* Interactive canvas particle storm */}
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-
-        {/* Client side cursor spotlight (desktop only) */}
-        <div ref={spotlightRef} className="absolute inset-0 w-full h-full hidden md:block" />
-
-        {/* Noise overlay texture */}
+        {/* Layer 3: Noise Texture */}
         <div 
           className="absolute inset-0 opacity-[0.015]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
           }}
         />
+
+        {/* Layer 5: Client side cursor spotlight (floating glow) */}
+        <div ref={spotlightRef} className="absolute inset-0 w-full h-full hidden md:block" />
       </div>
 
-      {/* Main Page Transition Containment Wrapper */}
-      <div ref={contentRef} className="w-full min-h-screen flex flex-col">
+      {/* Layer 4: Content (Main Page Transition Containment Wrapper) */}
+      <div ref={contentRef} className="w-full min-h-screen flex flex-col relative z-10">
         {children}
       </div>
     </MotionContext.Provider>

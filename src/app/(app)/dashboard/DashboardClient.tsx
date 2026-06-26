@@ -18,7 +18,7 @@ import { SecondarySidebar } from '@/components/dashboard/SecondarySidebar'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
-import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import { useGsapNumberCounter, useGsapTilt, useGsapMagnetic, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 import { 
   Heart, 
   MessageSquare, 
@@ -239,14 +239,17 @@ function PostCard({
   const isCollegeAdmin = currentUserProfile?.role === 'COLLEGE_ADMIN' && author?.college_id === currentUserProfile?.college_id
   const canDelete = isOwner || isSuperAdmin || isCollegeAdmin
 
+  const cardRef = useGsapTilt(3.5) as React.RefObject<HTMLDivElement>
+
   return (
     <motion.article 
+      ref={cardRef}
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-      className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 space-y-5 transition-all duration-300 hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
+      className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-6 space-y-5 transition-all duration-300 hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] transformPerspective-800"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -733,19 +736,45 @@ const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix =
   return <span ref={ref as any}>0{suffix}</span>
 }
 
+const MagneticButton: React.FC<{
+  onClick?: () => void
+  href?: string
+  className: string
+  children: React.ReactNode
+}> = ({ onClick, href, className, children }) => {
+  const ref = useGsapMagnetic(0.22) as React.RefObject<any>
+  if (href) {
+    return (
+      <Link ref={ref} href={href} className={className}>
+        {children}
+      </Link>
+    )
+  }
+  return (
+    <button ref={ref} onClick={onClick} className={className}>
+      {children}
+    </button>
+  )
+}
+
+const SummaryCard: React.FC<{
+  href: string
+  children: React.ReactNode
+}> = ({ href, children }) => {
+  const ref = useGsapTilt(4) as React.RefObject<HTMLDivElement>
+  return (
+    <Link href={href}>
+      <div
+        ref={ref}
+        className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group hover:border-white/[0.08] hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+      >
+        {children}
+      </div>
+    </Link>
+  )
+}
+
 const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreatePostClick }) => {
-  const heroRef = useRef<HTMLDivElement>(null)
-  const cardsRef = useRef<HTMLDivElement>(null)
-  const actionsRef = useRef<HTMLDivElement>(null)
-
-  useGSAP(() => {
-    if (getPrefersReducedMotion()) return
-    const tl = gsap.timeline({ defaults: { ease: Easing.premium } })
-    tl.fromTo(heroRef.current, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.6 })
-      .fromTo(cardsRef.current?.children || [], { opacity: 0, scale: 0.95, y: 10 }, { opacity: 1, scale: 1, y: 0, stagger: 0.05, duration: 0.5 }, '-=0.4')
-      .fromTo(actionsRef.current?.children || [], { opacity: 0, x: -10 }, { opacity: 1, x: 0, stagger: 0.04, duration: 0.4 }, '-=0.3')
-  }, { scope: heroRef })
-
   const getGreeting = () => {
     const hr = new Date().getHours()
     if (hr >= 5 && hr < 11) return 'Good Morning'
@@ -824,14 +853,14 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
   ]
 
   return (
-    <div ref={heroRef} className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6 select-none">
+    <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6 select-none reveal-hero">
       <div className="bg-[#18181B] border border-white/[0.04] rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
         {/* Glow backdrop */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.015),transparent_60%)] pointer-events-none" />
 
         {/* Personalized Header Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
+          <div className="flex items-center gap-4">
             <GlobalAvatar profile={profile} className="w-12 h-12 border border-white/10 shadow-md shrink-0" />
             <div>
               <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight font-sans">
@@ -845,45 +874,41 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
         </div>
 
         {/* Summary Cards Grid */}
-        <div ref={cardsRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-6">
           {summaryCards.map((card, idx) => {
             const Icon = card.icon
             return (
-              <Link href={card.href} key={idx}>
-                <div
-                  className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4 transition-all duration-300 h-full flex flex-col justify-between gap-3 text-left relative overflow-hidden group hover:y-[-2px] hover:border-white/[0.08]"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">{card.label}</span>
-                    <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0", card.color)}>
-                      <Icon size={12} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight font-sans">
-                      {card.label === 'Campus Rank' ? (
-                        <>
-                          Rank #<CountUp value={card.count} />
-                        </>
-                      ) : card.count > 0 ? (
-                        <CountUp value={card.count} suffix={card.suffix} />
-                      ) : (
-                        card.emptyText
-                      )}
-                    </p>
-                    {card.subvalue && (
-                      <p className="text-[9px] text-zinc-500 font-mono mt-0.5">{card.subvalue}</p>
-                    )}
+              <SummaryCard href={card.href} key={idx}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">{card.label}</span>
+                  <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0", card.color)}>
+                    <Icon size={12} />
                   </div>
                 </div>
-              </Link>
+                <div>
+                  <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight font-sans">
+                    {card.label === 'Campus Rank' ? (
+                      <>
+                        Rank #<CountUp value={card.count} />
+                      </>
+                    ) : card.count > 0 ? (
+                      <CountUp value={card.count} suffix={card.suffix} />
+                    ) : (
+                      card.emptyText
+                    )}
+                  </p>
+                  {card.subvalue && (
+                    <p className="text-[9px] text-zinc-500 font-mono mt-0.5">{card.subvalue}</p>
+                  )}
+                </div>
+              </SummaryCard>
             )
           })}
         </div>
 
         {/* Quick Actions Row */}
-        <div ref={actionsRef} className="flex flex-wrap items-center gap-2.5 mt-6 pt-5 border-t border-white/[0.04]">
-          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mr-2">Quick Actions:</span>
+        <div className="flex flex-wrap items-center gap-2.5 mt-6 pt-5 border-t border-white/[0.04] reveal-quick-actions">
+          <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mr-2 text-left">Quick Actions:</span>
           {quickActions.map((action, idx) => {
             const Icon = action.icon
             const isPrimary = action.isPrimary
@@ -905,18 +930,15 @@ const DashboardHero: React.FC<DashboardHeroProps> = ({ profile, stats, onCreateP
                 : "bg-white/[0.01] hover:bg-white/[0.04] border-white/[0.04] hover:border-white/[0.1] text-zinc-400 hover:text-zinc-200"
             )
 
-            if (action.action) {
-              return (
-                <button key={idx} onClick={action.action} className={classes}>
-                  {buttonContent}
-                </button>
-              )
-            }
-
             return (
-              <Link href={action.href!} key={idx} className={classes}>
+              <MagneticButton
+                key={idx}
+                onClick={action.action}
+                href={action.href}
+                className={classes}
+              >
                 {buttonContent}
-              </Link>
+              </MagneticButton>
             )
           })}
         </div>
@@ -942,6 +964,12 @@ export default function DashboardClient({
   const router = useRouter()
   const { profile: currentProfile } = useCurrentProfile()
   const profile = (currentProfile || initialProfile) as any
+
+  // Card Tilt refs
+  const verifyCardRef = useGsapTilt(3.5) as React.RefObject<HTMLDivElement>
+  const aiCardRef = useGsapTilt(3.5) as React.RefObject<HTMLDivElement>
+  const marketCardRef = useGsapTilt(3.5) as React.RefObject<HTMLDivElement>
+  const connectCardRef = useGsapTilt(3.5) as React.RefObject<HTMLDivElement>
 
   const [parentPosts] = useAutoAnimate()
   const [parentEvents] = useAutoAnimate()
@@ -1300,7 +1328,7 @@ export default function DashboardClient({
         <div className="w-full py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left/Main Column: Feed */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-8 space-y-6 reveal-feed">
             
             {/* Create Post composer */}
             <CreatePost 
@@ -1396,7 +1424,7 @@ export default function DashboardClient({
             
             {/* Identity Verification banner */}
             {profile && !profile.is_verified && (
-              <div className="bg-amber-500/[0.02] border border-amber-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-amber-500/30 duration-300">
+              <div ref={verifyCardRef} className="bg-amber-500/[0.02] border border-amber-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-amber-500/30 duration-300 transformPerspective-800">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-amber-500/10 transition-all pointer-events-none" />
                 <div className="relative z-10 space-y-3.5">
                   <div className="flex items-center gap-2.5">
@@ -1416,7 +1444,7 @@ export default function DashboardClient({
             )}
 
             {/* AI Assistant context helper */}
-            <div className="bg-purple-500/[0.02] border border-purple-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-purple-500/30 duration-300">
+            <div ref={aiCardRef} className="bg-purple-500/[0.02] border border-purple-500/20 rounded-2xl p-5 relative overflow-hidden group shadow-sm transition-all hover:border-purple-500/30 duration-300 transformPerspective-800 reveal-ai-assistant">
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-purple-500/10 transition-all pointer-events-none" />
               <div className="relative z-10 space-y-3.5">
                 <div className="flex items-center gap-2.5">
@@ -1438,7 +1466,7 @@ export default function DashboardClient({
             <RightSidebar />
 
             {/* Marketplace Featured Widget */}
-            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
+            <div ref={marketCardRef} className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300 transformPerspective-800 reveal-marketplace">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white tracking-tight">Marketplace Deals</span>
                 <Link href="/marketplace" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
@@ -1472,7 +1500,7 @@ export default function DashboardClient({
             </div>
 
             {/* Campus Connections & Suggestions */}
-            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-5 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
+            <div ref={connectCardRef} className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-5 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300 transformPerspective-800 reveal-communities">
               {/* Connections list */}
               <div>
                 <span className="text-[9px] font-mono font-semibold tracking-widest text-zinc-500 uppercase block mb-3 select-none">Classmate Connections ({friends.length})</span>

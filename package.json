@@ -14,6 +14,8 @@
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",
     "@gsap/react": "^2.1.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.43.4",
     "@use-gesture/react": "^10.3.1",
@@ -29,6 +31,7 @@
     "react-hot-toast": "^2.4.1",
     "resend": "^6.14.0",
     "tailwind-merge": "^2.3.0",
+    "three": "^0.185.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

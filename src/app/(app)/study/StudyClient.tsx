@@ -91,7 +91,7 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
   }, [groups, search])
 
   return (
-    <div className="space-y-10 pb-24">
+    <div className="space-y-10 pb-24 reveal-study-hub">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>

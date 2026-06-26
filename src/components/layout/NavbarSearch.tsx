@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useGsapMagnetic } from '@/hooks/useGsapMotion'
 
 interface SearchResult {
   id: string
@@ -88,6 +89,7 @@ interface PaletteItem {
 }
 
 export function NavbarSearch() {
+  const searchBtnRef = useGsapMagnetic(0.12) as React.RefObject<HTMLButtonElement>
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -682,6 +684,7 @@ export function NavbarSearch() {
       </button>
 
       <button 
+        ref={searchBtnRef}
         onClick={() => setIsOpen(true)}
         className="hidden md:block w-full max-w-[240px] p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(99,102,241,0.15)] hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:scale-[1.005] active:scale-[0.995]"
       >
