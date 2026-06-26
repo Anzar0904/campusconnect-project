@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { Navbar } from './Navbar'
 import { BottomNav } from './BottomNav'
-import { NotificationProvider } from '@/hooks/useNotifications'
-import { ProfileProvider } from '@/hooks/useCurrentProfile'
+import { Sidebar } from './Sidebar'
+import { NotificationProvider, useNotifications } from '@/hooks/useNotifications'
+import { ProfileProvider, useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { cn } from '@/lib/utils'
 
 import { useEffect } from 'react'
@@ -106,31 +107,58 @@ export function AppShell({
   return (
     <ProfileProvider initialProfile={initialProfile} userId={userId}>
       <NotificationProvider userId={userId}>
-        <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
-          <Navbar />
-        
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ 
-                  type: "spring",
-                  mass: 1,
-                  stiffness: 170,
-                  damping: 26 
-                }}
-                className="w-full"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-          <BottomNav />
-        </div>
+        <AppShellInner collegeName={collegeName} pathname={pathname}>
+          {children}
+        </AppShellInner>
       </NotificationProvider>
     </ProfileProvider>
+  )
+}
+
+function AppShellInner({ 
+  collegeName, 
+  pathname, 
+  children 
+}: { 
+  collegeName: string
+  pathname: string
+  children: React.ReactNode 
+}) {
+  const { profile } = useCurrentProfile()
+  const { unreadCount } = useNotifications()
+
+  return (
+    <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-50 font-sans antialiased selection:bg-brand-500/30 selection:text-white">
+      <Sidebar 
+        collegeName={collegeName}
+        userName={profile?.full_name || undefined}
+        userAvatar={profile?.avatar_url || undefined}
+        isVerified={profile?.is_verified}
+        userRole={profile?.role || undefined}
+        notificationCount={unreadCount}
+      />
+      <Navbar profile={profile} />
+    
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-32 md:pb-12 relative md:pl-64">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ 
+              type: "spring",
+              mass: 1,
+              stiffness: 170,
+              damping: 26 
+            }}
+            className="w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+      <BottomNav />
+    </div>
   )
 }

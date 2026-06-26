@@ -141,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
 
   return (
-    <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none">
+    <div className="fixed top-4 left-0 md:left-64 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none">
       <nav ref={navRef} className="pointer-events-auto h-16 w-full glass-panel-base rounded-2xl px-4 sm:px-6 flex items-center justify-between gap-4 transition-all duration-300">
         
         {/* Brand Logo */}

@@ -11,9 +11,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
-import { Navbar } from '@/components/layout/Navbar'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { ModuleSection } from '@/components/home/ModuleSection'
+import { RightSidebar } from '@/components/dashboard/RightSidebar'
+import { SecondarySidebar } from '@/components/dashboard/SecondarySidebar'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
@@ -1253,14 +1254,12 @@ export default function DashboardClient({
   const isProfileIncomplete = !profile?.username || !profile?.bio || !profile?.branch
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] text-zinc-50 flex flex-col font-sans antialiased selection:bg-brand-500/35 selection:text-white overflow-x-hidden pt-12">
-      <Navbar profile={profile} />
-
-      <main className="flex-1 flex flex-col w-full z-10 pt-4">
+    <div className="w-full">
+      <div className="flex-1 flex flex-col w-full z-10 pt-4">
         
         {/* Onboarding Banner */}
         {isProfileIncomplete && (
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 mb-6">
+          <div className="w-full mb-6">
             <AnimatePresence>
               <motion.div
                 initial={{ opacity: 0, y: -12 }}
@@ -1298,7 +1297,7 @@ export default function DashboardClient({
         />
 
         {/* Primary Functional Dashboard Node Grid */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="w-full py-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left/Main Column: Feed */}
           <div className="lg:col-span-8 space-y-6">
@@ -1435,117 +1434,8 @@ export default function DashboardClient({
               </div>
             </div>
 
-            {/* Upcoming Events Calendar Widget */}
-            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white tracking-tight">Upcoming Events</span>
-                <Link href="/events" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
-              </div>
-
-              {loadingWidgets ? (
-                <EventSkeleton />
-              ) : events.length === 0 ? (
-                <div className="py-6 text-center bg-zinc-950/20 rounded-xl border border-white/[0.02] select-none">
-                  <p className="text-zinc-500 text-[11px] font-medium italic">No events scheduled</p>
-                </div>
-              ) : (
-                <div ref={parentEvents} className="space-y-3">
-                  {events.map(e => {
-                    const { month, day } = formatEventDate(e.start_time)
-                    return (
-                      <div key={e.id} className="flex gap-3 items-center border-b border-white/[0.04] last:border-0 pb-3 last:pb-0 group cursor-pointer">
-                        <div className="w-10 h-10 rounded-xl bg-[#1B1F24] border border-white/[0.04] flex flex-col items-center justify-center shrink-0 group-hover:border-brand-500/20 transition-all">
-                          <span className="text-brand-400 font-mono text-[8px] font-bold uppercase leading-none">{month}</span>
-                          <span className="text-zinc-100 font-sans font-semibold text-sm leading-none mt-0.5">{day}</span>
-                        </div>
-                        <div className="min-w-0 space-y-0.5 flex-1">
-                          <p className="text-xs font-semibold text-white truncate group-hover:text-brand-400 transition-colors tracking-tight leading-tight">{e.title}</p>
-                          <p className="text-[10px] text-zinc-500 font-medium flex items-center gap-1">
-                            <MapPin size={9} className="text-zinc-600" />
-                            <span className="truncate">{e.venue || 'Campus'}</span>
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Internship Matches Widget */}
-            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white tracking-tight">Internship Matches</span>
-                <Link href="/internships" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
-              </div>
-
-              {loadingWidgets ? (
-                <InternshipSkeleton />
-              ) : (
-                <div className="space-y-2.5">
-                  {internships.length > 0 ? (
-                    internships.map((job) => (
-                      <Link href="/internships" key={job.id} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-brand-500/20 hover:bg-[#1B1F24] transition-all cursor-pointer group">
-                        <div className="min-w-0 flex-1 pr-2">
-                          <p className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors tracking-tight truncate">{job.title}</p>
-                          <p className="text-[10px] text-zinc-500 font-medium truncate mt-0.5">{job.company}</p>
-                        </div>
-                        <span className="text-[8px] font-semibold font-mono tracking-wider uppercase px-1.5 py-0.5 rounded-md border border-emerald-500/20 text-emerald-400 bg-emerald-500/10 shrink-0 select-none">
-                          Live
-                        </span>
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="text-[11px] text-zinc-500 font-medium italic text-center py-4">No active internships.</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Communities Widget */}
-            <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white tracking-tight">Campus Communities</span>
-                <Link href="/community" className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 transition-colors">View all</Link>
-              </div>
-
-              {loadingWidgets ? (
-                <CommunitySkeleton />
-              ) : (
-                <div className="space-y-3">
-                  {communities.length > 0 ? (
-                    communities.map((comm, idx) => {
-                      const initial = comm.name.slice(0, 2).toUpperCase()
-                      const baseColors = [
-                        'bg-zinc-800 text-zinc-200 border border-white/[0.04]',
-                        'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20',
-                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      ]
-                      const colorClass = baseColors[idx % baseColors.length]
-                      
-                      return (
-                        <div key={comm.id} className="flex items-center justify-between group p-0.5">
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                            <div className={cn("w-8 h-8 rounded-lg text-[9px] font-bold flex items-center justify-center shadow-sm shrink-0", colorClass)}>
-                              {initial}
-                            </div>
-                            <div className="min-w-0 text-left">
-                              <Link href={`/community/${comm.id}`} className="text-xs font-semibold text-white group-hover:text-brand-400 transition-colors cursor-pointer tracking-tight block truncate">{comm.name}</Link>
-                              <p className="text-[10px] text-zinc-500 font-medium truncate mt-0.5">{comm.member_count} nodes</p>
-                            </div>
-                          </div>
-                          <Link href={`/community/${comm.id}`} className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-[10px] rounded-lg transition-all tracking-wide shrink-0 active:scale-95">
-                            Join
-                          </Link>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <p className="text-[11px] text-zinc-500 font-medium italic text-center py-4">No communities yet.</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <SecondarySidebar />
+            <RightSidebar />
 
             {/* Marketplace Featured Widget */}
             <div className="bg-[#15181D] border border-white/[0.04] rounded-2xl p-5 space-y-4 shadow-sm transition-all hover:border-white/[0.08] hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] duration-300">
@@ -1720,7 +1610,7 @@ export default function DashboardClient({
 
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Footer */}
       <footer className="w-full border-t border-white/[0.04] bg-[#0B0D10] z-10 py-8 px-6 sm:px-12 lg:px-20 mt-12 text-center text-[9px] uppercase font-bold tracking-widest text-zinc-600 select-none">
