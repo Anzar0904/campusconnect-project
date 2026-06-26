@@ -33,65 +33,60 @@ This document outlines the UX layout improvements, spacing adjustments, and scro
 
 ---
 
-## 3. Navbar Redesign & Spacing
+## 3. Navbar Desktop Navigation Refinement
 
-* **Problem:** The top navigation bar felt overcrowded and condensed.
-* **Solution:**
-  * **Increased Height & Spacing:** Navbar height increased from `h-16` (64px) to `h-20` (80px), container padding updated to `px-6 sm:px-8`, and gap margins widened to `gap-6` for a spacious feel.
-  * **Clean Desktop Layout:** 
-    * Navigation tabs now hide on medium layouts and become visible only on large desktop screens (`hidden xl:flex`) to avoid overlapping the central search input.
-    * The item spacing inside the tab row was increased to `gap-3`.
-  * **Centered Search:** Added double-flexible spacers (`flex-1`) on both sides of the search bar, perfectly centering it on the navbar.
-  * **Actions Grid Spacing:** Set spacing between actions to `gap-3`.
-
----
-
-## 4. Centered Search Bar visual upgrade
-
-* **Problem:** The search trigger on the navbar was small, narrow, and lacked visual weight.
-* **Solution:**
-  * **Size Upgrade:** Increased width significantly on desktop: `w-[300px] lg:w-[450px]` with transition-width expansions up to `hover:lg:w-[485px]` for a smooth focus/hover feel.
-  * **Glass Layout:** Styled with a highly translucent dark glass layer (`bg-zinc-950/70` + `backdrop-blur-2xl` + `border-white/[0.08]`).
-  * **Animated Border Glow:** Maintained the active rotating multi-color neon gradient border (`glowing-border`) with a subtle shadow glow to guide the user's focus.
-  * **Magnetic Hover:** Retained the magnetic spring physics on hover for a satisfying interactive feel.
+* **Primary Top Nav Items:** 
+  * Removed "Marketplace" and "Internships" from the desktop top navigation bar to clean up visual clutter.
+  * Desktop top navigation links now contain exclusively:
+    1. **Feed** (`/dashboard`)
+    2. **Communities** (`/community`)
+    3. **Study Hub** (`/study`)
+  * Marketplace and Internships remain fully accessible via the App Launcher drawer, Global Search queries, direct links, and mobile navigation overlays.
+* **Responsive Layout:**
+  * Navigation links are visible starting on `lg` viewports and above (`hidden lg:flex`).
+  * Increased link item spacing to `gap-4` for a more balanced look.
 
 ---
 
-## 5. Quick Actions Decluttering
+## 4. Centered Search Bar Visuals & Width Upgrade
 
-* **Problem:** Too many redundant action shortcuts cluttered the header.
-* **Solution:**
-  * Removed the Dedicated Sparkly AI Shortcut button (`/ai`) from the primary navbar, as it is already readily accessible inside the App Launcher categories.
-  * Header visible icons are now restricted strictly to:
-    1. Search (Centered Input Bar / Mobile Icon)
-    2. App Launcher (LayoutGrid)
-    3. Notifications (Bell)
-    4. Create Post (Plus)
-    5. User Profile (Avatar Dropdown)
-  * All secondary activities remain grouped inside the App Launcher grid.
+* **Width Upgrade:** Further increased width on desktop to `w-[320px] lg:w-[480px]` with transition-width expansions up to `hover:lg:w-[560px]`. This anchors the search bar as the primary focal point of the header.
+* **Glass Layout:** Styled with a highly translucent dark glass layer (`bg-zinc-950/70` + `backdrop-blur-2xl` + `border-white/[0.08]`).
+* **Centered Positioning:** Maintained flexible spacers (`flex-1`) on both sides of the search bar in `Navbar.tsx` to center it perfectly.
+* **Glow & Hover:** Retained the rotating neon outline border (`glowing-border`) and magnetic hover spring physics.
 
 ---
 
-## 6. Background Visibility & Translucent Glass Cards
+## 5. Header Actions Spacing & AI Assistant Shortcut
 
-* **Problem:** The dark cards on various subpages were too opaque, obscuring the walkway showcase sequence and flattening visual depth.
-* **Solution:**
-  * Updated card styles inside `src/components/ui/Card.tsx` and `src/app/globals.css`:
-    * **Premium Variant:** Changed background from `bg-zinc-900/40 backdrop-blur-xl` to `bg-zinc-900/22 backdrop-blur-2xl` (reducing opacity and boosting glass blur intensity).
-    * **Elevated Variant:** Changed background from solid dark `bg-zinc-900` to a translucent glass style `bg-zinc-900/35 backdrop-blur-xl border-white/[0.04]`.
-  * These adjustments let the background walkway frame showcase bleed through the glass layers beautifully while maintaining absolute readability of text and inputs.
+* **Actions List:** Restored the dedicated AI Assistant (✨) shortcut button in the actions menu, positioned cleanly between Create (+) and Notifications (🔔).
+* **Grid Spacing:** Spacing inside the actions group on the right was increased to `gap-4` for a cleaner separation of interactive items.
+* **Visible Icons:**
+  1. App Launcher (grid)
+  2. Create (+)
+  3. AI Assistant (✨)
+  4. Notifications (🔔)
+  5. Profile Avatar
+
+---
+
+## 6. Translucent Glass Cards
+
+* **Premium Variant:** Translucent background set to `bg-zinc-900/22` with a robust `backdrop-blur-2xl`.
+* **Elevated Variant:** Translucent background set to `bg-zinc-900/35` with `backdrop-blur-xl` and a `border-white/[0.04]`.
+* This increases walkway showcase background visibility behind cards while keeping content legible.
 
 ---
 
 ## 7. Files Modified
 
 1. **[Navbar.tsx](file:///Users/anzarakhtar/Downloads/iilm-production/src/components/layout/Navbar.tsx)**
-   * Redesigned heights, paddings, flex spacing, and removed the AI Sparkles shortcut button.
+   * Refined visible navigation tabs (Feed, Communities, Study Hub), restored the AI Assistant icon, and increased container padding/spacing.
 2. **[NavbarSearch.tsx](file:///Users/anzarakhtar/Downloads/iilm-production/src/components/layout/NavbarSearch.tsx)**
-   * Expanded search trigger width, updated backdrop glass blur styling, and integrated Lenis start/stop scroll locking.
+   * Expanded search trigger width to `480px` (desktop) and `560px` (hover expansion).
 3. **[Card.tsx](file:///Users/anzarakhtar/Downloads/iilm-production/src/components/ui/Card.tsx)**
-   * Toned down card opacities (zinc-900/22 and zinc-900/35) and boosted backdrop-blur values.
+   * Updated translucent card values for premium and elevated card variants.
 4. **[globals.css](file:///Users/anzarakhtar/Downloads/iilm-production/src/app/globals.css)**
-   * Updated global class mappings for `.card-premium` and `.card-elevated`.
+   * Updated card CSS styles for `.card-premium` and `.card-elevated`.
 5. **[MotionProvider.tsx](file:///Users/anzarakhtar/Downloads/iilm-production/src/components/providers/MotionProvider.tsx)**
-   * Updated background container style to be viewport-fixed with explicit dimensions.
+   * Set fixed viewport size on background container wrapper.

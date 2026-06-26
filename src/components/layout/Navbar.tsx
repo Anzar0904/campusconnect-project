@@ -94,8 +94,6 @@ const PRIMARY_LINKS = [
   { label: 'Feed', href: '/dashboard', icon: Home },
   { label: 'Communities', href: '/community', icon: MessageCircle },
   { label: 'Study Hub', href: '/study', icon: GraduationCap },
-  { label: 'Marketplace', href: '/marketplace', icon: Store },
-  { label: 'Internships', href: '/internships', icon: Briefcase },
 ]
 
 export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
@@ -199,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
         {/* Desktop Primary Nav Tabs */}
         {profile && (
-          <div className="hidden xl:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
             {PRIMARY_LINKS.map((link) => {
               const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
               return (
@@ -221,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
         {profile && <div className="flex-1 hidden md:block" />}
 
         {/* Actions Menu */}
-        <div className="flex items-center gap-3 relative">
+        <div className="flex items-center gap-4 relative">
           {profile ? (
             <>
               {/* App Launcher Button */}
@@ -325,8 +323,17 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                   )}
                 </AnimatePresence>
               </div>
-
-
+              {/* Dedicated Sparkly AI Shortcut */}
+              <LinkComponent
+                href="/ai"
+                className={clsx(
+                  "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-brand-500/10 hover:border-brand-500/20 hover:text-brand-400 transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                  pathname === '/ai' && "text-brand-400 bg-brand-500/10 border-brand-500/20"
+                )}
+                aria-label="AI Assistant"
+              >
+                <Sparkles size={16} className="animate-pulse" />
+              </LinkComponent>
 
               {/* Notifications Popover */}
               <div className="relative">
