@@ -88,9 +88,19 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     gsap.ticker.add(tickHandler)
     gsap.ticker.lagSmoothing(0)
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        lenisInstance.stop()
+      } else {
+        lenisInstance.start()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       lenisInstance.destroy()
       gsap.ticker.remove(tickHandler)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
