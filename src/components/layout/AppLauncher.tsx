@@ -371,8 +371,7 @@ export default function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
       {/* Main Command Center Modal */}
       <div 
         ref={containerRef}
-        className="relative w-full max-w-4xl h-[85vh] max-h-[640px] glass-panel-base border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col z-10"
-        style={{ background: 'rgba(9, 9, 11, 0.95)' }}
+        className="relative w-full max-w-4xl h-[85vh] max-h-[640px] glass-modal rounded-3xl overflow-hidden flex flex-col z-10"
       >
         {/* Search Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">

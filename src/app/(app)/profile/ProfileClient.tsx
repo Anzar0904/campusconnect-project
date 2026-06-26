@@ -739,7 +739,7 @@ export default function ProfileClient({
               </button>
 
               {showCoverPicker && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1c1c22] border border-white/[0.08] shadow-2xl p-2 z-30 space-y-1">
+                <div className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-2 z-30 space-y-1">
                   <p className="text-[9px] font-mono font-bold text-zinc-500 uppercase px-2 py-1">Select Preset</p>
                   {COVER_PRESETS.map((preset) => (
                     <button
@@ -932,7 +932,7 @@ export default function ProfileClient({
                         </button>
 
                         {showDropdown && (
-                          <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#1c1c22] border border-white/[0.08] shadow-2xl p-1.5 z-30 font-sans">
+                          <div className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-1.5 z-30 font-sans">
                             <button
                               onClick={(e) => {
                                 setShowDropdown(false)
@@ -1305,7 +1305,7 @@ export default function ProfileClient({
       {showAllMutual && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAllMutual(false)} />
-          <div className="max-w-md w-full relative z-10 p-6 space-y-4 bg-[#1c1c22] border border-white/[0.06] rounded-3xl shadow-2xl flex flex-col font-sans max-h-[80vh]">
+          <div className="max-w-md w-full relative z-10 p-6 space-y-4 glass-modal rounded-3xl flex flex-col font-sans max-h-[80vh]">
             <div className="flex justify-between items-center border-b border-white/[0.04] pb-3">
               <h3 className="font-display font-bold text-white text-base">Mutual Connections</h3>
               <button onClick={() => setShowAllMutual(false)} className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-1">

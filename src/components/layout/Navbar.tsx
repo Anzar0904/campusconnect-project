@@ -32,7 +32,6 @@ import {
   CheckCheck,
   LayoutGrid
 } from 'lucide-react'
-import Link from 'next/navigation'
 import { useRouter, usePathname } from 'next/navigation'
 import LinkComponent from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -169,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
-      <nav ref={navRef} className="pointer-events-auto h-20 flex-1 glass-panel-base rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
+      <nav ref={navRef} className="pointer-events-auto h-20 flex-1 glass-navbar rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
         
         {/* Left: Navigation (Logo + Nav Links) */}
         <div className="flex items-center gap-4 lg:gap-6 flex-1 justify-start min-w-0">
@@ -266,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 8 }}
                         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                        className="absolute right-0 mt-3 w-56 glass-panel-base rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
+                        className="absolute right-0 mt-3 w-56 glass-dropdown rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
                       >
                         <p className="font-mono text-[9px] font-bold text-zinc-500 uppercase tracking-widest px-3 py-1.5 select-none">
                           Quick Create
@@ -440,7 +439,7 @@ const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLog
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-        className="absolute right-0 mt-3 w-56 glass-panel-base rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
+        className="absolute right-0 mt-3 w-56 glass-dropdown rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
       >
         <LinkComponent
           href="/profile"
@@ -622,7 +621,7 @@ const NotificationsDropdown = React.memo(({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-        className="absolute right-0 mt-3 w-96 max-w-[calc(100vw-32px)] glass-panel-base rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3.5 border border-white/[0.08] max-h-[480px] overflow-hidden"
+        className="absolute right-0 mt-3 w-96 max-w-[calc(100vw-32px)] glass-dropdown rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3.5 border border-white/[0.08] max-h-[480px] overflow-hidden"
       >
         {/* Header section */}
         <div className="flex items-center justify-between border-b border-white/[0.05] pb-2.5 select-none shrink-0">
