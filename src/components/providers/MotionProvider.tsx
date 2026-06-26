@@ -201,43 +201,130 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     const drawParticles = () => {
       ctx.clearRect(0, 0, width, height)
 
-      // Only run simulation if the window tab is active and visible to prevent idle CPU cycles
       if (document.visibilityState === 'visible') {
+        // 1. Time-of-Day background rendering layers
+        if (timeOfDay === 'morning') {
+          // Sunrise golden rays from top-left
+          const time = Date.now() * 0.0003
+          ctx.save()
+          for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI) / 8 + Math.sin(time + i) * 0.04
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.02)'
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.arc(0, 0, Math.max(width, height) * 0.8, angle, angle + Math.PI / 20)
+            ctx.closePath()
+            ctx.fill()
+          }
+          ctx.restore()
+        } else if (timeOfDay === 'evening') {
+          // Aurora wave styling
+          const time = Date.now() * 0.0006
+          ctx.save()
+          ctx.strokeStyle = 'rgba(168, 85, 247, 0.012)'
+          ctx.lineWidth = 80
+          ctx.beginPath()
+          for (let x = 0; x < width + 40; x += 40) {
+            const y = height * 0.4 + Math.sin(x * 0.002 + time) * 35
+            if (x === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          }
+          ctx.stroke()
+
+          ctx.strokeStyle = 'rgba(249, 115, 22, 0.008)'
+          ctx.lineWidth = 100
+          ctx.beginPath()
+          for (let x = 0; x < width + 40; x += 40) {
+            const y = height * 0.5 + Math.cos(x * 0.0015 - time * 0.8) * 30
+            if (x === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          }
+          ctx.stroke()
+          ctx.restore()
+        } else if (timeOfDay === 'night') {
+          // Moon glow shader
+          ctx.save()
+          const moonGrad = ctx.createRadialGradient(width * 0.85, height * 0.15, 0, width * 0.85, height * 0.15, 140)
+          moonGrad.addColorStop(0, 'rgba(186, 230, 253, 0.035)')
+          moonGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          ctx.fillStyle = moonGrad
+          ctx.beginPath()
+          ctx.arc(width * 0.85, height * 0.15, 140, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.restore()
+
+          // Draw constellations connecting stars
+          ctx.save()
+          for (let i = 0; i < particles.length; i++) {
+            const p1 = particles[i]
+            for (let j = i + 1; j < particles.length; j++) {
+              const p2 = particles[j]
+              const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y)
+              if (dist < 120) {
+                ctx.strokeStyle = `rgba(224, 242, 254, ${(1 - dist / 120) * 0.045})`
+                ctx.lineWidth = 0.5
+                ctx.beginPath()
+                ctx.moveTo(p1.x, p1.y)
+                ctx.lineTo(p2.x, p2.y)
+                ctx.stroke()
+              }
+            }
+          }
+          ctx.restore()
+        }
+
+        // 2. Draw active particles
         particles.forEach((p, idx) => {
-          // Update positions
           p.y += p.speedY
           p.x += p.speedX
           if (p.angle !== undefined && p.spinSpeed !== undefined) {
             p.angle += p.spinSpeed
           }
 
-          // Wrap around screen boundaries
-          if (p.y > height) {
+          if (p.y > height + 20) {
             particles[idx] = initParticle({ y: -10 })
-          } else if (p.x > width) {
+          } else if (p.x > width + 20) {
             particles[idx] = initParticle({ x: -10 })
-          } else if (p.x < -10) {
+          } else if (p.x < -20) {
             particles[idx] = initParticle({ x: width + 10 })
           }
 
-          // Draw the custom shape depending on the season
-          ctx.save()
-          ctx.translate(p.x, p.y)
-          ctx.rotate(p.angle || 0)
-          ctx.fillStyle = p.color
-          ctx.shadowBlur = season === 'summer' || season === 'winter' ? 6 : 0
-          ctx.shadowColor = p.color
+          if (timeOfDay === 'night') {
+            p.opacity = Math.max(0.15, Math.min(0.65, p.opacity + (Math.random() * 0.06 - 0.03)))
+          }
 
-          if (season === 'spring' || season === 'autumn') {
-            // Draw leaf/petal paths
+          ctx.save()
+          
+          if (timeOfDay === 'afternoon') {
+            const blobGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 18)
+            blobGrad.addColorStop(0, `rgba(56, 189, 248, ${p.opacity * 0.18})`)
+            blobGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+            ctx.fillStyle = blobGrad
             ctx.beginPath()
-            ctx.ellipse(0, 0, p.size * 2, p.size, 0, 0, Math.PI * 2)
+            ctx.arc(p.x, p.y, p.size * 18, 0, Math.PI * 2)
+            ctx.fill()
+          } else if (timeOfDay === 'morning' && season !== 'winter' && season !== 'spring') {
+            ctx.translate(p.x, p.y)
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 0.08})`
+            ctx.beginPath()
+            ctx.arc(0, 0, p.size * 22, 0, Math.PI * 2)
             ctx.fill()
           } else {
-            // Draw soft dots/snowflakes
-            ctx.beginPath()
-            ctx.arc(0, 0, p.size, 0, Math.PI * 2)
-            ctx.fill()
+            ctx.translate(p.x, p.y)
+            ctx.rotate(p.angle || 0)
+            ctx.fillStyle = p.color
+            ctx.shadowBlur = season === 'summer' || season === 'winter' ? 5 : 0
+            ctx.shadowColor = p.color
+
+            if (season === 'spring' || season === 'autumn') {
+              ctx.beginPath()
+              ctx.ellipse(0, 0, p.size * 2, p.size, 0, 0, Math.PI * 2)
+              ctx.fill()
+            } else {
+              ctx.beginPath()
+              ctx.arc(0, 0, p.size, 0, Math.PI * 2)
+              ctx.fill()
+            }
           }
           ctx.restore()
         })
@@ -256,7 +343,7 @@ export default function MotionProvider({ children }: { children: React.ReactNode
       cancelAnimationFrame(spotTicker)
       cancelAnimationFrame(animationFrameId)
     }
-  }, [season])
+  }, [season, timeOfDay])
 
   // Get dynamic background gradient configurations based on Time of Day
   const getAmbientGradient = () => {
