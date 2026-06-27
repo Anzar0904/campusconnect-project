@@ -73,7 +73,7 @@ export default function LoginPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-surface">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-transparent">
         <div className="glass-elevated rounded-2xl p-10 max-w-sm w-full text-center space-y-5">
           <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'rgba(76,215,246,0.15)', border: '1px solid rgba(76,215,246,0.3)' }}>
@@ -103,7 +103,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-surface">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-transparent">
       <div className="glass-elevated rounded-2xl p-10 max-w-sm w-full space-y-6">
         {/* Logo */}
         <div className="text-center">

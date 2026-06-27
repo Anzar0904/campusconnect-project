@@ -241,7 +241,7 @@ export default function SettingsClient({ profile: initialProfile, userId }: Sett
           <div className="space-y-6">
             
             {/* Email update */}
-            <form onSubmit={handleUpdateEmail} className="card-premium p-6 sm:p-8 space-y-5 border border-white/[0.06]">
+            <form onSubmit={handleUpdateEmail} className="card-premium p-6 sm:p-8 space-y-5">
               <div>
                 <h3 className="text-sm font-bold text-white tracking-tight">Email Address</h3>
                 <p className="text-[11px] text-zinc-400 mt-1">View or update your registered campus email address.</p>
@@ -268,7 +268,7 @@ export default function SettingsClient({ profile: initialProfile, userId }: Sett
             </form>
 
             {/* Password update */}
-            <form onSubmit={handleUpdatePassword} className="card-premium p-6 sm:p-8 space-y-5 border border-white/[0.06]">
+            <form onSubmit={handleUpdatePassword} className="card-premium p-6 sm:p-8 space-y-5">
               <div>
                 <h3 className="text-sm font-bold text-white tracking-tight">Change Password</h3>
                 <p className="text-[11px] text-zinc-400 mt-1">Keep your campus connection credential strong and secure.</p>
@@ -322,7 +322,7 @@ export default function SettingsClient({ profile: initialProfile, userId }: Sett
 
         {/* Notifications Settings Pane */}
         {activeTab === 'notifications' && (
-          <div className="card-premium p-6 sm:p-8 space-y-6 border border-white/[0.06]">
+          <div className="card-premium p-6 sm:p-8 space-y-6">
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">Notification Settings</h2>
               <p className="text-xs text-zinc-400 mt-1 font-medium">Control what events and items trigger notification updates.</p>
@@ -363,7 +363,7 @@ export default function SettingsClient({ profile: initialProfile, userId }: Sett
 
         {/* Appearance & Privacy Settings Pane */}
         {activeTab === 'appearance' && (
-          <div className="card-premium p-6 sm:p-8 space-y-6 border border-white/[0.06]">
+          <div className="card-premium p-6 sm:p-8 space-y-6">
             <div>
               <h2 className="text-base font-bold text-white tracking-tight">Theme & Privacy</h2>
               <p className="text-xs text-zinc-400 mt-1 font-medium">Control the visual aesthetics and public privacy of your connection profile.</p>

@@ -46,6 +46,7 @@ import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { Easing, getPrefersReducedMotion, useGsapMagnetic } from '@/hooks/useGsapMotion'
 import AppLauncher from './AppLauncher'
+import { useCollisionDetection } from '@/hooks/useCollisionDetection'
 
 const NavbarTab = ({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) => {
   const ref = useGsapMagnetic(0.18) as React.RefObject<HTMLAnchorElement>
@@ -106,6 +107,9 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const pathname = usePathname()
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
+  const profileRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const quickCreateRef = useCollisionDetection(showQuickCreate)
 
   useEffect(() => {
     const handleOpenNotifications = () => {
@@ -123,34 +127,41 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
     window.addEventListener('open-notifications', handleOpenNotifications)
     window.addEventListener('keydown', handleGlobalKeyDown)
 
-    // Hide/show navbar on scroll
-    let lastScrollY = window.scrollY
+    // Hide/show navbar and profile avatar on scroll of the custom container
+    const scrollContainer = document.getElementById('main-scroll-container')
+    let lastScrollY = 0
+    
     const handleScroll = () => {
-      if (getPrefersReducedMotion()) return
-      const currentScrollY = window.scrollY
+      if (getPrefersReducedMotion() || !scrollContainer) return
+      const currentScrollY = scrollContainer.scrollTop
       if (currentScrollY > 80 && currentScrollY > lastScrollY) {
-        gsap.to(navRef.current, { y: -100, opacity: 0, duration: 0.3, ease: 'power2.out' })
+        gsap.to(headerRef.current, { y: -120, opacity: 0, duration: 0.3, ease: 'power2.out' })
       } else {
-        gsap.to(navRef.current, { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out' })
+        gsap.to(headerRef.current, { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out' })
       }
       lastScrollY = currentScrollY
     }
-    window.addEventListener('scroll', handleScroll)
+    
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll)
+    }
 
     return () => {
       window.removeEventListener('open-notifications', handleOpenNotifications)
       window.removeEventListener('keydown', handleGlobalKeyDown)
-      window.removeEventListener('scroll', handleScroll)
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll)
+      }
     }
   }, [])
 
   useGSAP(() => {
     if (getPrefersReducedMotion()) return
-    gsap.fromTo(navRef.current,
+    gsap.fromTo(headerRef.current,
       { y: -20, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.6, ease: Easing.premium }
     )
-  }, { scope: navRef })
+  }, { scope: headerRef })
 
   const handleLogout = async () => {
     try {
@@ -167,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
 
   return (
-    <div className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
+    <div ref={headerRef} className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
       <nav ref={navRef} className="pointer-events-auto h-20 flex-1 glass-navbar rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
         
         {/* Left: Navigation (Logo + Nav Links) */}
@@ -261,6 +272,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
                     <>
                       <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowQuickCreate(false)} />
                       <motion.div
+                        ref={quickCreateRef}
                         initial={{ opacity: 0, scale: 0.95, y: 8 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -383,7 +395,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
       {/* Floating Profile Avatar Outside the Glass Nav Bar */}
       {profile && (
-        <div className="pointer-events-auto relative shrink-0">
+        <div ref={profileRef} className="pointer-events-auto relative shrink-0">
           <button 
             onClick={() => {
               setShowProfileMenu(!showProfileMenu)
@@ -430,11 +442,13 @@ interface ProfileMenuProps {
 }
 
 const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLogout, isAdmin }: ProfileMenuProps) => {
+  const containerRef = useCollisionDetection(showProfileMenu)
   if (!showProfileMenu) return null
   return (
     <>
       <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowProfileMenu(false)} />
       <motion.div
+        ref={containerRef}
         initial={{ opacity: 0, scale: 0.95, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -505,6 +519,7 @@ const NotificationsDropdown = React.memo(({
   markAllAsRead,
   deleteNotification
 }: NotificationsDropdownProps) => {
+  const containerRef = useCollisionDetection(showNotifications)
   const [parent] = useAutoAnimate()
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
 
@@ -617,6 +632,7 @@ const NotificationsDropdown = React.memo(({
     <>
       <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
       <motion.div
+        ref={containerRef}
         initial={{ opacity: 0, scale: 0.95, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}

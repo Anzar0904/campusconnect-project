@@ -83,7 +83,7 @@ export const SecondarySidebar: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Internships widget */}
-      <div className="glass-panel-base rounded-2xl p-4 reveal-study-hub">
+      <div className="card-premium p-4 reveal-study-hub">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Briefcase size={14} className="text-amber-400" />
@@ -110,7 +110,7 @@ export const SecondarySidebar: React.FC = () => {
       </div>
 
       {/* Communities widget */}
-      <div className="glass-panel-base rounded-2xl p-4 reveal-communities">
+      <div className="card-premium p-4 reveal-communities">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Users size={14} className="text-purple-400" />

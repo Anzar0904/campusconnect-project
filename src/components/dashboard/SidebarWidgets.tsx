@@ -64,7 +64,7 @@ export const RightWidgetsColumn: React.FC = () => {
   return (
     <div ref={containerRef} className="space-y-4">
       {/* Mini Calendar */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-xs font-bold text-white tracking-tight">
             <CalendarIcon size={13} className="text-blue-400" />
@@ -101,7 +101,7 @@ export const RightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Upcoming Events */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-bold text-white tracking-tight">Upcoming Events</span>
           <Link href="/events" className="text-[10px] font-bold text-blue-400 hover:underline">View all</Link>
@@ -128,7 +128,7 @@ export const RightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Campus Activity (Recent Signups) */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Trophy size={13} className="text-amber-400" />
@@ -200,7 +200,7 @@ export const MiddleRightWidgetsColumn: React.FC = () => {
   return (
     <div ref={containerRef} className="space-y-4">
       {/* Internship Matches */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Briefcase size={13} className="text-amber-400" />
@@ -229,7 +229,7 @@ export const MiddleRightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Top Communities */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Users size={13} className="text-purple-400" />

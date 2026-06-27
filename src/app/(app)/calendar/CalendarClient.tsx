@@ -70,7 +70,7 @@ const { error } = await (supabase as any)
       </div>
 
       {showAddEvent && (
-        <div className="glass-elevated rounded-xl p-5 space-y-3 border border-primary/20">
+        <div className="card-premium p-5 space-y-3">
           <h2 className="font-display font-semibold text-on-surface">New Event</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2"><label className="section-label block mb-1">TITLE *</label><input className="input-glass" placeholder="Event name" value={newEvent.title} onChange={e=>setNewEvent(p=>({...p,title:e.target.value}))} /></div>
@@ -92,7 +92,7 @@ const { error } = await (supabase as any)
 
       <div className="grid grid-cols-12 gap-6">
         {/* Calendar */}
-        <div className="col-span-8 glass-card rounded-xl p-5">
+        <div className="col-span-8 card-premium p-5">
           {/* Month nav */}
           <div className="flex items-center justify-between mb-5">
             <button onClick={()=>setCurrentMonth(subMonths(currentMonth,1))} className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06] text-on-surface-variant hover:text-on-surface transition-colors" aria-label="Previous month">
@@ -137,7 +137,7 @@ const { error } = await (supabase as any)
         {/* Sidebar */}
         <div className="col-span-4 space-y-4">
           {selectedDay && (
-            <div className="glass-card rounded-xl p-4">
+            <div className="card-premium p-4">
               <h3 className="font-display font-semibold text-on-surface text-sm mb-3">{format(selectedDay,'d MMMM yyyy')}</h3>
               {selectedDayEvents.length===0 ? (
                 <p className="text-xs text-on-surface-variant">No events on this day.</p>
@@ -158,7 +158,7 @@ const { error } = await (supabase as any)
             </div>
           )}
 
-          <div className="glass-card rounded-xl p-4">
+          <div className="card-premium p-4">
             <h3 className="font-display font-semibold text-on-surface text-sm mb-3">Upcoming Events</h3>
             <div className="space-y-3">
               {allEvents.slice(0,5).map((e:any)=>{
@@ -180,7 +180,7 @@ const { error } = await (supabase as any)
           </div>
 
           {/* Legend */}
-          <div className="glass-card rounded-xl p-4">
+          <div className="card-premium p-4">
             <h3 className="section-label mb-2">CATEGORIES</h3>
             <div className="space-y-1.5">
               {Object.entries(CAT_COLORS).map(([cat,color])=>(

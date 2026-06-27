@@ -228,7 +228,7 @@ export default function CommunityClient({
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card-elevated rounded-2xl p-6 md:p-8 relative overflow-hidden border-t-4"
+        className="card-premium p-6 md:p-8 relative overflow-hidden border-t-4"
         style={{ borderTopColor: color }}
       >
         <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full opacity-10 blur-[90px] pointer-events-none" style={{ backgroundColor: color }} />
@@ -502,7 +502,7 @@ export default function CommunityClient({
       {deletingPostId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDeletingPostId(null)} />
-          <div className="card-premium max-w-sm w-full relative z-10 p-6 space-y-4 bg-zinc-950 border border-white/10 rounded-xl">
+          <div className="glass-modal max-w-sm w-full relative z-10 p-6 space-y-4 rounded-2xl">
             <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
             <p className="text-zinc-400 text-xs leading-relaxed font-medium">
               Are you sure you want to permanently delete this post? This action cannot be undone.

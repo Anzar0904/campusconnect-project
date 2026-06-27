@@ -214,7 +214,7 @@ export default function MarketplaceClient({ items, userId }: any) {
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
             className="overflow-hidden"
           >
-            <div className="card-premium p-6 md:p-8 space-y-6 bg-zinc-900/60 border-white/[0.08] shadow-2xl rounded-2xl">
+            <div className="card-premium p-6 md:p-8 space-y-6 shadow-2xl">
               <div className="flex items-center justify-between">
                 <h2 className="sub-heading text-xl font-bold tracking-tight text-white flex items-center gap-2.5">
                   <Tag className="text-indigo-400" size={20} />
@@ -421,7 +421,7 @@ export default function MarketplaceClient({ items, userId }: any) {
             <motion.div 
               variants={itemVariants}
               key={item.id} 
-              className="card-premium overflow-hidden cursor-pointer group flex flex-col justify-between h-[390px] border-white/[0.06] hover:border-indigo-500/20 bg-zinc-900/20" 
+              className="card-premium overflow-hidden cursor-pointer group flex flex-col justify-between h-[390px]" 
               onClick={()=>setSelectedItem(item)}
             >
               <div className="space-y-0 flex-1">
@@ -528,7 +528,7 @@ export default function MarketplaceClient({ items, userId }: any) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ type: "spring", duration: 0.4 }}
-              className="card-premium max-w-lg w-full relative z-10 overflow-hidden shadow-2xl bg-zinc-950 border-white/[0.08]"
+              className="glass-modal max-w-lg w-full relative z-10 overflow-hidden"
             >
               {/* Top breadcrumb header */}
               <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between bg-zinc-900/40">
@@ -660,7 +660,7 @@ export default function MarketplaceClient({ items, userId }: any) {
               initial={{opacity:0,scale:0.96,y:10}} 
               animate={{opacity:1,scale:1,y:0}} 
               exit={{opacity:0,scale:0.96,y:10}} 
-              className="card-premium max-w-md w-full relative z-10 p-6 md:p-8 space-y-5 bg-zinc-950 border-white/[0.08]"
+              className="glass-modal max-w-md w-full relative z-10 p-6 md:p-8 space-y-5"
             >
               <div className="flex items-center justify-between">
                 <h2 className="sub-heading text-lg font-bold text-white">Edit Listing</h2>

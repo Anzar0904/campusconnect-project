@@ -19,6 +19,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import { useCollisionDetection } from '@/hooks/useCollisionDetection'
 
 const BRANCHES = ['BBA', 'MBA', 'BCA', 'MCA', 'B.Com', 'BA (H)', 'B.Sc', 'Law', 'B.Tech', 'Other']
 const HOSTELS = ['Boys Hostel A', 'Boys Hostel B', 'Girls Hostel A', 'Girls Hostel B', 'Day Scholar']
@@ -100,6 +101,7 @@ export default function ProfileClient({
 
   const [coverPreset, setCoverPreset] = useState(0)
   const [showCoverPicker, setShowCoverPicker] = useState(false)
+  const coverPickerRef = useCollisionDetection(showCoverPicker)
 
   const coverBannerRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLDivElement>(null)
@@ -158,6 +160,7 @@ export default function ProfileClient({
   const [friendship, setFriendship] = useState<any | null>(null)
   const [friendshipLoading, setFriendshipLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const connectionMenuRef = useCollisionDetection(showDropdown)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [mutualFriends, setMutualFriends] = useState<any[]>([])
   const [showAllMutual, setShowAllMutual] = useState(false)
@@ -739,7 +742,7 @@ export default function ProfileClient({
               </button>
 
               {showCoverPicker && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-2 z-30 space-y-1">
+                <div ref={coverPickerRef} className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-2 z-30 space-y-1">
                   <p className="text-[9px] font-mono font-bold text-zinc-500 uppercase px-2 py-1">Select Preset</p>
                   {COVER_PRESETS.map((preset) => (
                     <button
@@ -932,7 +935,7 @@ export default function ProfileClient({
                         </button>
 
                         {showDropdown && (
-                          <div className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-1.5 z-30 font-sans">
+                          <div ref={connectionMenuRef} className="absolute right-0 mt-2 w-48 rounded-xl glass-dropdown p-1.5 z-30 font-sans">
                             <button
                               onClick={(e) => {
                                 setShowDropdown(false)

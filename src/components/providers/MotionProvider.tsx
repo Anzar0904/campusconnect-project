@@ -9,8 +9,8 @@ import { useGSAP } from '@gsap/react'
 import { getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 import dynamic from 'next/dynamic'
 
-// Dynamically load SequenceBackground to prevent SSR hydration errors
-const SequenceBackground = dynamic(() => import('./SequenceBackground'), { ssr: false })
+// Dynamically load AnimatedBackground to prevent SSR hydration errors
+const AnimatedBackground = dynamic(() => import('./AnimatedBackground'), { ssr: false })
 
 // Register ScrollTrigger
 if (typeof window !== 'undefined') {
@@ -62,11 +62,19 @@ export default function MotionProvider({ children }: { children: React.ReactNode
   const mousePos = useRef({ x: -1000, y: -1000 })
   const spotlightPos = useRef({ x: -1000, y: -1000 })
 
-  // Initialize Lenis scroll
+  // Initialize Lenis scroll and ScrollTrigger synchronization
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !contentRef.current) return
+
+    const scrollContainer = contentRef.current
+
+    // Set ScrollTrigger default scroller
+    ScrollTrigger.defaults({ scroller: scrollContainer })
+
+    
 
     const lenisInstance = new Lenis({
+      wrapper: scrollContainer,
       duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
@@ -78,15 +86,101 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     })
 
     setLenis(lenisInstance)
+    if (typeof window !== 'undefined') {
+      (window as any).lenis = lenisInstance
+    }
 
-    // Sync Lenis with GSAP ScrollTrigger
-    lenisInstance.on('scroll', ScrollTrigger.update)
+    // Configure ScrollTrigger scrollerProxy for the custom scroll wrapper
+    ScrollTrigger.scrollerProxy(scrollContainer, {
+      scrollTop(value) {
+        if (value !== undefined) {
+          lenisInstance.scrollTo(value, { immediate: true })
+        }
+        return lenisInstance.scroll
+      },
+      getBoundingClientRect() {
+        return {
+          top: 0,
+          left: 0,
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+      },
+      pinType: 'fixed'
+    })
+
+    // Ensure Lenis drives ScrollTrigger updates on scroll
+    lenisInstance.on('scroll', () => {
+      ScrollTrigger.update()
+    })
 
     const tickHandler = (time: number) => {
       lenisInstance.raf(time * 1000)
     }
     gsap.ticker.add(tickHandler)
     gsap.ticker.lagSmoothing(0)
+
+    // Track layout updates and trigger a debounced ScrollTrigger refresh
+    let debounceTimer: NodeJS.Timeout | null = null
+    let lastHeight = document.documentElement.scrollHeight
+
+    const handleLayoutChange = () => {
+      const currentHeight = document.documentElement.scrollHeight
+      if (currentHeight !== lastHeight) {
+        console.log(`[LayoutChange] Document height changed from ${lastHeight}px to ${currentHeight}px. Refreshing ScrollTrigger.`)
+        lastHeight = currentHeight
+        ScrollTrigger.refresh()
+        lenisInstance.resize()
+      }
+    }
+
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(handleLayoutChange, 150)
+    }
+
+    // Set up ResizeObserver to track layout changes
+    const resizeObserver = new ResizeObserver(() => {
+      debouncedRefresh()
+    })
+
+    resizeObserver.observe(document.documentElement)
+    if (document.body) {
+      resizeObserver.observe(document.body)
+    }
+    const scrollContent = scrollContainer.querySelector('#main-scroll-content')
+    if (scrollContent) {
+      resizeObserver.observe(scrollContent)
+    }
+
+    // Listen to resize and orientation changes
+    window.addEventListener('resize', debouncedRefresh)
+    window.addEventListener('orientationchange', debouncedRefresh)
+
+    // Capture image loading
+    const handleImageLoad = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) {
+        debouncedRefresh()
+      }
+    }
+    window.addEventListener('load', handleImageLoad, true)
+
+    // Track font loading
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        debouncedRefresh()
+      })
+    }
+
+    // Track transitions/animations (sidebar changes, modal openings)
+    const handleTransitionOrAnimationEnd = () => {
+      debouncedRefresh()
+    }
+    window.addEventListener('transitionend', handleTransitionOrAnimationEnd)
+    window.addEventListener('animationend', handleTransitionOrAnimationEnd)
+
+    // Initial refresh after initialization
+    ScrollTrigger.refresh()
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -98,9 +192,19 @@ export default function MotionProvider({ children }: { children: React.ReactNode
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', debouncedRefresh)
+      window.removeEventListener('orientationchange', debouncedRefresh)
+      window.removeEventListener('load', handleImageLoad, true)
+      window.removeEventListener('transitionend', handleTransitionOrAnimationEnd)
+      window.removeEventListener('animationend', handleTransitionOrAnimationEnd)
+
       lenisInstance.destroy()
       gsap.ticker.remove(tickHandler)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      // Reset ScrollTrigger defaults scroller
+      ScrollTrigger.defaults({ scroller: window })
     }
   }, [])
 
@@ -115,6 +219,12 @@ export default function MotionProvider({ children }: { children: React.ReactNode
 
     if (lenis) {
       lenis.scrollTo(0, { immediate: true })
+      // Wait for layout to settle after route transition completes
+      const timer = setTimeout(() => {
+        ScrollTrigger.refresh()
+        lenis.resize()
+      }, 600)
+      return () => clearTimeout(timer)
     }
   }, { dependencies: [pathname, lenis], scope: contentRef })
 
@@ -237,14 +347,13 @@ export default function MotionProvider({ children }: { children: React.ReactNode
       {/* Dynamic Ambient Background Layers */}
       <div 
         ref={backgroundRef}
-        className="fixed top-0 left-0 pointer-events-none z-0 overflow-hidden select-none bg-zinc-950 transform-gpu"
-        style={{ width: '100vw', height: '100vh' }}
+        className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden select-none transform-gpu"
       >
         {/* Layer 0: Animated Cinematic Sequence Background */}
-        <SequenceBackground />
+        <AnimatedBackground />
 
         {/* Layer 1: Soft Gradient Overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-20 transition-all duration-[3000ms]`} />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${getAmbientGradient()} opacity-10 transition-all duration-[3000ms]`} />
 
         {/* Dot Pattern Overlay */}
         <div 
@@ -273,9 +382,18 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         <div ref={spotlightRef} className="absolute inset-0 w-full h-full hidden md:block" />
       </div>
 
+      {/* Glass Overlay (fixed, between background and scrollable app content) */}
+      <div className="fixed inset-0 pointer-events-none z-[5] bg-zinc-950/10 backdrop-blur-[2px] transition-all duration-500" />
+
       {/* Layer 4: Content (Main Page Transition Containment Wrapper) */}
-      <div ref={contentRef} className="w-full min-h-screen flex flex-col relative z-10">
-        {children}
+      <div ref={contentRef} id="main-scroll-container" className="w-full h-screen overflow-y-auto overflow-x-hidden flex flex-col relative z-10 custom-scrollbar">
+        <div
+  id="main-scroll-content"
+  className="w-full flex flex-col"
+  style={{ minHeight: "max-content" }}
+>
+          {children}
+        </div>
       </div>
     </MotionContext.Provider>
   )

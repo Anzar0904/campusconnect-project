@@ -397,7 +397,7 @@ export default function InternshipsClient({
               <Plus size={14} /> Create Posting
             </motion.button>
           )}
-          <div className="card-premium px-4 py-2 bg-zinc-900/40 border-white/[0.06] flex items-center gap-3">
+          <div className="card-premium px-4 py-2 flex items-center gap-3">
             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Active Roles</span>
             <span className="text-xl font-display font-bold text-white leading-none">{internships.length}</span>
           </div>
@@ -519,7 +519,7 @@ export default function InternshipsClient({
                   <motion.div 
                     variants={itemVariants}
                     key={intern.id} 
-                    className="card-premium p-6 flex flex-col justify-between cursor-pointer border-white/[0.06] hover:border-cyan-500/20 bg-zinc-900/20 h-[340px]" 
+                    className="card-premium p-6 flex flex-col justify-between cursor-pointer h-[340px]" 
                     onClick={() => setSelectedInternship(intern)}
                   >
                     <div className="space-y-4">

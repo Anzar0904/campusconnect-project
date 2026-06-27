@@ -11,7 +11,7 @@ export const FeedSection: React.FC = () => {
 
   return (
     <div ref={containerRef} className="space-y-4">
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium rounded-2xl p-4">
         <div className="flex gap-3.5">
           <GlobalAvatar
             avatarUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
@@ -61,7 +61,7 @@ export const FeedSection: React.FC = () => {
       </div>
 
       <div 
-        className="glass-panel-base rounded-xl p-4.5 space-y-3.5"
+        className="card-premium rounded-2xl p-4.5 space-y-3.5"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

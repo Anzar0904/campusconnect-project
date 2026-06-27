@@ -143,13 +143,19 @@ export function NavbarSearch() {
     }
   }, [supabase])
 
-  // Handle Ctrl+K / Cmd+K shortcuts & lock body scroll
   useEffect(() => {
+    const scrollContainer = document.getElementById('main-scroll-container')
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      if (scrollContainer) {
+        scrollContainer.classList.add('scroll-locked')
+      }
       if (lenis) lenis.stop()
     } else {
       document.body.style.overflow = ''
+      if (scrollContainer) {
+        scrollContainer.classList.remove('scroll-locked')
+      }
       if (lenis) lenis.start()
     }
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -170,6 +176,9 @@ export function NavbarSearch() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown)
       document.body.style.overflow = ''
+      if (scrollContainer) {
+        scrollContainer.classList.remove('scroll-locked')
+      }
       if (lenis) lenis.start()
     }
   }, [isOpen, lenis])

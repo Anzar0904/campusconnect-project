@@ -5,7 +5,7 @@ import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 export const RightSidebar: React.FC = () => {
   return (
     <div className="space-y-5">
-      <div className="glass-panel-base rounded-2xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2 text-xs font-bold text-white tracking-tight">
             <CalendarIcon size={14} className="text-blue-400" />
@@ -36,7 +36,7 @@ export const RightSidebar: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-panel-base rounded-2xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-white tracking-tight">Upcoming Events</span>
           <button className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors">View all</button>
@@ -59,7 +59,7 @@ export const RightSidebar: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-panel-base rounded-2xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <MessageSquare size={14} className="text-emerald-400" />
@@ -92,7 +92,7 @@ export const RightSidebar: React.FC = () => {
         </div>
       </div>
 
-      <div className="glass-panel-base rounded-2xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Trophy size={14} className="text-amber-400" />
