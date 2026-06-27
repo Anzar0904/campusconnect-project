@@ -42,11 +42,13 @@ import { format } from 'date-fns'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { motion, AnimatePresence } from 'framer-motion'
+
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { Easing, getPrefersReducedMotion, useGsapMagnetic } from '@/hooks/useGsapMotion'
 import AppLauncher from './AppLauncher'
 import { useCollisionDetection } from '@/hooks/useCollisionDetection'
+
 
 const NavbarTab = ({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) => {
   const ref = useGsapMagnetic(0.18) as React.RefObject<HTMLAnchorElement>
@@ -106,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
   const pathname = usePathname()
   const router = useRouter()
-  const navRef = useRef<HTMLElement>(null)
+  const navRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const quickCreateRef = useCollisionDetection(showQuickCreate)
@@ -179,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
 
   return (
     <div ref={headerRef} className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
-      <nav ref={navRef} className="pointer-events-auto h-20 flex-1 glass-navbar rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
+      <div ref={navRef} className="glass-navbar pointer-events-auto h-20 flex-1 rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
         
         {/* Left: Navigation (Logo + Nav Links) */}
         <div className="flex items-center gap-4 lg:gap-6 flex-1 justify-start min-w-0">
@@ -385,13 +387,16 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
               </div>
             </>
           ) : (
-            <LinkComponent href="/auth/login" className="btn-premium px-4 py-2 text-xs">
-              <LogIn size={14} />
-              <span>Sign In</span>
+            <LinkComponent
+              href="/auth/login"
+              className="btn-premium px-4 py-2 text-xs"
+            >
+              <LogIn size={14} className="mr-2" />
+              Sign In
             </LinkComponent>
           )}
         </div>
-      </nav>
+      </div>
 
       {/* Floating Profile Avatar Outside the Glass Nav Bar */}
       {profile && (

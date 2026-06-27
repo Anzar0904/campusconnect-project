@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGsapMagnetic } from '@/hooks/useGsapMotion'
 import { useMotion } from '@/components/providers/MotionProvider'
+import { Card } from '@/components/ui/Card'
 
 interface SearchResult {
   id: string
@@ -729,13 +730,10 @@ export function NavbarSearch() {
               />
 
               {/* Centered glassmorphic container */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.96, y: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -8 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="glass-modal rounded-2xl flex flex-col overflow-hidden relative w-full max-w-[900px] h-[500px] max-h-[80vh]"
-              >
+                <Card
+                  variant="premium"
+                  className="rounded-2xl flex flex-col overflow-hidden relative w-full max-w-[900px] h-[500px] max-h-[80vh]"
+                >
                 {/* Top Search Input */}
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.08] bg-zinc-950/40 relative">
                   <Search className="text-cyan-400 w-5 h-5 shrink-0" />
@@ -930,7 +928,7 @@ export function NavbarSearch() {
                     <Command size={10} /> Command Palette
                   </div>
                 </div>
-              </motion.div>
+                </Card>
             </div>
           )}
         </AnimatePresence>,
