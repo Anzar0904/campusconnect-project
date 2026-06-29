@@ -13,7 +13,6 @@ export default async function CalendarPage() {
     .from('events')
     .select('*')
     .order('start_time', { ascending: true })
-    .limit(50)
 
   return <CalendarClient events={events??[]} userId={user.id} />
 }

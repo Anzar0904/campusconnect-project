@@ -1,8 +1,8 @@
 'use client'
 import { ChevronLeft, ChevronRight, Plus, X, Calendar, MapPin, Clock, Tag } from 'lucide-react'
 
-import { useState } from 'react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths } from 'date-fns'
+import { useState, useMemo } from 'react'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -28,7 +28,15 @@ const CAT_BG: Record<string, string> = {
 
 export default function CalendarClient({ events, userId }: any) {
   const allEvents = events
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  // currentMonth drives which month the grid renders.
+  // Initialized to the real system date — no hardcoded month/year.
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date()
+    // Normalise to the 1st so month arithmetic never drifts into adjacent months.
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [showAddEvent, setShowAddEvent] = useState(false)
   const [newEvent, setNewEvent] = useState({
@@ -40,19 +48,41 @@ export default function CalendarClient({ events, userId }: any) {
   })
   const supabase = createClient()
 
+  // ── Calendar grid ──────────────────────────────────────────────────────────
+  // All computed from currentMonth, so changing the month re-derives everything
+  // correctly (leap years, first weekday, varying day counts, etc.).
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
 
+  // Sunday-aligned left padding: getDay() returns 0–6
   const startPad = monthStart.getDay()
   const paddingDays = Array(startPad).fill(null)
 
+  // ── Today — evaluated at render time, not cached at mount ─────────────────
+  // This means if the component is mounted just before midnight and the user
+  // is still on the page the next day, "today" will always be accurate.
+  function getTodayDate() {
+    return new Date()
+  }
+
+  // ── Event helpers ──────────────────────────────────────────────────────────
   function getEventsForDay(day: Date) {
     return allEvents.filter((e: any) => isSameDay(new Date(e.start_time), day))
   }
 
   const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : []
 
+  // Upcoming = future events (from the real current time), sorted ascending
+  const upcomingEvents = useMemo(() => {
+    const now = new Date()
+    return [...allEvents]
+      .filter((e: any) => new Date(e.start_time) >= now)
+      .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+      .slice(0, 6)
+  }, [allEvents])
+
+  // ── Add event ──────────────────────────────────────────────────────────────
   async function addEvent() {
     if (!newEvent.title || !newEvent.start_time) { toast.error('Fill title and date'); return }
     const eventData = {
@@ -73,10 +103,12 @@ export default function CalendarClient({ events, userId }: any) {
     setNewEvent({ title: '', start_time: '', venue: '', category: 'Academic', description: '' })
   }
 
-  const upcomingEvents = [...allEvents]
-    .filter((e: any) => new Date(e.start_time) >= new Date())
-    .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-    .slice(0, 6)
+  // Jump back to the real current month (user convenience)
+  function goToToday() {
+    const now = new Date()
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
+    setSelectedDay(now)
+  }
 
   return (
     <div className="animate-fade-in space-y-8 pb-32">
@@ -120,7 +152,7 @@ export default function CalendarClient({ events, userId }: any) {
                   <input className="input-pro" placeholder="Event name" value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="section-label block px-1">DATE & TIME *</label>
+                  <label className="section-label block px-1">DATE &amp; TIME *</label>
                   <input type="datetime-local" className="input-pro" value={newEvent.start_time} onChange={e => setNewEvent(p => ({ ...p, start_time: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
@@ -159,9 +191,23 @@ export default function CalendarClient({ events, userId }: any) {
             >
               <ChevronLeft size={18} />
             </button>
-            <h2 className="font-bold text-white text-lg tracking-tight">
-              {format(currentMonth, 'MMMM yyyy')}
-            </h2>
+
+            <div className="flex items-center gap-3">
+              <h2 className="font-bold text-white text-lg tracking-tight">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              {/* "Today" button: only visible when the displayed month isn't the current real month */}
+              {(currentMonth.getFullYear() !== getTodayDate().getFullYear() ||
+                currentMonth.getMonth() !== getTodayDate().getMonth()) && (
+                <button
+                  onClick={goToToday}
+                  className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all"
+                >
+                  TODAY
+                </button>
+              )}
+            </div>
+
             <button
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-100 transition-all border border-white/[0.05] hover:border-white/[0.1]"
@@ -178,19 +224,21 @@ export default function CalendarClient({ events, userId }: any) {
             ))}
           </div>
 
-          {/* Days Grid */}
+          {/* Days Grid — fully dynamic: leap years, varying first-weekday and
+              month lengths are all handled by date-fns at render time */}
           <div className="grid grid-cols-7 gap-1">
             {paddingDays.map((_, i) => <div key={`pad-${i}`} />)}
             {days.map(day => {
               const dayEvents = getEventsForDay(day)
-              const isSelected = selectedDay && isSameDay(day, selectedDay)
+              // Fix: compare selectedDay against itself, not against epoch (new Date(0))
+              const isSelected = selectedDay ? isSameDay(day, selectedDay) : false
+              // isToday uses the real system clock on every render
               const isTodayDay = isToday(day)
-              const isCurrentMonth = isSameMonth(day, currentMonth)
 
               return (
                 <button
                   key={day.toISOString()}
-                  onClick={() => setSelectedDay(isSameDay(day, selectedDay || new Date(0)) ? null : day)}
+                  onClick={() => setSelectedDay(isSelected ? null : day)}
                   className={clsx(
                     "aspect-square flex flex-col items-center justify-start p-1.5 rounded-xl text-xs transition-all hover:bg-white/[0.05]",
                     isSelected && "bg-brand-500/20 border border-brand-500/30",
@@ -200,11 +248,11 @@ export default function CalendarClient({ events, userId }: any) {
                 >
                   <span className={clsx(
                     "font-mono text-xs leading-none mb-1",
-                    isTodayDay ? "text-cyan-400 font-bold" :
-                    isCurrentMonth ? "text-zinc-200" : "text-zinc-700"
+                    isTodayDay ? "text-cyan-400 font-bold" : "text-zinc-200"
                   )}>
                     {format(day, 'd')}
                   </span>
+                  {/* Event dots — one per event category, up to 3 */}
                   <div className="flex gap-0.5 flex-wrap justify-center">
                     {dayEvents.slice(0, 3).map((e: any, i: number) => (
                       <div
