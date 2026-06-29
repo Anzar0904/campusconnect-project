@@ -1,5 +1,49 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// IMPORTANT: This middleware runs in the Node.js runtime (not the Edge Runtime).
+//
+// WHY: @supabase/supabase-js ≤2.54.x bundles @supabase/realtime-js, which
+// references `process.versions` inside websocket-factory.js to detect whether
+// it needs to polyfill WebSockets. That is a Node.js-only API. On Vercel the
+// default middleware runtime is the Edge Runtime (a V8 isolate), where
+// `process.versions` does not exist → runtime crash → MIDDLEWARE_INVOCATION_FAILED.
+//
+// SOLUTION (two-part):
+//  1. Export `runtime = 'nodejs'` so Next.js/Vercel runs this file in the full
+//     Node.js runtime where process.versions is available.
+//  2. Upgrade @supabase/supabase-js to ≥2.55.0 in package.json (the fix was
+//     shipped in realtime-js@2.15.1 / supabase-js@2.55.0). Once that upgrade is
+//     in place you can remove this export if you prefer the edge runtime, but
+//     leaving it as nodejs is safe and has no functional downside for auth middleware.
+// ─────────────────────────────────────────────────────────────────────────────
+export const runtime = 'nodejs'
+
 import { type CookieOptions, createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+/**
+ * Derive the Supabase project ref from the public URL so we can delete the
+ * auth-token cookie by its exact name when suspending a user.
+ *
+ * The cookie name Supabase sets is: sb-<PROJECT_REF>-auth-token
+ * e.g. NEXT_PUBLIC_SUPABASE_URL = https://abcdefgh.supabase.co
+ *      → project ref = "abcdefgh"
+ *      → cookie name = "sb-abcdefgh-auth-token"
+ *
+ * We guard against a missing / malformed URL so the middleware never throws
+ * a TypeError during cookie deletion (which would produce another 500).
+ */
+function getSupabaseAuthCookieName(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) return null
+  try {
+    // Works for both https://ref.supabase.co and self-hosted URLs
+    const host = new URL(url).hostname          // e.g. "abcdefgh.supabase.co"
+    const ref  = host.split('.')[0]             // e.g. "abcdefgh"
+    return `sb-${ref}-auth-token`
+  } catch {
+    return null
+  }
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -52,20 +96,22 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (profile?.is_suspended) {
-      // We must clear the session client-side, but from middleware we can only redirect.
-      // Redirect to a public endpoint that explains the suspension or clears the auth.
-      // For now, redirect to login with a query parameter.
       const suspendedUrl = request.nextUrl.clone()
       suspendedUrl.pathname = '/auth/login'
       suspendedUrl.searchParams.set('error', 'Account suspended')
-      
-      // Delete the auth cookies to forcefully log them out at the edge
+
       supabaseResponse = NextResponse.redirect(suspendedUrl)
-      supabaseResponse.cookies.delete('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0] + '-auth-token')
+
+      // Safely delete the auth cookie — guarded against missing/malformed URL
+      const cookieName = getSupabaseAuthCookieName()
+      if (cookieName) {
+        supabaseResponse.cookies.delete(cookieName)
+      }
+
       return supabaseResponse
     } else if (
-      profile && 
-      !isProfilePage && 
+      profile &&
+      !isProfilePage &&
       !isSettingsPage &&
       !isApiRoute && (
         !profile.full_name?.trim() ||
