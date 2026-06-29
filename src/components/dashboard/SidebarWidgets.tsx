@@ -1,15 +1,19 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Calendar as CalendarIcon, MessageSquare, Trophy, Briefcase, Users, MapPin, UserPlus } from 'lucide-react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
 
 export const RightWidgetsColumn: React.FC = () => {
   const supabase = createClient()
   const [events, setEvents] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadWidgetsData() {
@@ -37,6 +41,14 @@ export const RightWidgetsColumn: React.FC = () => {
     loadWidgetsData()
   }, [supabase])
 
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !containerRef.current) return
+    gsap.fromTo(containerRef.current.children,
+      { opacity: 0, y: 15 },
+      { opacity: 1, y: 0, stagger: 0.08, duration: 0.5, ease: Easing.premium }
+    )
+  }, { scope: containerRef, dependencies: [events, activities] })
+
   const formatEventDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr)
@@ -50,9 +62,9 @@ export const RightWidgetsColumn: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       {/* Mini Calendar */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-xs font-bold text-white tracking-tight">
             <CalendarIcon size={13} className="text-blue-400" />
@@ -89,7 +101,7 @@ export const RightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Upcoming Events */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-bold text-white tracking-tight">Upcoming Events</span>
           <Link href="/events" className="text-[10px] font-bold text-blue-400 hover:underline">View all</Link>
@@ -116,7 +128,7 @@ export const RightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Campus Activity (Recent Signups) */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Trophy size={13} className="text-amber-400" />
@@ -151,6 +163,7 @@ export const MiddleRightWidgetsColumn: React.FC = () => {
   const supabase = createClient()
   const [internships, setInternships] = useState<any[]>([])
   const [communities, setCommunities] = useState<any[]>([])
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadMiddleWidgetsData() {
@@ -176,10 +189,18 @@ export const MiddleRightWidgetsColumn: React.FC = () => {
     loadMiddleWidgetsData()
   }, [supabase])
 
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !containerRef.current) return
+    gsap.fromTo(containerRef.current.children,
+      { opacity: 0, y: 15 },
+      { opacity: 1, y: 0, stagger: 0.08, duration: 0.5, ease: Easing.premium }
+    )
+  }, { scope: containerRef, dependencies: [internships, communities] })
+
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       {/* Internship Matches */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Briefcase size={13} className="text-amber-400" />
@@ -208,7 +229,7 @@ export const MiddleRightWidgetsColumn: React.FC = () => {
       </div>
 
       {/* Top Communities */}
-      <div className="glass-panel-base rounded-xl p-4">
+      <div className="card-premium p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-white tracking-tight">
             <Users size={13} className="text-purple-400" />

@@ -11,6 +11,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useGsapMagnetic } from '@/hooks/useGsapMotion'
+import { useMotion } from '@/components/providers/MotionProvider'
+import { Card } from '@/components/ui/Card'
 
 interface SearchResult {
   id: string
@@ -88,6 +91,8 @@ interface PaletteItem {
 }
 
 export function NavbarSearch() {
+  const searchBtnRef = useGsapMagnetic(0.12) as React.RefObject<HTMLButtonElement>
+  const { lenis } = useMotion()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -139,17 +144,45 @@ export function NavbarSearch() {
     }
   }, [supabase])
 
-  // Handle Ctrl+K / Cmd+K shortcuts
   useEffect(() => {
+    const scrollContainer = document.getElementById('main-scroll-container')
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      if (scrollContainer) {
+        scrollContainer.classList.add('scroll-locked')
+      }
+      if (lenis) lenis.stop()
+    } else {
+      document.body.style.overflow = ''
+      if (scrollContainer) {
+        scrollContainer.classList.remove('scroll-locked')
+      }
+      if (lenis) lenis.start()
+    }
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setIsOpen(prev => !prev)
+        return
+      }
+
+      if (!isOpen) return
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setIsOpen(false)
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      document.body.style.overflow = ''
+      if (scrollContainer) {
+        scrollContainer.classList.remove('scroll-locked')
+      }
+      if (lenis) lenis.start()
+    }
+  }, [isOpen, lenis])
 
   // Auto-focus input when modal opens
   useEffect(() => {
@@ -625,7 +658,7 @@ export function NavbarSearch() {
   }, [visibleItems, query])
 
   return (
-    <div className="md:flex-1 md:max-w-xl md:mx-8 relative">
+    <div className="md:w-full md:max-w-[430px] md:min-w-[380px] relative">
       {/* Rotating neon outline border */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes rotatingGlow {
@@ -665,17 +698,17 @@ export function NavbarSearch() {
         <Search size={18} />
       </button>
 
-      {/* Navbar Trigger Button (Desktop) */}
       <button 
+        ref={searchBtnRef}
         onClick={() => setIsOpen(true)}
-        className="hidden md:block w-full p-[1.5px] rounded-full transition-all duration-300 relative glowing-border shadow-[0_0_10px_rgba(37,99,235,0.1)] hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:scale-[1.005] active:scale-[0.995]"
+        className="hidden md:block w-full transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] p-[1.5px] rounded-full relative glowing-border shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.25)] hover:scale-[1.01] active:scale-[0.99]"
       >
-        <div className="bg-[#030712]/95 rounded-full flex items-center justify-between relative pl-4 pr-3 py-1.5 w-full border border-white/[0.04] text-left">
-          <div className="flex items-center text-neutral-400">
-            <Search size={14} strokeWidth={2.5} className="mr-2.5 shrink-0 text-neutral-400" />
-            <span className="text-xs text-neutral-500 font-medium">Search or type a command...</span>
+        <div className="bg-zinc-950/70 backdrop-blur-2xl rounded-full flex items-center justify-between relative pl-5 pr-4 py-2 w-full border border-white/[0.08] text-left">
+          <div className="flex items-center text-zinc-400">
+            <Search size={14} strokeWidth={2.5} className="mr-2 shrink-0 text-zinc-400" />
+            <span className="text-[12px] text-zinc-400 font-medium tracking-wide">Search campus...</span>
           </div>
-          <div className="pointer-events-none text-[9px] font-mono font-bold text-neutral-400 tracking-widest bg-white/[0.04] border border-white/[0.08] rounded-md px-1.5 py-0.5 shadow-sm">
+          <div className="pointer-events-none text-[9px] font-mono font-bold text-zinc-400 tracking-wider bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-0.5 shadow-sm select-none">
             ⌘ K
           </div>
         </div>
@@ -693,17 +726,14 @@ export function NavbarSearch() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => setIsOpen(false)}
-                className="absolute inset-0 bg-[#030712]/40 backdrop-blur-[2px]"
+                className="absolute inset-0 bg-zinc-950/75 backdrop-blur-[12px]"
               />
 
               {/* Centered glassmorphic container */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.96, y: -8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -8 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="palette-blur bg-[#090d16]/85 border border-white/[0.08] rounded-2xl flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(6,182,212,0.15)] w-full max-w-[900px] h-[500px] max-h-[80vh]"
-              >
+                <Card
+                  variant="premium"
+                  className="rounded-2xl flex flex-col overflow-hidden relative w-full max-w-[900px] h-[500px] max-h-[80vh]"
+                >
                 {/* Top Search Input */}
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.08] bg-zinc-950/40 relative">
                   <Search className="text-cyan-400 w-5 h-5 shrink-0" />
@@ -888,7 +918,7 @@ export function NavbarSearch() {
                 </div>
 
                 {/* Statusbar footer */}
-                <div className="flex items-center justify-between px-6 py-3 bg-[#030712]/50 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
+                <div className="flex items-center justify-between px-6 py-3 bg-zinc-950/50 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1 py-0.2 rounded">↑↓</span> Navigate</span>
                     <span className="flex items-center gap-1.5"><span className="bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.2 rounded font-sans">↵</span> Select</span>
@@ -898,7 +928,7 @@ export function NavbarSearch() {
                     <Command size={10} /> Command Palette
                   </div>
                 </div>
-              </motion.div>
+                </Card>
             </div>
           )}
         </AnimatePresence>,

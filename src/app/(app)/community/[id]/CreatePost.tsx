@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
+import { PenTool } from 'lucide-react'
 
 export default function CreatePost({
   communityId,
+  profile,
 }: {
   communityId: string
+  profile?: any
 }) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,50 +52,41 @@ export default function CreatePost({
   }
 
   return (
-    <div className="glass-card rounded-3xl p-6 border border-white/10">
-      <h2 className="text-xl font-semibold mb-4">
-        Create Post
-      </h2>
+    <div className="card-premium p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-4 border-b border-white/[0.04] pb-3">
+        <h2 className="font-display text-sm font-bold text-white flex items-center gap-1.5 uppercase tracking-wider">
+          <PenTool size={14} className="text-brand-400" /> Share a Thought
+        </h2>
+      </div>
+
       <div className="flex items-center gap-3 mb-4">
-  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold">
-    A
-  </div>
+        <GlobalAvatar profile={profile} size="md" />
+        <div>
+          <p className="font-semibold text-xs text-white">
+            {profile?.full_name || 'Student Member'}
+          </p>
+          <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+            {profile?.branch || 'Campus Connect'} · Year {profile?.year || '1'}
+          </p>
+        </div>
+      </div>
 
-  <div>
-    <p className="font-medium">
-      Anzar Khan
-    </p>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Type a message or share an update with the community..."
+        className="w-full min-h-[90px] rounded-xl bg-zinc-950/40 border border-white/[0.06] hover:border-white/[0.1] focus:border-brand-500/50 p-4 text-xs text-white placeholder:text-zinc-500 resize-none outline-none transition-all"
+      />
 
-    <p className="text-xs text-on-surface-variant">
-      Share something with your community
-    </p>
-  </div>
-</div>
-
-     <textarea
-  value={content}
-  onChange={(e) => setContent(e.target.value)}
-  placeholder="Share something with your community..."
-  rows={3}
-  className="w-full min-h-[120px] rounded-2xl bg-slate-900/80 border border-white/10 p-5 text-white placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-/>
-
-      <button
-        onClick={submitPost}
-        disabled={loading}
-        className="
-mt-4
-px-6
-py-3
-rounded-xl
-bg-primary
-font-medium
-hover:opacity-90
-transition
-"
-      >
-        {loading ? 'Posting...' : 'Post'}
-      </button>
+      <div className="flex justify-end mt-3">
+        <button
+          onClick={submitPost}
+          disabled={loading || !content.trim()}
+          className="btn-premium px-5 py-2 text-xs font-bold"
+        >
+          {loading ? 'Posting...' : 'Share Post'}
+        </button>
+      </div>
     </div>
   )
 }

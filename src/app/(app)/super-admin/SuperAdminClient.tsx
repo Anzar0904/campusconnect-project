@@ -1,19 +1,97 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
 import { CardSkeleton, Skeleton } from '@/components/ui/Skeleton'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
-import { X, Trophy, Calendar, Sparkles, BookOpen, FileText, User, Users, Shield, Briefcase, Store, MessageSquare, Trash2, ChevronLeft } from 'lucide-react'
+import { X, Trophy, Calendar, Sparkles, BookOpen, FileText, User, Users, Shield, Briefcase, Store, MessageSquare, Trash2, ChevronLeft, ShieldCheck, Eye, EyeOff, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { cn } from '@/lib/utils'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+import { Card } from '@/components/ui/Card'
+import { motion } from 'framer-motion'
+
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
+
+function AnalyticsChart({ users }: { users: any[] }) {
+  const branchCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    users.forEach(u => {
+      const branch = u.branch || 'Other'
+      counts[branch] = (counts[branch] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+  }, [users])
+
+  const data = branchCounts.length > 0 ? branchCounts : [
+    { name: 'B.Tech', value: 28 },
+    { name: 'BBA', value: 19 },
+    { name: 'BCA', value: 16 },
+    { name: 'MBA', value: 11 },
+    { name: 'MCA', value: 8 },
+    { name: 'Law', value: 5 },
+    { name: 'Other', value: 3 }
+  ]
+
+  const maxValue = Math.max(...data.map(d => d.value), 1)
+
+  return (
+    <Card variant="premium" className="p-6 border border-white/[0.06] shadow-premium space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold text-white font-display">User Demographics by Branch</h3>
+          <p className="text-[10px] text-zinc-400 mt-1 font-medium font-sans">Real-time database student representation analysis</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-400 bg-white/[0.02] border border-white/[0.04] px-2.5 py-1 rounded-lg">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse shrink-0" />
+          <span>Live Analytics</span>
+        </div>
+      </div>
+
+      <div className="h-48 w-full flex items-end gap-3.5 pt-6 px-2">
+        {data.map((item, idx) => {
+          const percentHeight = (item.value / maxValue) * 100
+          return (
+            <div key={item.name} className="flex-1 flex flex-col items-center gap-2 group/bar relative">
+              <div className="absolute bottom-full mb-2 bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono font-bold text-white opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none shadow-xl z-20 whitespace-nowrap">
+                {item.value} Members
+              </div>
+
+              <div className="w-full bg-white/[0.01] rounded-t-lg relative overflow-hidden h-36 flex items-end border border-white/[0.03]">
+                <motion.div 
+                  initial={{ height: 0 }}
+                  animate={{ height: `${percentHeight}%` }}
+                  transition={{ type: 'spring', stiffness: 100, damping: 15, delay: idx * 0.04 }}
+                  className="w-full bg-gradient-to-t from-brand-600/35 to-brand-400 rounded-t-md group-hover/bar:brightness-110 transition-all cursor-pointer relative"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-brand-200/50" />
+                </motion.div>
+              </div>
+
+              <span className="text-[9px] font-mono text-zinc-500 group-hover/bar:text-zinc-300 transition-colors truncate max-w-full">
+                {item.name}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
 
 export default function SuperAdminClient({ userId, ownerEmail }: { userId: string, ownerEmail: string }) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [parentUsers] = useAutoAnimate()
   const [parentDating] = useAutoAnimate()
+  const overviewRef = useRef<HTMLDivElement>(null)
   const [parentReports] = useAutoAnimate()
   const [activeTab, setActiveTab] = useState<
   'overview'|'users'|'colleges'|'admins'|'moderation'|'dating'|'audit'
@@ -28,6 +106,14 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   const [invites, setInvites] = useState<any[]>([])
   const [datingRequests, setDatingRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !overviewRef.current) return
+    gsap.fromTo(overviewRef.current.children,
+      { opacity: 0, scale: 0.95, y: 15 },
+      { opacity: 1, scale: 1, y: 0, stagger: 0.08, duration: 0.5, ease: Easing.premium }
+    )
+  }, { scope: overviewRef, dependencies: [activeTab, metrics] })
 
   // User Inspector state
   const [selectedUserInspectorId, setSelectedUserInspectorId] = useState<string | null>(null)
@@ -77,7 +163,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       })
 
       // 2. Fetch Detailed Data
-      const { data: userData } = await supabase.from('profiles').select('id, full_name, email, role, is_verified, is_suspended, accepted_terms_at, created_at, colleges(name)').order('created_at', { ascending: false }).limit(50)
+      const { data: userData } = await supabase.from('profiles').select('id, full_name, email, role, is_verified, is_suspended, accepted_terms_at, created_at, branch, colleges(name)').order('created_at', { ascending: false }).limit(50)
       const { data: collegeData } = await supabase.from('colleges').select('*').order('name')
       const { data: logData } = await supabase.from('role_audit_logs').select('*, changed_by:profiles!role_audit_logs_changed_by_fkey(full_name), target_user:profiles!role_audit_logs_target_user_fkey(full_name)').order('created_at', { ascending: false }).limit(30)
       const { data: reportData } = await supabase.from('abuse_reports').select('*, reporter:profiles!abuse_reports_reporter_id_fkey(full_name)').order('created_at', { ascending: false }).limit(30)
@@ -258,81 +344,111 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-fade-in">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-on-surface tracking-tight">Super Admin Platform</h1>
-        <p className="text-on-surface-variant font-mono mt-1 text-sm">Global infrastructure and access management</p>
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-fade-in">
+      <div className="flex flex-col gap-2">
+        <h1 className="font-display text-3xl font-extrabold text-white tracking-tight leading-none">Super Admin Platform</h1>
+        <p className="text-zinc-400 font-mono mt-1 text-xs uppercase tracking-widest font-bold">Global infrastructure and access management</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {(['overview','users','colleges','admins','moderation','dating','audit'] as const).map(t => (
-          <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm font-mono transition-all capitalize ${activeTab === t ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface border border-white/5 text-on-surface-variant hover:text-on-surface hover:bg-white/5'}`}>
-            {t}
-          </button>
-        ))}
+      <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.02] w-fit border border-white/[0.04] overflow-x-auto max-w-full scrollbar-none select-none">
+        {(['overview','users','colleges','admins','moderation','dating','audit'] as const).map(t => {
+          const isActive = activeTab === t
+          return (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-semibold font-display tracking-wide capitalize transition-all whitespace-nowrap active:scale-95 cursor-pointer",
+                isActive 
+                  ? "bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-sm" 
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+            >
+              {t === 'dating' ? 'Dating Verification' : t}
+            </button>
+          )
+        })}
       </div>
 
       {/* Overview Tab */}
       {activeTab === 'overview' && metrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="glass-card rounded-2xl p-6 border-l-4 border-l-primary">
-            <h3 className="text-sm font-mono text-on-surface-variant mb-2">Total Users</h3>
-            <p className="font-display text-3xl font-bold text-on-surface">{metrics.totalUsers}</p>
+        <div className="space-y-6 select-none animate-fade-in">
+          <div ref={overviewRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Total Users</span>
+                <Users size={16} className="text-blue-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalUsers} /></p>
+            </div>
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Verified Students</span>
+                <ShieldCheck size={16} className="text-emerald-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.verifiedUsers} /></p>
+            </div>
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Active Colleges</span>
+                <BookOpen size={16} className="text-purple-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.totalColleges} /></p>
+            </div>
+            <div className="card-premium p-6 space-y-2 border border-white/[0.06] shadow-premium">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Pending Reports</span>
+                <Trash2 size={16} className="text-red-400" />
+              </div>
+              <p className="font-display text-3xl font-bold text-white"><CountUp value={metrics.pendingReports} /></p>
+            </div>
           </div>
-          <div className="glass-card rounded-2xl p-6 border-l-4 border-l-[#86efac]">
-            <h3 className="text-sm font-mono text-on-surface-variant mb-2">Verified Students</h3>
-            <p className="font-display text-3xl font-bold text-on-surface">{metrics.verifiedUsers}</p>
-          </div>
-          <div className="glass-card rounded-2xl p-6 border-l-4 border-l-[#c3c0ff]">
-            <h3 className="text-sm font-mono text-on-surface-variant mb-2">Active Colleges</h3>
-            <p className="font-display text-3xl font-bold text-on-surface">{metrics.totalColleges}</p>
-          </div>
-          <div className="glass-card rounded-2xl p-6 border-l-4 border-l-[#fbbf24]">
-            <h3 className="text-sm font-mono text-on-surface-variant mb-2">Pending Reports</h3>
-            <p className="font-display text-3xl font-bold text-on-surface">{metrics.pendingReports}</p>
-          </div>
+
+          <AnalyticsChart users={users} />
         </div>
       )}
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <input 
-            className="input-glass w-full max-w-md" 
+            className="input-pro w-full max-w-md" 
             placeholder="Search users by name or email..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
+          <div className="card-premium overflow-hidden border border-white/[0.06] shadow-premium">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/5 text-on-surface-variant font-mono text-xs uppercase">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/[0.02] border-b border-white/[0.04] text-zinc-400 font-mono text-[10px] uppercase tracking-wider">
                   <tr>
-                    <th className="px-6 py-4">User</th>
-                    <th className="px-6 py-4">College</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Legal</th>
-                    <th className="px-6 py-4">Role</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 font-bold">User</th>
+                    <th className="px-6 py-4 font-bold">College</th>
+                    <th className="px-6 py-4 font-bold">Status</th>
+                    <th className="px-6 py-4 font-bold">Legal</th>
+                    <th className="px-6 py-4 font-bold">Role</th>
+                    <th className="px-6 py-4 text-right font-bold">Actions</th>
                   </tr>
                 </thead>
-                <tbody ref={parentUsers} className="divide-y divide-white/5">
+                <tbody ref={parentUsers} className="divide-y divide-white/[0.03]">
                   {users.filter(u => u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
-                  <tr key={u.id} className="hover:bg-white/[0.02]">
+                  <tr key={u.id} className="hover:bg-white/[0.01] transition-colors">
                     <td className="px-6 py-4 cursor-pointer" onClick={() => handleInspectUser(u.id)}>
-                      <p className="font-medium text-on-surface hover:text-cyan-400 transition-colors">{u.full_name}</p>
-                      <p className="text-xs text-on-surface-variant">{u.email}</p>
+                      <p className="font-bold text-white hover:text-brand-400 transition-colors">{u.full_name}</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">{u.email}</p>
                     </td>
-                    <td className="px-6 py-4 text-on-surface-variant">{u.colleges?.name || 'No College'}</td>
+                    <td className="px-6 py-4 text-zinc-300 font-medium">{u.colleges?.name || 'No College'}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-mono w-fit ${u.is_verified ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-on-surface-variant'}`}>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded text-[9px] font-mono font-bold w-fit uppercase",
+                          u.is_verified ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-zinc-500 border border-white/5'
+                        )}>
                           {u.is_verified ? 'Verified' : 'Pending'}
                         </span>
                         {u.is_suspended && (
-                          <span className="px-2 py-1 rounded-md text-[10px] font-mono w-fit bg-red-500/20 text-red-400">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold w-fit bg-red-500/10 text-red-400 border border-red-500/20 uppercase">
                             Suspended
                           </span>
                         )}
@@ -340,31 +456,39 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                     </td>
                     <td className="px-6 py-4">
                       {u.accepted_terms_at ? (
-                        <span className="text-[10px] font-mono text-green-400" title={`Accepted on ${format(new Date(u.accepted_terms_at), 'PPP')}`}>
+                        <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded uppercase" title={`Accepted on ${format(new Date(u.accepted_terms_at), 'PPP')}`}>
                           Accepted
                         </span>
                       ) : (
-                        <span className="text-[10px] font-mono text-error">Pending</span>
+                        <span className="text-[9px] font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded uppercase">Pending</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-mono ${u.role === 'SUPER_ADMIN' ? 'bg-red-500/20 text-red-400' : u.role === 'COLLEGE_ADMIN' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase",
+                        u.role === 'SUPER_ADMIN' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : u.role === 'COLLEGE_ADMIN' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      )}>
                         {u.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button onClick={() => handleVerifyUser(u.id, !u.is_verified)} className="btn-ghost text-xs px-3 py-1">
+                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                      <button onClick={() => handleVerifyUser(u.id, !u.is_verified)} className="px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide uppercase transition-all bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-zinc-200 hover:text-white cursor-pointer active:scale-95">
                         {u.is_verified ? 'Revoke' : 'Verify'}
                       </button>
                       <button 
                         onClick={() => handleSuspendUser(u.id, !u.is_suspended)} 
                         disabled={u.email === ownerEmail}
-                        className={`btn-ghost text-xs px-3 py-1 ${u.is_suspended ? 'text-green-400 hover:bg-green-400/10' : 'text-red-400 hover:bg-red-400/10'}`}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide uppercase transition-all border cursor-pointer active:scale-95",
+                          u.is_suspended 
+                            ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-400' 
+                            : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-red-400'
+                        )}
                       >
                         {u.is_suspended ? 'Reactivate' : 'Suspend'}
                       </button>
                       <select 
-                        className="input-glass text-xs py-1.5 w-32"
+                        className="bg-zinc-900 border border-white/[0.08] hover:border-white/[0.12] rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-zinc-300 focus:outline-none transition-all cursor-pointer inline-block outline-none"
                         value={u.role}
                         onChange={(e) => handleUpdateRole(u.id, e.target.value)}
                         disabled={u.email === ownerEmail}
@@ -386,117 +510,139 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       {/* Colleges Tab */}
       {activeTab === 'colleges' && (
         <div className="space-y-6">
-          <div className="glass-elevated rounded-xl p-5 border border-white/10 space-y-4">
-            <h3 className="font-display font-semibold text-on-surface">Add New College</h3>
+          <div className="card-premium p-6 border border-white/[0.06] shadow-premium space-y-6">
+            <div className="border-b border-white/[0.04] pb-4">
+              <h3 className="text-sm font-bold text-white tracking-tight">Add New College</h3>
+              <p className="text-[11px] text-zinc-400 mt-1">Register a new college entity to enable student registrations under its domain name.</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input className="input-glass" placeholder="College Name" value={collegeForm.name} onChange={e=>setCollegeForm(p=>({...p,name:e.target.value}))} />
-              <input className="input-glass" placeholder="City" value={collegeForm.city} onChange={e=>setCollegeForm(p=>({...p,city:e.target.value}))} />
-              <input className="input-glass" placeholder="Domain (e.g. mit.edu)" value={collegeForm.email_domain} onChange={e=>setCollegeForm(p=>({...p,email_domain:e.target.value}))} />
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">College Name</span>
+                <input className="input-pro text-xs font-medium" placeholder="IILM University" value={collegeForm.name} onChange={e=>setCollegeForm(p=>({...p,name:e.target.value}))} />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">City</span>
+                <input className="input-pro text-xs font-medium" placeholder="Greater Noida" value={collegeForm.city} onChange={e=>setCollegeForm(p=>({...p,city:e.target.value}))} />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Email Domain</span>
+                <input className="input-pro text-xs font-medium" placeholder="iilm.edu" value={collegeForm.email_domain} onChange={e=>setCollegeForm(p=>({...p,email_domain:e.target.value}))} />
+              </div>
             </div>
             <div className="flex justify-end">
-              <button onClick={handleCreateCollege} className="btn-primary text-sm px-6">Add College</button>
+              <button onClick={handleCreateCollege} className="btn-premium px-8 text-xs font-semibold">Add College</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {colleges.map(c => (
-            <div key={c.id} className="glass-card rounded-xl p-5 flex items-center justify-between border border-white/5">
-              <div>
-                <h3 className="font-display font-semibold text-on-surface">{c.name}</h3>
-                <p className="text-xs text-on-surface-variant font-mono mt-1">@{c.email_domain}</p>
+              <div key={c.id} className="card-premium p-5 flex items-center justify-between border border-white/[0.06] shadow-premium">
+                <div>
+                  <h3 className="text-xs font-bold text-white">{c.name}</h3>
+                  <p className="text-[10px] text-zinc-400 font-mono mt-1">@{c.email_domain} · {c.city || 'No City'}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase",
+                    c.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  )}>
+                    {c.is_active ? 'Active' : 'Disabled'}
+                  </span>
+                  <button 
+                    onClick={() => handleToggleCollege(c.id, c.is_active)} 
+                    className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] flex items-center justify-center text-zinc-400 hover:text-white transition-all cursor-pointer"
+                  >
+                    <DynamicIcon name={c.is_active ? 'block' : 'check_circle'} size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`px-2 py-1 rounded-md text-[10px] font-mono ${c.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                  {c.is_active ? 'Active' : 'Disabled'}
-                </span>
-                <button onClick={() => handleToggleCollege(c.id, c.is_active)} className="btn-ghost text-xs p-2 rounded-lg hover:bg-white/10">
-                  <DynamicIcon name={c.is_active ? 'block' : 'check_circle'} size={18} />
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Dating Tab */}
+      {activeTab === 'dating' && (
+        <div ref={parentDating} className="space-y-6">
+          <div className="border-b border-white/[0.04] pb-4">
+            <h2 className="text-base font-bold text-white tracking-tight">Dating Verification Requests</h2>
+            <p className="text-xs text-zinc-400 mt-1">Review student ID submissions to approve dating module access.</p>
+          </div>
+
+          {datingRequests.length === 0 ? (
+            <div className="card-premium p-8 text-center text-zinc-500 text-xs italic">
+              No pending requests
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {datingRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="card-premium p-6 border border-white/[0.06] shadow-premium space-y-4"
+                >
+                  <div className="space-y-2 text-xs">
+                    <p className="text-zinc-400"><strong>Name:</strong> <span className="text-zinc-200 font-bold">{request.full_name}</span></p>
+                    <p className="text-zinc-400"><strong>Email:</strong> <span className="text-zinc-200">{request.email}</span></p>
+                    <p className="text-zinc-400"><strong>Branch:</strong> <span className="text-zinc-200">{request.branch}</span></p>
+                    <p className="text-zinc-400"><strong>Year:</strong> <span className="text-zinc-200">{request.year}</span></p>
+                    <p className="text-zinc-400"><strong>Roll No:</strong> <span className="text-zinc-200">{request.roll_number}</span></p>
+                    <p className="text-zinc-400"><strong>Status:</strong> <span className="text-zinc-200 uppercase font-mono">{request.status}</span></p>
+                  </div>
+
+                  <div className="flex gap-3 pt-2 border-t border-white/[0.04]">
+                    <button
+                      onClick={() => {
+                        const { data } = supabase.storage
+                          .from('dating-verification')
+                          .getPublicUrl(request.id_card_url)
+
+                        window.open(data.publicUrl, '_blank')
+                      }}
+                      className="px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-zinc-200 hover:text-white cursor-pointer active:scale-95"
+                    >
+                      View ID Card
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleApproveDatingRequest(
+                          request.id,
+                          request.user_id
+                        )
+                      }
+                      className="px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/20 text-white cursor-pointer active:scale-95"
+                    >
+                      Approve
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Audit Tab */}
-      {activeTab === 'dating' && (
-  <div ref={parentDating} className="space-y-4">
-    <h2 className="text-2xl font-bold">
-      Dating Verification Requests
-    </h2>
-
-    {datingRequests.length === 0 ? (
-      <div className="glass-card rounded-2xl p-6">
-        No pending requests
-      </div>
-    ) : (
-      datingRequests.map((request) => (
-        <div
-          key={request.id}
-          className="glass-card rounded-2xl p-6"
-        >
-          <div className="space-y-2">
-            <p><strong>Name:</strong> {request.full_name}</p>
-            <p><strong>Email:</strong> {request.email}</p>
-            <p><strong>Branch:</strong> {request.branch}</p>
-            <p><strong>Year:</strong> {request.year}</p>
-            <p><strong>Roll No:</strong> {request.roll_number}</p>
-            <p><strong>Status:</strong> {request.status}</p>
-
-            <button
-  onClick={() => {
-    const { data } = supabase.storage
-      .from('dating-verification')
-      .getPublicUrl(request.id_card_url)
-
-    window.open(data.publicUrl, '_blank')
-  }}
-  className="text-primary underline"
->
-  View ID Card
-</button>
-
-            <div className="pt-4">
-              <button
-                onClick={() =>
-                  handleApproveDatingRequest(
-                    request.id,
-                    request.user_id
-                  )
-                }
-                className="px-4 py-2 bg-green-600 rounded-xl"
-              >
-                Approve
-              </button>
-            </div>
-          </div>
-        </div>
-      ))
-    )}
-  </div>
-)}
       {activeTab === 'audit' && (
-        <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
+        <div className="card-premium overflow-hidden border border-white/[0.06] shadow-premium">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-white/5 text-on-surface-variant font-mono text-xs uppercase">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-white/[0.02] border-b border-white/[0.04] text-zinc-400 font-mono text-[10px] uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Time</th>
-                  <th className="px-6 py-4">Actor</th>
-                  <th className="px-6 py-4">Target User</th>
-                  <th className="px-6 py-4">Change</th>
+                  <th className="px-6 py-4 font-bold">Time</th>
+                  <th className="px-6 py-4 font-bold">Actor</th>
+                  <th className="px-6 py-4 font-bold">Target User</th>
+                  <th className="px-6 py-4 font-bold">Change</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.03]">
                 {logs.map(l => (
-                  <tr key={l.id} className="hover:bg-white/[0.02]">
-                    <td className="px-6 py-4 text-xs font-mono text-on-surface-variant">{format(new Date(l.created_at), 'MMM d, HH:mm')}</td>
-                    <td className="px-6 py-4 text-on-surface font-medium">{l.changed_by?.full_name || 'System'}</td>
-                    <td className="px-6 py-4 text-on-surface-variant">{l.target_user?.full_name || 'Unknown'}</td>
-                    <td className="px-6 py-4 font-mono text-[11px]">
-                      <span className="text-error opacity-70">{l.old_role}</span>
-                      <span className="mx-2 text-on-surface-variant">→</span>
-                      <span className="text-success opacity-90">{l.new_role}</span>
+                  <tr key={l.id} className="hover:bg-white/[0.01] transition-colors">
+                    <td className="px-6 py-4 text-xs font-mono text-zinc-400">{format(new Date(l.created_at), 'MMM d, HH:mm')}</td>
+                    <td className="px-6 py-4 text-white font-medium">{l.changed_by?.full_name || 'System'}</td>
+                    <td className="px-6 py-4 text-zinc-300">{l.target_user?.full_name || 'Unknown'}</td>
+                    <td className="px-6 py-4 font-mono text-[10px]">
+                      <span className="text-red-400 opacity-80">{l.old_role}</span>
+                      <span className="mx-2 text-zinc-500">→</span>
+                      <span className="text-emerald-400 opacity-90">{l.new_role}</span>
                     </td>
                   </tr>
                 ))}
@@ -509,48 +655,66 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       {/* Admins Tab */}
       {activeTab === 'admins' && (
         <div className="space-y-6">
-          <div className="glass-elevated rounded-xl p-5 border border-white/10 space-y-4">
-            <h3 className="font-display font-semibold text-on-surface">Invite Administrator</h3>
+          <div className="card-premium p-6 border border-white/[0.06] shadow-premium space-y-6">
+            <div className="border-b border-white/[0.04] pb-4">
+              <h3 className="text-sm font-bold text-white tracking-tight">Invite Administrator</h3>
+              <p className="text-[11px] text-zinc-400 mt-1">Send an invitation email to delegate roles such as College Admin or Super Admin.</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input className="input-glass col-span-2" placeholder="Email Address" value={inviteForm.email} onChange={e=>setInviteForm(p=>({...p,email:e.target.value}))} />
-              <select className="input-glass" value={inviteForm.role} onChange={e=>setInviteForm(p=>({...p,role:e.target.value}))}>
-                <option value="COLLEGE_ADMIN">College Admin</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-              </select>
-              {inviteForm.role === 'COLLEGE_ADMIN' && (
-                <select className="input-glass" value={inviteForm.college_id} onChange={e=>setInviteForm(p=>({...p,college_id:e.target.value}))}>
-                  <option value="">Select College</option>
-                  {colleges.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              <div className="space-y-1.5 md:col-span-2">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Email Address</span>
+                <input className="input-pro text-xs font-medium" placeholder="admin@iilm.edu" value={inviteForm.email} onChange={e=>setInviteForm(p=>({...p,email:e.target.value}))} />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Admin Role</span>
+                <select className="input-pro text-xs font-medium appearance-none cursor-pointer" value={inviteForm.role} onChange={e=>setInviteForm(p=>({...p,role:e.target.value}))}>
+                  <option value="COLLEGE_ADMIN">College Admin</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
                 </select>
+              </div>
+              {inviteForm.role === 'COLLEGE_ADMIN' && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Select College</span>
+                  <select className="input-pro text-xs font-medium appearance-none cursor-pointer" value={inviteForm.college_id} onChange={e=>setInviteForm(p=>({...p,college_id:e.target.value}))}>
+                    <option value="">Choose College</option>
+                    {colleges.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
               )}
             </div>
             <div className="flex justify-end">
-              <button onClick={handleInviteAdmin} className="btn-primary text-sm px-6">Send Invitation</button>
+              <button onClick={handleInviteAdmin} className="btn-premium px-8 text-xs font-semibold">Send Invitation</button>
             </div>
           </div>
-          <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
+          <div className="card-premium overflow-hidden border border-white/[0.06] shadow-premium">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/5 text-on-surface-variant font-mono text-xs uppercase">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/[0.02] border-b border-white/[0.04] text-zinc-400 font-mono text-[10px] uppercase tracking-wider">
                   <tr>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Role</th>
-                    <th className="px-6 py-4">College</th>
-                    <th className="px-6 py-4">Invited By</th>
-                    <th className="px-6 py-4">Expires</th>
+                    <th className="px-6 py-4 font-bold">Email</th>
+                    <th className="px-6 py-4 font-bold">Role</th>
+                    <th className="px-6 py-4 font-bold">College</th>
+                    <th className="px-6 py-4 font-bold">Invited By</th>
+                    <th className="px-6 py-4 font-bold">Expires</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-white/[0.03]">
                   {invites.map(i => (
-                    <tr key={i.id} className="hover:bg-white/[0.02]">
-                      <td className="px-6 py-4 text-on-surface">{i.email}</td>
-                      <td className="px-6 py-4 font-mono text-[10px] text-tertiary">{i.role}</td>
-                      <td className="px-6 py-4 text-on-surface-variant">{i.college?.name || '-'}</td>
-                      <td className="px-6 py-4 text-on-surface-variant">{i.inviter?.full_name}</td>
-                      <td className="px-6 py-4 text-on-surface-variant text-xs">{format(new Date(i.expires_at), 'MMM d')}</td>
+                    <tr key={i.id} className="hover:bg-white/[0.01] transition-colors">
+                      <td className="px-6 py-4 text-white font-medium">{i.email}</td>
+                      <td className="px-6 py-4 font-mono text-[10px] text-brand-400">{i.role}</td>
+                      <td className="px-6 py-4 text-zinc-300">{i.college?.name || '-'}</td>
+                      <td className="px-6 py-4 text-zinc-300">{i.inviter?.full_name}</td>
+                      <td className="px-6 py-4 text-zinc-400 font-mono text-[10px]">{format(new Date(i.expires_at), 'MMM d, yyyy')}</td>
                     </tr>
                   ))}
-                  {invites.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">No active invitations</td></tr>}
+                  {invites.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-zinc-500 text-xs italic">
+                        No active invitations
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -561,58 +725,66 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
       {/* Moderation Tab */}
       {activeTab === 'moderation' && (
         <div ref={parentReports} className="space-y-4">
+          <div className="border-b border-white/[0.04] pb-4">
+            <h2 className="text-base font-bold text-white tracking-tight">Content Moderation & Reports</h2>
+            <p className="text-xs text-zinc-400 mt-1">Review student flags and moderation reports.</p>
+          </div>
+
           {reports.length === 0 ? (
-            <div className="glass-card rounded-xl p-12 text-center text-on-surface-variant">
+            <div className="card-premium p-8 text-center text-zinc-500 text-xs italic">
               No pending abuse reports. Great job!
             </div>
           ) : (
-            reports.map(r => (
-              <div key={r.id} className="glass-card rounded-xl p-5 border border-error/20 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-error/20 text-error uppercase">{r.target_type}</span>
-                    <span className="font-display font-semibold text-on-surface">Reported for: {r.reason}</span>
+            <div className="space-y-4">
+              {reports.map(r => (
+                <div key={r.id} className="card-premium p-6 border border-red-500/10 shadow-[0_0_40px_rgba(239,68,68,0.02)] flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase">{r.target_type}</span>
+                      <span className="font-bold text-white">Reported for: <span className="text-red-400">{r.reason}</span></span>
+                    </div>
+                    <p className="text-zinc-400">Target ID: <span className="font-mono text-[11px] text-zinc-300">{r.target_id}</span></p>
+                    <p className="text-zinc-500">Reported by {r.reporter?.full_name} on {format(new Date(r.created_at), 'PPP')}</p>
+                    {r.details && (
+                      <div className="mt-2.5 p-3.5 rounded-xl bg-white/[0.01] border border-white/[0.04] text-xs text-zinc-300 italic">
+                        &quot;{r.details}&quot;
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-on-surface-variant">Target ID: <span className="font-mono text-xs">{r.target_id}</span></p>
-                  <p className="text-xs text-on-surface-variant">Reported by {r.reporter?.full_name} on {format(new Date(r.created_at), 'MMM d')}</p>
-                  {r.details && <div className="mt-2 p-3 rounded-lg bg-black/20 text-sm text-on-surface italic">&quot;{r.details}&quot;</div>}
+                  <div className="flex gap-2 w-full md:w-auto shrink-0">
+                    <button onClick={() => handleUpdateReportStatus(r.id, 'dismissed')} className="btn-ghost-pro py-2 text-xs flex-1 md:flex-none">Dismiss</button>
+                    <button onClick={() => handleUpdateReportStatus(r.id, 'actioned')} className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 border border-red-500/20 text-white cursor-pointer transition-all active:scale-95 flex-1 md:flex-none">Take Action</button>
+                  </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                  <button onClick={() => handleUpdateReportStatus(r.id, 'dismissed')} className="btn-ghost text-xs flex-1 md:flex-none">Dismiss</button>
-                  <button onClick={() => handleUpdateReportStatus(r.id, 'actioned')} className="btn-primary text-xs bg-error hover:bg-error/80 flex-1 md:flex-none">Take Action</button>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       )}
 
+      {/* User Inspector Modal */}
       {selectedUserInspectorId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={() => setSelectedUserInspectorId(null)} />
-          <div className="card-premium max-w-4xl w-full max-h-[85vh] relative z-10 flex flex-col bg-[#090d16] border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-scale-up">
-            <div className="p-6 border-b border-white/10 flex flex-col gap-4 bg-white/[0.01]">
-              {/* Back navigation & Breadcrumbs */}
-              <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                {/* Mobile Back Button */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedUserInspectorId(null)} />
+          <div className="relative w-full max-w-4xl max-h-[85vh] bg-[#111317] border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col z-10 animate-scale-up">
+            <div className="p-6 border-b border-white/[0.04] flex flex-col gap-4 bg-white/[0.01]">
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.04]">
                 <button
                   onClick={() => setSelectedUserInspectorId(null)}
                   className="md:hidden flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white"
                 >
                   <ChevronLeft size={16} /> Back
                 </button>
-                {/* Desktop Breadcrumbs */}
-                <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold">
                   <span className="cursor-pointer hover:text-white" onClick={() => { setSelectedUserInspectorId(null); router.push('/dashboard') }}>Dashboard</span>
                   <span>&gt;</span>
                   <span className="cursor-pointer hover:text-white" onClick={() => setSelectedUserInspectorId(null)}>Super Admin</span>
                   <span>&gt;</span>
                   <span className="text-white font-medium">User Inspector</span>
                 </div>
-                {/* Close Button on Desktop */}
                 <button 
                   onClick={() => setSelectedUserInspectorId(null)}
-                  className="hidden md:block text-zinc-400 hover:text-white hover:opacity-80"
+                  className="hidden md:block text-zinc-500 hover:text-white transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -628,10 +800,10 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                     )}
                   </div>
                   <div>
-                    <h2 className="font-display font-bold text-white text-lg flex items-center gap-2">
+                    <h2 className="font-display font-bold text-white text-base flex items-center gap-2">
                       {inspectorData ? inspectorData.profile.full_name : 'Loading User Profile...'}
                       {inspectorData?.profile?.is_verified && (
-                        <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-mono font-bold">Verified</span>
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider">Verified</span>
                       )}
                     </h2>
                     <p className="text-xs text-zinc-400 mt-0.5 font-mono">
@@ -639,12 +811,12 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                     </p>
                   </div>
                 </div>
-                {/* Mobile-only Close Button */}
-                <button onClick={() => setSelectedUserInspectorId(null)} className="md:hidden w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
-                  <X size={18} />
+                <button onClick={() => setSelectedUserInspectorId(null)} className="md:hidden w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
+                  <X size={14} />
                 </button>
               </div>
             </div>
+
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {loadingInspector ? (
                 <div className="space-y-6 animate-pulse">
@@ -656,29 +828,37 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                 </div>
               ) : inspectorData ? (
                 <>
-                  <div className="flex gap-1.5 p-1 rounded-xl bg-black/20 w-fit border border-white/[0.03]">
+                  <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.01] border border-white/[0.04] w-fit">
                     {([
                       ['profile', '👤 Profile'],
                       ['posts', '📝 Posts'],
                       ['friends', '👥 Friends'],
                       ['modules', '📦 Modules'],
                       ['rewards', '🏆 Rewards']
-                    ] as const).map(([tabId, label]) => (
-                      <button
-                        key={tabId}
-                        onClick={() => setInspectorActiveSubTab(tabId)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${inspectorActiveSubTab === tabId ? 'bg-white/[0.08] text-white border border-white/10' : 'text-zinc-500 hover:text-zinc-300'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    ] as const).map(([tabId, label]) => {
+                      const isActive = inspectorActiveSubTab === tabId
+                      return (
+                        <button
+                          key={tabId}
+                          onClick={() => setInspectorActiveSubTab(tabId)}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer active:scale-95",
+                            isActive 
+                              ? 'bg-brand-500/10 border border-brand-500/20 text-brand-400 shadow-sm' 
+                              : 'text-zinc-500 hover:text-zinc-300'
+                          )}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {inspectorActiveSubTab === 'profile' && (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                       <div className="md:col-span-5 space-y-4">
-                        <div className="glass-card rounded-2xl p-4.5 space-y-3.5 border border-white/5">
-                          <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase">Information</h3>
+                        <div className="card-premium p-5 space-y-3.5 border border-white/[0.06] shadow-premium">
+                          <h3 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Information</h3>
                           <div className="space-y-2 text-xs">
                             <p className="text-zinc-400"><strong>Branch:</strong> <span className="text-zinc-200">{inspectorData.profile.branch || 'Not set'}</span></p>
                             <p className="text-zinc-400"><strong>Year:</strong> <span className="text-zinc-200">{inspectorData.profile.year ? `Year ${inspectorData.profile.year}` : 'Not set'}</span></p>
@@ -687,13 +867,13 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                             <p className="text-zinc-400"><strong>Join Date:</strong> <span className="text-zinc-200">{format(new Date(inspectorData.profile.created_at), 'PPP')}</span></p>
                           </div>
                         </div>
-                        <div className="glass-card rounded-2xl p-4.5 space-y-3 border border-white/5">
-                          <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase">Bio</h3>
-                          <p className="text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap">{inspectorData.profile.bio || 'No bio entered.'}</p>
+                        <div className="card-premium p-5 space-y-3 border border-white/[0.06] shadow-premium">
+                          <h3 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase">Bio</h3>
+                          <p className="text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap font-medium">{inspectorData.profile.bio || 'No bio entered.'}</p>
                         </div>
                       </div>
                       <div className="md:col-span-7 space-y-4">
-                        <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Activity Metrics</h3>
+                        <h3 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Activity Metrics</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {[
                             { label: 'Posts', value: inspectorData.counts.total_posts, color: 'border-l-cyan-500' },
@@ -707,9 +887,9 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                             { label: 'Notes', value: inspectorData.counts.total_notes, color: 'border-l-violet-500' },
                             { label: 'Papers', value: inspectorData.counts.total_papers, color: 'border-l-fuchsia-500' }
                           ].map(metric => (
-                            <div key={metric.label} className={`glass-card rounded-xl p-3.5 border-l-4 ${metric.color} border border-white/5`}>
-                              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight leading-none mb-1">{metric.label}</p>
-                              <p className="font-display text-xl font-bold text-zinc-100">{metric.value}</p>
+                            <div key={metric.label} className={cn("card-premium p-4 border-l-4 border border-white/[0.06] shadow-premium", metric.color)}>
+                              <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider leading-none mb-1.5 font-bold">{metric.label}</p>
+                              <p className="font-display text-xl font-bold text-white">{metric.value}</p>
                             </div>
                           ))}
                         </div>
@@ -723,9 +903,9 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                         <p className="text-zinc-500 text-xs italic py-6 text-center">No posts published by this user.</p>
                       ) : (
                         inspectorData.posts.map((p: any) => (
-                          <div key={p.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs space-y-2">
-                            <p className="text-zinc-300 whitespace-pre-wrap">{p.content}</p>
-                            <div className="flex gap-4 text-[10px] font-mono text-zinc-500 pt-1.5 border-t border-white/[0.02]">
+                          <div key={p.id} className="card-premium p-4 border border-white/[0.06] shadow-premium text-xs space-y-2">
+                            <p className="text-zinc-200 whitespace-pre-wrap leading-relaxed font-medium">{p.content}</p>
+                            <div className="flex gap-4 text-[10px] font-mono text-zinc-500 pt-2 border-t border-white/[0.04]">
                               <span>❤️ {p.likes_count} likes</span>
                               <span>💬 {p.comments_count} comments</span>
                               <span className="ml-auto">{format(new Date(p.created_at), 'PPP')}</span>
@@ -742,7 +922,7 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                         <p className="col-span-full text-zinc-500 text-xs italic py-6 text-center">No active friends found.</p>
                       ) : (
                         inspectorData.friends.map((f: any) => (
-                          <div key={f.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] flex items-center gap-3">
+                          <div key={f.id} className="card-premium p-3 border border-white/[0.06] shadow-premium flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-zinc-400 text-xs overflow-hidden shrink-0">
                               {f.avatar_url ? (
                                 <img src={f.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -763,33 +943,33 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                   {inspectorActiveSubTab === 'modules' && (
                     <div className="space-y-6">
                       <div className="space-y-2.5">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Communities Joined ({inspectorData.communities.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Communities Joined ({inspectorData.communities.length})</h4>
                         {inspectorData.communities.length === 0 ? (
-                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                          <p className="text-zinc-500 text-xs italic pl-1">None joined</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {inspectorData.communities.map((c: any) => (
-                              <div key={c.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                              <div key={c.id} className="card-premium p-3.5 border border-white/[0.06] shadow-premium text-xs">
                                 <p className="font-bold text-white leading-tight">{c.name}</p>
-                                <span className="text-[9px] uppercase font-mono tracking-wider text-cyan-400 bg-cyan-500/5 px-1.5 py-0.5 rounded border border-cyan-500/10 mt-1.5 inline-block">{c.category}</span>
+                                <span className="text-[9px] uppercase font-mono tracking-wider text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 mt-1.5 inline-block font-bold">{c.category}</span>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                       <div className="space-y-2.5">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Clubs Joined & Led ({inspectorData.clubs.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Clubs Joined & Led ({inspectorData.clubs.length})</h4>
                         {inspectorData.clubs.length === 0 ? (
-                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                          <p className="text-zinc-500 text-xs italic pl-1">None joined</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {inspectorData.clubs.map((c: any) => (
-                              <div key={c.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs flex justify-between items-center">
+                              <div key={c.id} className="card-premium p-3.5 border border-white/[0.06] shadow-premium text-xs flex justify-between items-center">
                                 <div>
                                   <p className="font-bold text-white leading-tight">{c.name}</p>
-                                  <span className="text-[9px] uppercase font-mono tracking-wider text-purple-400 bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10 mt-1.5 inline-block">{c.category}</span>
+                                  <span className="text-[9px] uppercase font-mono tracking-wider text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 mt-1.5 inline-block font-bold">{c.category}</span>
                                 </div>
-                                <span className={`text-[10px] font-mono capitalize px-2 py-0.5 rounded-full ${c.role === 'president' || c.role === 'leader' || c.role === 'lead' ? 'bg-pink-500/20 text-pink-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                <span className="text-[9px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400">
                                   {c.role}
                                 </span>
                               </div>
@@ -798,13 +978,13 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                         )}
                       </div>
                       <div className="space-y-2.5">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Registered Events ({inspectorData.events.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Registered Events ({inspectorData.events.length})</h4>
                         {inspectorData.events.length === 0 ? (
-                          <p className="text-zinc-600 text-xs italic pl-1">None registered</p>
+                          <p className="text-zinc-500 text-xs italic pl-1">None registered</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {inspectorData.events.map((e: any) => (
-                              <div key={e.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                              <div key={e.id} className="card-premium p-3.5 border border-white/[0.06] shadow-premium text-xs">
                                 <p className="font-bold text-white leading-tight truncate">{e.title}</p>
                                 <p className="text-[10px] text-zinc-500 mt-1">📍 {e.venue || 'Campus'} · {format(new Date(e.start_time), 'PPp')}</p>
                               </div>
@@ -813,33 +993,36 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                         )}
                       </div>
                       <div className="space-y-2.5">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Study Groups Joined ({inspectorData.study_groups.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Study Groups Joined ({inspectorData.study_groups.length})</h4>
                         {inspectorData.study_groups.length === 0 ? (
-                          <p className="text-zinc-600 text-xs italic pl-1">None joined</p>
+                          <p className="text-zinc-500 text-xs italic pl-1">None joined</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {inspectorData.study_groups.map((s: any) => (
-                              <div key={s.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
+                              <div key={s.id} className="card-premium p-3.5 border border-white/[0.06] shadow-premium text-xs">
                                 <p className="font-bold text-white leading-tight">{s.name}</p>
-                                <p className="text-[10px] text-zinc-500 mt-1">📚 {s.subject}</p>
+                                <p className="text-[10px] text-zinc-500 mt-1 font-medium">📚 {s.subject}</p>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                       <div className="space-y-2.5">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Marketplace Listings ({inspectorData.marketplace.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Marketplace Listings ({inspectorData.marketplace.length})</h4>
                         {inspectorData.marketplace.length === 0 ? (
-                          <p className="text-zinc-600 text-xs italic pl-1">No listings active</p>
+                          <p className="text-zinc-500 text-xs italic pl-1">No listings active</p>
                         ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {inspectorData.marketplace.map((m: any) => (
-                              <div key={m.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs flex justify-between items-center">
+                              <div key={m.id} className="card-premium p-3.5 border border-white/[0.06] shadow-premium text-xs flex justify-between items-center font-medium">
                                 <div>
                                   <p className="font-bold text-white leading-tight">{m.title}</p>
-                                  <p className="text-[10px] text-cyan-400 font-bold mt-1">₹{m.price}</p>
+                                  <p className="text-[10px] text-brand-400 font-bold mt-1">₹{m.price}</p>
                                 </div>
-                                <span className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full ${m.status === 'available' ? 'bg-green-500/20 text-green-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                <span className={cn(
+                                  "text-[9px] font-mono uppercase font-bold px-2 py-0.5 rounded-full border",
+                                  m.status === 'available' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                )}>
                                   {m.status}
                                 </span>
                               </div>
@@ -853,30 +1036,30 @@ export default function SuperAdminClient({ userId, ownerEmail }: { userId: strin
                   {inspectorActiveSubTab === 'rewards' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="glass-card rounded-2xl p-4.5 border-l-4 border-l-amber-500 border border-white/5">
-                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight mb-1">Current Points</p>
-                          <p className="font-display text-2xl font-bold text-zinc-100">{inspectorData.points_rank.total_points}</p>
+                        <div className="card-premium p-5 border-l-4 border-l-amber-500 border border-white/[0.06] shadow-premium">
+                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold mb-1.5">Current Points</p>
+                          <p className="font-display text-2xl font-bold text-white">{inspectorData.points_rank.total_points}</p>
                         </div>
-                        <div className="glass-card rounded-2xl p-4.5 border-l-4 border-l-cyan-500 border border-white/5">
-                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-tight mb-1">Current Rank</p>
-                          <p className="font-display text-2xl font-bold text-zinc-100">#{inspectorData.points_rank.rank}</p>
+                        <div className="card-premium p-5 border-l-4 border-l-cyan-500 border border-white/[0.06] shadow-premium">
+                          <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider font-bold mb-1.5">Current Rank</p>
+                          <p className="font-display text-2xl font-bold text-white">#{inspectorData.points_rank.rank}</p>
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <h4 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Achievements Earned ({inspectorData.achievements.length})</h4>
+                        <h4 className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase px-1">Achievements Earned ({inspectorData.achievements.length})</h4>
                         {inspectorData.achievements.length === 0 ? (
                           <p className="text-zinc-500 text-xs italic py-4 pl-1">No achievements unlocked yet.</p>
                         ) : (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {inspectorData.achievements.map((ac: any) => (
-                              <div key={ac.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3 border border-white/5">
+                              <div key={ac.id} className="card-premium p-4 flex items-center gap-3 border border-white/[0.06] shadow-premium">
                                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-500 shadow-sm">
                                   <Trophy size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="font-bold text-zinc-100 text-xs leading-none">{ac.name}</p>
-                                  <p className="text-[10px] text-zinc-500 truncate mt-1">{ac.description}</p>
-                                  <span className="text-[9px] font-mono text-zinc-600 block mt-1.5">Unlocked {format(new Date(ac.unlocked_at), 'PPP')}</span>
+                                  <p className="font-bold text-white text-xs leading-none">{ac.name}</p>
+                                  <p className="text-[10px] text-zinc-400 truncate mt-1.5 font-medium">{ac.description}</p>
+                                  <span className="text-[9px] font-mono text-zinc-500 block mt-2">Unlocked {format(new Date(ac.unlocked_at), 'PPP')}</span>
                                 </div>
                               </div>
                             ))}

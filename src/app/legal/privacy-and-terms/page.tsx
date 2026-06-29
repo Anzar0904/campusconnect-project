@@ -45,7 +45,7 @@ export default function LegalPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface p-6 md:p-12 animate-fade-in">
+    <div className="min-h-screen bg-transparent text-on-surface p-6 md:p-12 animate-fade-in">
       <div className="max-w-3xl mx-auto space-y-10">
         
         {/* Header */}

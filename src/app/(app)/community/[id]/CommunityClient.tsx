@@ -14,6 +14,16 @@ import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import CreatePost from './CreatePost'
 import { formatDistanceToNow } from 'date-fns'
 
+const CATEGORY_COLORS: Record<string, string> = {
+  Academic: '#a78bfa',  // Violet
+  Social: '#22d3ee',    // Cyan
+  Technical: '#3b82f6', // Blue
+  Cultural: '#ec4899',  // Pink
+  Sports: '#f59e0b',    // Amber
+  Career: '#10b981',    // Emerald
+  General: '#94a3b8',   // Slate
+}
+
 const CATEGORIES = ['Academic', 'Social', 'Technical', 'Cultural', 'Sports', 'Career', 'General']
 
 export default function CommunityClient({
@@ -186,6 +196,8 @@ export default function CommunityClient({
     }
   }
 
+  const color = CATEGORY_COLORS[community.category] || '#94a3b8'
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24">
       {/* Mobile back button & Desktop Breadcrumbs */}
@@ -203,12 +215,12 @@ export default function CommunityClient({
           <ChevronLeft size={16} /> Back
         </button>
 
-        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+        <div className="hidden md:flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
           <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/dashboard')}>Dashboard</span>
           <span>&gt;</span>
           <span className="cursor-pointer hover:text-white transition-colors" onClick={() => router.push('/community')}>Communities</span>
           <span>&gt;</span>
-          <span className="text-white font-medium">{community.name}</span>
+          <span className="text-white font-semibold">{community.name}</span>
         </div>
       </div>
 
@@ -216,39 +228,46 @@ export default function CommunityClient({
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-3xl p-8 relative overflow-hidden border border-white/[0.08] bg-[#090d16]/80 backdrop-blur-2xl"
+        className="card-premium p-6 md:p-8 relative overflow-hidden border-t-4"
+        style={{ borderTopColor: color }}
       >
-        <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full bg-violet-600/10 blur-[90px] pointer-events-none" />
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-purple-600/10 blur-[90px] pointer-events-none" />
+        <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full opacity-10 blur-[90px] pointer-events-none" style={{ backgroundColor: color }} />
+        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full opacity-10 blur-[90px] pointer-events-none" style={{ backgroundColor: color }} />
 
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 relative z-10">
-          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/10">
+          <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-lg shrink-0" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
               🎉
             </div>
             
-            <div className="space-y-1.5">
-              <h1 className="text-3xl font-black text-white tracking-tight flex items-center justify-center md:justify-start gap-2.5">
-                {community.name}
-                {community.is_private && <span className="chip-pro text-[9px] bg-red-500/10 text-red-400 border-red-500/20">Private</span>}
-              </h1>
-              <p className="text-xs text-neutral-400 leading-relaxed max-w-xl font-medium">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-none">
+                  {community.name}
+                </h1>
+                {community.is_private && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
+                    Private
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed max-w-xl font-medium">
                 {community.description || 'Welcome to this university interest group.'}
               </p>
               
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-mono text-zinc-500 pt-1.5">
-                <span className="flex items-center gap-1.5"><Award size={13} className="text-violet-400" /> {community.category}</span>
-                <span className="flex items-center gap-1.5"><Users size={13} className="text-purple-400" /> {community.member_count} Members</span>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[10px] font-mono text-zinc-500 pt-1 border-t border-white/[0.04] w-fit">
+                <span className="flex items-center gap-1.5"><Award size={13} style={{ color }} /> {community.category}</span>
+                <span className="flex items-center gap-1.5"><Users size={13} className="text-brand-400" /> {community.member_count} Members</span>
                 <span className="flex items-center gap-1.5"><MessageCircle size={13} className="text-cyan-400" /> {posts.length} Posts</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-center md:self-start">
             {canManage && (
               <button 
                 onClick={() => setShowSettings(true)}
-                className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-neutral-400 hover:text-white transition-all active:scale-95"
+                className="p-2.5 rounded-xl bg-zinc-900 border border-white/[0.08] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95 shadow-sm"
                 title="Edit Community Settings"
               >
                 <Settings size={16} />
@@ -258,10 +277,10 @@ export default function CommunityClient({
             <button 
               onClick={handleJoinLeave}
               className={clsx(
-                "px-6 py-2.5 rounded-xl text-xs font-bold font-display tracking-wide shadow-lg transition-all active:scale-95",
+                "px-5 py-2.5 rounded-xl text-xs font-bold font-display tracking-wide shadow-md transition-all active:scale-95",
                 membership 
                   ? "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20" 
-                  : "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:scale-102"
+                  : "btn-premium"
               )}
             >
               {membership ? 'Leave Community' : 'Join Community'}
@@ -271,12 +290,12 @@ export default function CommunityClient({
       </motion.div>
 
       {/* Tabs Menu */}
-      <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.05] w-fit">
+      <div className="flex gap-1 p-1 rounded-xl bg-zinc-950/60 border border-white/[0.06] w-fit">
         <button 
           onClick={() => setTab('feed')}
           className={clsx(
-            "px-6 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-all",
-            tab === 'feed' ? "bg-white/[0.08] text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            "px-5 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-all",
+            tab === 'feed' ? "bg-white/[0.06] text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
           )}
         >
           Community Feed
@@ -284,8 +303,8 @@ export default function CommunityClient({
         <button 
           onClick={() => setTab('members')}
           className={clsx(
-            "px-6 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-all",
-            tab === 'members' ? "bg-white/[0.08] text-zinc-50 shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            "px-5 py-2 rounded-lg text-xs font-mono uppercase tracking-widest transition-all",
+            tab === 'members' ? "bg-white/[0.06] text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
           )}
         >
           Members ({members.length})
@@ -302,31 +321,33 @@ export default function CommunityClient({
             exit={{ opacity: 0, y: -5 }}
             className="space-y-6"
           >
-            {membership && <CreatePost communityId={community.id} />}
+            {membership && <CreatePost communityId={community.id} profile={currentUserProfile} />}
 
-            <div className="glass-card rounded-3xl p-6 border border-white/[0.08] bg-[#090d16]/30">
-              <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
+            <div className="card-premium p-6 relative overflow-hidden">
+              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-white mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /> Recent Activity
+              </h2>
 
               {posts.length === 0 ? (
-                <div className="py-12 text-center text-neutral-500 text-xs italic">
+                <div className="py-16 text-center text-zinc-500 text-xs italic font-medium">
                   No signals sent to this feed yet. Be the first to share.
                 </div>
               ) : (
                 <div className="space-y-4">
                   {posts.map((post: any) => (
-                    <div key={post.id} className="p-5 rounded-2xl bg-[#030712]/40 border border-white/[0.04] hover:border-cyan-500/10 transition-colors">
-                      <div className="flex items-center justify-between mb-4">
+                    <div key={post.id} className="p-5 rounded-xl bg-zinc-950/30 border border-white/[0.04] hover:border-brand-500/10 transition-colors duration-300">
+                      <div className="flex items-start justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                           <GlobalAvatar profile={post.author} size="md" />
                           <div>
                             <p className="font-bold text-xs text-white leading-none">{post.author?.full_name || 'Student'}</p>
-                            <p className="text-[9px] font-mono text-neutral-500 mt-1.5 leading-none uppercase">
+                            <p className="text-[9px] font-mono text-zinc-500 mt-1.5 leading-none uppercase tracking-wider">
                               {post.author?.branch || 'Student'} · Year {post.author?.year || '1'}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono text-zinc-600">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[9px] font-mono text-zinc-500">
                             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                           </span>
                           {(post.author_id === currentUserId ||
@@ -334,7 +355,7 @@ export default function CommunityClient({
                             (currentUserRole === 'COLLEGE_ADMIN' && post.author?.college_id === currentUserProfile?.college_id)) && (
                             <button
                               onClick={() => setDeletingPostId(post.id)}
-                              className="w-11 h-11 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
                               title="Delete Post"
                             >
                               <Trash2 size={13} />
@@ -343,11 +364,11 @@ export default function CommunityClient({
                         </div>
                       </div>
 
-                      <p className="text-xs leading-relaxed text-neutral-200 whitespace-pre-wrap">{post.content}</p>
+                      <p className="text-xs leading-relaxed text-zinc-200 whitespace-pre-wrap font-medium">{post.content}</p>
 
-                      <div className="mt-4 flex gap-5 text-[10px] font-mono font-bold text-neutral-500">
-                        <button className="hover:text-pink-400 transition-colors">❤️ {post.likes_count ?? 0}</button>
-                        <button className="hover:text-cyan-400 transition-colors">💬 {post.comments_count ?? 0}</button>
+                      <div className="mt-4 pt-3 border-t border-white/[0.02] flex gap-5 text-[10px] font-mono font-bold text-zinc-500">
+                        <button className="hover:text-pink-400 transition-colors flex items-center gap-1">❤️ {post.likes_count ?? 0}</button>
+                        <button className="hover:text-cyan-400 transition-colors flex items-center gap-1">💬 {post.comments_count ?? 0}</button>
                       </div>
                     </div>
                   ))}
@@ -368,22 +389,22 @@ export default function CommunityClient({
               if (!p) return null
               const isMemCreator = p.id === community.created_by
               return (
-                <div key={idx} className="card-premium p-4 flex items-center justify-between group hover:border-cyan-500/15 transition-all">
-                  <div className="flex items-center gap-3.5 min-w-0">
+                <div key={idx} className="card-premium p-4 flex items-center justify-between group hover:border-brand-500/15 transition-all">
+                  <div className="flex items-center gap-3 min-w-0">
                     <GlobalAvatar profile={p} size="md" />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white truncate leading-none flex items-center gap-1.5">
                         {p.full_name}
                         {isMemCreator && <ShieldCheck size={12} className="text-violet-400 shrink-0" />}
                       </p>
-                      <p className="text-[10px] font-mono text-neutral-500 mt-1 leading-none uppercase truncate">
+                      <p className="text-[10px] font-mono text-zinc-500 mt-1 leading-none uppercase truncate">
                         {p.branch || 'Student'} · Year {p.year || '1'}
                       </p>
                     </div>
                   </div>
 
                   {isMemCreator && (
-                    <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded border border-violet-500/20 shrink-0">
+                    <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20 shrink-0">
                       Host
                     </span>
                   )}
@@ -400,56 +421,56 @@ export default function CommunityClient({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={()=>setShowSettings(false)} />
             <motion.div initial={{opacity:0, scale:0.95, y:20}} animate={{opacity:1, scale:1, y:0}} exit={{opacity:0, scale:0.95, y:20}} 
-              className="card-premium max-w-md w-full relative z-10 overflow-hidden shadow-2xl bg-[#090d16]"
+              className="card-elevated max-w-md w-full relative z-10 overflow-hidden"
             >
-              <form onSubmit={handleSaveSettings} className="p-8 space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="display-heading text-xl">Community Settings</h2>
-                  <button type="button" onClick={()=>setShowSettings(false)} className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white" aria-label="Close settings">
+              <form onSubmit={handleSaveSettings} className="p-6 md:p-8 space-y-6">
+                <div className="flex justify-between items-center border-b border-white/[0.04] pb-3">
+                  <h2 className="font-display text-xl font-bold text-white">Community Settings</h2>
+                  <button type="button" onClick={()=>setShowSettings(false)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white" aria-label="Close settings">
                     <X size={16} />
                   </button>
                 </div>
 
                 <div className="space-y-4 text-xs">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Community Name</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Community Name</label>
                     <input 
                       value={editForm.name} 
                       onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                      className="w-full bg-[#030712]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-white outline-none"
+                      className="input-pro"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Description</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Description</label>
                     <textarea 
                       value={editForm.description} 
                       onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                      className="w-full bg-[#030712]/50 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-white outline-none h-20 resize-none"
+                      className="input-pro h-20 py-2.5 resize-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Category</label>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Category</label>
                       <select 
                         value={editForm.category} 
                         onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
-                        className="w-full bg-[#030712]/95 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-white outline-none"
+                        className="input-pro"
                       >
-                        {CATEGORIES.map(x => <option key={x} value={x} className="bg-[#030712]">{x}</option>)}
+                        {CATEGORIES.map(x => <option key={x} value={x}>{x}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-mono font-bold tracking-widest text-neutral-500 uppercase block">Privacy Level</label>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-mono font-bold tracking-widest text-zinc-500 uppercase block">Privacy Level</label>
                       <select 
                         value={editForm.is_private ? 'private' : 'public'} 
                         onChange={e => setEditForm(f => ({ ...f, is_private: e.target.value === 'private' }))}
-                        className="w-full bg-[#030712]/95 border border-white/[0.08] focus:border-cyan-500/50 rounded-xl px-3 py-2 text-white outline-none"
+                        className="input-pro"
                       >
-                        <option value="public" className="bg-[#030712]">Public Discoverable</option>
-                        <option value="private" className="bg-[#030712]">Private (Secret)</option>
+                        <option value="public">Public Discoverable</option>
+                        <option value="private">Private (Secret)</option>
                       </select>
                     </div>
                   </div>
@@ -481,16 +502,16 @@ export default function CommunityClient({
       {deletingPostId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDeletingPostId(null)} />
-          <div className="card-premium max-w-sm w-full relative z-10 p-6 space-y-4 bg-[#090d16] border border-white/10 rounded-2xl">
+          <div className="glass-modal max-w-sm w-full relative z-10 p-6 space-y-4 rounded-2xl">
             <h3 className="font-display font-bold text-white text-base">Delete Post</h3>
-            <p className="text-zinc-400 text-xs leading-relaxed">
+            <p className="text-zinc-400 text-xs leading-relaxed font-medium">
               Are you sure you want to permanently delete this post? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2.5">
               <button
                 onClick={() => setDeletingPostId(null)}
                 disabled={deleting}
-                className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-neutral-300 transition-all"
+                className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl text-xs font-bold text-zinc-300 transition-all"
               >
                 Cancel
               </button>

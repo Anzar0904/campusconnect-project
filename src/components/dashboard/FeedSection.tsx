@@ -4,13 +4,16 @@ import React, { useState } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { Image as ImageIcon, BarChart2, Calendar, FileText, Heart, MessageSquare, Share2, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useGsapReveal } from '@/hooks/useGsapMotion'
 
 export const FeedSection: React.FC = () => {
   const [postText, setPostText] = useState('')
+  const containerRef = useGsapReveal({ stagger: 0.08, y: 15 }) as React.RefObject<HTMLDivElement>
+  const [activeTab, setActiveTab] = React.useState('For You');
 
   return (
-    <div className="space-y-4">
-      <div className="glass-panel-base rounded-xl p-4">
+    <div ref={containerRef} className="space-y-4">
+      <div className="card-premium rounded-2xl p-4">
         <div className="flex gap-3.5">
           <GlobalAvatar
             avatarUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
@@ -53,16 +56,31 @@ export const FeedSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-5 border-b border-white/[0.04] text-[11px] font-bold tracking-tight">
-        <button className="text-blue-400 border-b-2 border-blue-400 pb-2 px-1">For You</button>
-        <button className="text-neutral-500 hover:text-neutral-300 pb-2 px-1 transition-colors">Following</button>
-        <button className="text-neutral-500 hover:text-neutral-300 pb-2 px-1 transition-colors">Trending</button>
-      </div>
+      <div className="relative w-full h-14 max-w-full px-4 bg-[rgba(18,22,34,0.55)] backdrop-blur-[20px] border border-white/8 rounded-2xl shadow-md overflow-hidden flex items-center mt-2 mb-2">
+  {[
+    "For You",
+    "Following",
+    "Trending",
+  ].map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`relative flex-1 text-center text-sm font-medium transition-all duration-150 ease-out cursor-pointer py-2 ${activeTab === tab ? "text-white" : "text-white/70"}`}
+    >
+      {activeTab === tab && (
+        <motion.div
+          layoutId="activePill"
+          className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow-lg"
+          transition={{ type: "spring", duration: 0.2 }}
+        />
+      )}
+      <span className="relative z-10">{tab}</span>
+    </button>
+  ))}
+</div>
 
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="glass-panel-base rounded-xl p-4.5 space-y-3.5"
+      <div 
+        className="card-premium rounded-2xl p-4.5 space-y-3.5"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -119,7 +137,7 @@ export const FeedSection: React.FC = () => {
             <span>12 Shares</span>
           </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

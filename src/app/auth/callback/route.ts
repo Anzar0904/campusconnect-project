@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       !profile.roll_number?.trim();
 
     if (isProfileIncomplete) {
-      return NextResponse.redirect(new URL('/profile?onboarding=1', requestUrl.origin))
+      return NextResponse.redirect(new URL('/settings', requestUrl.origin))
     }
   }
 

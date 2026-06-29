@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import React from 'react'
+import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { NotificationProvider } from '@/hooks/useNotifications'
+import { ProfileProvider } from '@/hooks/useCurrentProfile'
 import { HeroSection } from '@/components/home/HeroSection'
 import { ModuleSection } from '@/components/home/ModuleSection'
 import { FeedSection } from '@/components/dashboard/FeedSection'
@@ -23,8 +25,9 @@ export default async function RootPage() {
   }
 
   return (
-    <NotificationProvider userId="">
-      <div className="min-h-screen bg-[#030712] text-neutral-100 flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-white overflow-x-hidden">
+    <ProfileProvider initialProfile={null} userId="">
+      <NotificationProvider userId="">
+        <div className="min-h-screen bg-transparent text-neutral-100 flex flex-col font-sans antialiased selection:bg-blue-500/30 selection:text-white">
         <Navbar />
 
         <main className="flex-1 flex flex-col w-full z-10">
@@ -88,7 +91,7 @@ export default async function RootPage() {
           </section>
 
           {/* High Fidelity Space Optimized CTA Module Layer */}
-          <section className="w-full px-6 sm:px-12 lg:px-20 py-16 bg-[#030712]">
+          <section className="w-full px-6 sm:px-12 lg:px-20 py-16 bg-zinc-950/40 backdrop-blur-sm">
             <div className="max-w-5xl mx-auto glass-panel-base rounded-3xl p-8 sm:p-12 relative overflow-hidden text-center space-y-6 shadow-[0_0_80px_rgba(37,99,235,0.15)] border-white/[0.08]">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-transparent to-purple-500/5 pointer-events-none" />
               <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mx-auto shadow-inner mb-2 animate-bounce">
@@ -101,20 +104,20 @@ export default async function RootPage() {
                 Join half a million students deployment infrastructure operating on the next-generation spatial engine structure layer.
               </p>
               <div className="pt-4 flex flex-wrap justify-center gap-4">
-                <button className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide transition-all duration-300 shadow-[0_4px_25px_rgba(37,99,235,0.45)] flex items-center gap-2 group">
+                <Link href="/auth/login" className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide transition-all duration-300 shadow-[0_4px_25px_rgba(37,99,235,0.45)] flex items-center gap-2 group cursor-pointer">
                   Deploy Now Free
                   <ArrowRight size={14} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="px-6 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-neutral-300 font-bold text-xs tracking-wide transition-all duration-300 backdrop-blur-md">
+                </Link>
+                <Link href="mailto:support@campusconnect.com" className="px-6 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] text-neutral-300 font-bold text-xs tracking-wide transition-all duration-300 backdrop-blur-md cursor-pointer">
                   Contact Core Systems
-                </button>
+                </Link>
               </div>
             </div>
           </section>
         </main>
 
         {/* Premium Multi-Column Grid System Footer */}
-        <footer className="w-full border-t border-white/[0.05] bg-[#01040a] z-10 pt-12 pb-6 px-6 sm:px-12 lg:px-20">
+        <footer className="w-full border-t border-white/[0.05] bg-zinc-950/50 backdrop-blur-md z-10 pt-12 pb-6 px-6 sm:px-12 lg:px-20">
           <div className="max-w-[1600px] mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 pb-10 text-xs font-medium text-neutral-400">
             <div className="col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
@@ -176,6 +179,7 @@ export default async function RootPage() {
           </div>
         </footer>
       </div>
-    </NotificationProvider>
+      </NotificationProvider>
+    </ProfileProvider>
   )
 }

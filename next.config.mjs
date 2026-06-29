@@ -1,10 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ── Compiler optimizations ───────────────────────────────────
+  compiler: {
+    // Remove console.* calls in production to eliminate main-thread logging overhead
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+
+  // ── Image optimization ────────────────────────────────────────
   images: {
+    // Serve AVIF first (50% smaller than WebP), fallback to WebP
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: 'api.dicebear.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
+    ],
+    // Aggressive caching for remote images (1 week)
+    minimumCacheTTL: 604800,
+  },
+
+  // ── Bundle optimizations ──────────────────────────────────────
+  experimental: {
+    // Tree-shake these large packages at the module level
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'gsap',
+      '@gsap/react',
+      'date-fns',
     ],
   },
 

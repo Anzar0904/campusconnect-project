@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface Profile {
@@ -45,9 +45,14 @@ export function ProfileProvider({
 }) {
   const [profile, setProfileState] = useState<Profile | null>(initialProfile)
   const [loading, setLoading] = useState(!initialProfile)
-  const supabase = createClient()
+  // Memoize to prevent creating a new client instance on every render
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchProfile = useCallback(async () => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -68,6 +73,11 @@ export function ProfileProvider({
   }, [supabase, userId])
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
     // If we don't have initialProfile, fetch it immediately
     if (!initialProfile) {
       fetchProfile()

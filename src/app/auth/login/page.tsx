@@ -1,8 +1,9 @@
 'use client'
-import { MailCheck, Network, RefreshCw, Send } from 'lucide-react'
-
+import { MailCheck, RefreshCw, Send, Shield, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CampusConnectLogo } from '@/components/brand/CampusConnectLogo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -23,14 +24,10 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      /**
-       * SECURITY: We call the Edge Function — NOT supabase.auth.signInWithOtp() directly.
-       * The Edge Function validates the email domain and legal acceptance server-side.
-       */
       const { data, error: fnError } = await supabase.functions.invoke('validate-otp', {
-        body: { 
+        body: {
           email: email.trim().toLowerCase(),
-          acceptedTerms: true 
+          acceptedTerms: true
         },
       })
 
@@ -40,15 +37,12 @@ export default function LoginPage() {
         return
       }
 
-      // Edge Function validated successfully. Now trigger PKCE login.
-      // We pass 'accepted_terms' in user metadata so the DB trigger (Migration 013) 
-      // can physically verify consent before creating the account record.
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
           shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { 
+          data: {
             college_id: data.college_id,
             accepted_terms: true,
             policy_version: '1.0'
@@ -64,7 +58,7 @@ export default function LoginPage() {
 
       setCollegeName(data.college)
       setSent(true)
-    } catch (err: any) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -73,75 +67,120 @@ export default function LoginPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-surface">
-        <div className="glass-elevated rounded-2xl p-10 max-w-sm w-full text-center space-y-5">
-          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
-            style={{ background: 'rgba(76,215,246,0.15)', border: '1px solid rgba(76,215,246,0.3)' }}>
-            <MailCheck style={{ color: '#4cd7f6', fontVariationSettings: "'FILL' 1" }} size={32} />
+      <div className="min-h-screen flex items-center justify-center p-4 bg-transparent">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="card-elevated rounded-2xl p-10 max-w-sm w-full text-center space-y-6"
+        >
+          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-2xl"
+            style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(34,211,238,0.25)' }}>
+            <MailCheck style={{ color: '#22d3ee' }} size={32} />
           </div>
           <div>
-            <h2 className="font-display text-xl font-bold text-on-surface">Check your inbox</h2>
-            <p className="text-sm text-on-surface-variant mt-2">
-              We sent a magic link to <strong className="text-on-surface">{email}</strong>
+            <h2 className="font-display text-xl font-bold text-white">Check your inbox</h2>
+            <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+              We sent a magic link to{' '}
+              <strong className="text-white font-semibold">{email}</strong>
             </p>
             {collegeName && (
-              <p className="text-xs font-mono mt-2" style={{ color: '#4cd7f6' }}>
+              <p className="text-xs font-mono mt-3 text-emerald-400">
                 ✓ Verified {collegeName} student
               </p>
             )}
           </div>
-          <p className="text-xs text-on-surface-variant">
+          <p className="text-xs text-zinc-500 leading-relaxed">
             Link expires in 10 minutes. Check spam if you don&apos;t see it.
           </p>
-          <button onClick={() => { setSent(false); setError('') }}
-            className="btn-ghost text-sm w-full justify-center">
+          <button
+            onClick={() => { setSent(false); setError('') }}
+            className="btn-ghost-pro text-sm w-full justify-center"
+          >
             Use a different email
           </button>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-surface">
-      <div className="glass-elevated rounded-2xl p-10 max-w-sm w-full space-y-6">
-        {/* Logo */}
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4"
-            style={{ background: 'linear-gradient(135deg,#4f46e5,#571bc1)', boxShadow: '0 0 30px rgba(79,70,229,0.4)' }}>
-            <Network className="text-white" style={{ fontVariationSettings: "'FILL' 1" }} size={28} />
+    <div className="min-h-screen flex items-center justify-center p-4 bg-transparent">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="card-elevated rounded-2xl p-8 sm:p-10 max-w-sm w-full space-y-7"
+      >
+        {/* Logo + Brand */}
+        <div className="text-center space-y-4 flex flex-col items-center">
+          <div
+            className="rounded-2xl p-2 flex items-center justify-center shadow-2xl"
+            style={{ boxShadow: '0 0 40px rgba(99,102,241,0.35), 0 0 80px rgba(99,102,241,0.12)' }}
+          >
+            <CampusConnectLogo size={64} id="login" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-on-surface">CampusConnect</h1>
-          <p className="text-sm text-on-surface-variant mt-1">Sign in with your college email</p>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-white tracking-tight">
+              CampusConnect
+            </h1>
+            <p className="text-sm text-zinc-400 mt-1">Your campus. Connected.</p>
+          </div>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        {/* Trust badges */}
+        <div className="flex items-center justify-center gap-3">
+          <span className="chip chip-success text-[10px]">
+            <Shield size={9} /> College-verified
+          </span>
+          <span className="chip chip-primary text-[10px]">
+            <Sparkles size={9} /> No password
+          </span>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="section-label block mb-2">COLLEGE EMAIL</label>
             <input
               type="email"
               required
-              className="input-glass"
-              placeholder="yourname@iilm.edu"
+              id="email"
+              name="email"
+              className="input-pro"
+              placeholder="yourname@college.edu"
               value={email}
               onChange={e => { setEmail(e.target.value); setError('') }}
               autoComplete="email"
+              autoFocus
             />
-            {error && (
-              <p className="text-xs mt-2 font-mono" style={{ color: '#ffb4ab' }}>
-                ⚠ {error}
-              </p>
-            )}
-            {!error && (
-              <p className="text-xs mt-1.5 text-on-surface-variant">
-                Only verified college emails are accepted
-              </p>
-            )}
+            <AnimatePresence mode="wait">
+              {error ? (
+                <motion.p
+                  key="error"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="text-xs mt-2 font-medium text-red-400 flex items-center gap-1.5"
+                >
+                  ⚠ {error}
+                </motion.p>
+              ) : (
+                <motion.p
+                  key="hint"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="text-xs mt-1.5 text-zinc-500"
+                >
+                  Only verified college emails are accepted
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Legal Acceptance */}
           <div className="flex items-start gap-3 py-1">
-            <div className="flex items-center h-5">
+            <div className="flex items-center h-5 mt-0.5">
               <input
                 id="terms"
                 name="terms"
@@ -149,28 +188,45 @@ export default function LoginPage() {
                 required
                 checked={accepted}
                 onChange={e => setAccepted(e.target.checked)}
-                className="w-4 h-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary accent-primary cursor-pointer"
+                className="w-4 h-4 rounded border-white/10 bg-white/5 text-brand-500 focus:ring-brand-500/40 accent-brand-500 cursor-pointer"
               />
             </div>
-            <div className="text-xs leading-5">
-              <label htmlFor="terms" className="text-on-surface-variant cursor-pointer">
-                I have read and agree to the <a href="/legal/privacy-and-terms" target="_blank" className="text-primary hover:underline transition-all">Privacy Policy</a> and <a href="/legal/privacy-and-terms#terms" target="_blank" className="text-primary hover:underline transition-all">Terms & Conditions</a>.
-              </label>
-            </div>
+            <label htmlFor="terms" className="text-xs leading-5 text-zinc-400 cursor-pointer">
+              I agree to the{' '}
+              <a href="/legal/privacy-and-terms" target="_blank" className="text-brand-400 hover:text-brand-300 transition-colors hover:underline">
+                Privacy Policy
+              </a>{' '}
+              and{' '}
+              <a href="/legal/privacy-and-terms#terms" target="_blank" className="text-brand-400 hover:text-brand-300 transition-colors hover:underline">
+                Terms &amp; Conditions
+              </a>
+            </label>
           </div>
 
-          <button type="submit" disabled={loading || !email.trim() || !accepted} className="btn-primary w-full justify-center disabled:opacity-50">
-            {loading
-              ? <><RefreshCw className="animate-spin" size={16} /> Verifying…</>
-              : <><Send size={16} /> Send Magic Link</>
-            }
+          <button
+            type="submit"
+            disabled={loading || !email.trim() || !accepted}
+            id="send-magic-link"
+            className="btn-premium w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="animate-spin" size={15} />
+                Verifying…
+              </>
+            ) : (
+              <>
+                <Send size={15} />
+                Send Magic Link
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-xs text-center text-on-surface-variant">
+        <p className="text-xs text-center text-zinc-500 leading-relaxed">
           No password required · One-click sign in · College-verified only
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -1,11 +1,23 @@
 'use client'
 
-import { Flame } from 'lucide-react'
+import { Flame, Trophy, Award, Calendar, Zap, Star, ShieldAlert, Sparkles, Check, ChevronRight, Lock } from 'lucide-react'
 import { DynamicIcon } from '@/components/ui/DynamicIcon'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { triggerConfetti } from '@/lib/confetti'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { useGsapNumberCounter, Easing, getPrefersReducedMotion } from '@/hooks/useGsapMotion'
+
+const CountUp: React.FC<{ value: number; suffix?: string }> = ({ value, suffix = '' }) => {
+  const ref = useGsapNumberCounter(value, 1.2, 0, suffix)
+  return <span ref={ref as any}>0{suffix}</span>
+}
 
 const ACHIEVEMENT_COLORS: Record<string, string> = {
   FIRST_POST: '#c3c0ff',
@@ -52,6 +64,15 @@ function formatRelativeTime(dateStr: string) {
 export default function RewardsClient({ userId, profile }: any) {
   const [tab, setTab] = useState<'overview' | 'badges' | 'leaderboard' | 'earn'>('overview')
   const [loading, setLoading] = useState(true)
+  const heroCardRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion() || !heroCardRef.current) return
+    gsap.fromTo(heroCardRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: Easing.premium }
+    )
+  }, { scope: heroCardRef, dependencies: [loading] })
   const [stats, setStats] = useState({
     points: 0,
     rank: 0,
@@ -63,6 +84,8 @@ export default function RewardsClient({ userId, profile }: any) {
   const [badges, setBadges] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
   const [leaderboard, setLeaderboard] = useState<any[]>([])
+  
+  const [animateParentRef] = useAutoAnimate()
 
   useEffect(() => {
     const loadData = async () => {
@@ -175,7 +198,7 @@ export default function RewardsClient({ userId, profile }: any) {
             )
           `)
           .order('total', { ascending: false })
-          .limit(10)
+          .limit(15)
 
         const mappedLeaderboard = (topPoints || []).map((item: any, idx: number) => ({
           rank: idx + 1,
@@ -185,6 +208,7 @@ export default function RewardsClient({ userId, profile }: any) {
           badge: idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '⭐',
           streak: item.streak_days || 0,
           isYou: item.user_id === userId,
+          avatar_url: item.profiles?.avatar_url
         }))
 
         const hasYou = mappedLeaderboard.some((m: any) => m.isYou)
@@ -197,6 +221,7 @@ export default function RewardsClient({ userId, profile }: any) {
             badge: '🔥',
             streak,
             isYou: true,
+            avatar_url: profile?.avatar_url
           })
         }
 
@@ -252,198 +277,534 @@ export default function RewardsClient({ userId, profile }: any) {
     )
   }
 
+
+
   const pointsForCurrentLevel = (stats.level - 1) * 500
   const pct = Math.min(100, Math.max(0, Math.round(((stats.points - pointsForCurrentLevel) / 500) * 100)))
   const ptsToNext = stats.nextLevelPoints - stats.points
 
+  // Trigger local confetti to wow the user
+  const handleBadgeClick = (badge: any) => {
+    if (badge.earned) {
+      triggerConfetti()
+      toast.success(`Badge "${badge.name}" unlocked! Reward claimed: +${badge.points} XP`, {
+        icon: '🏅',
+        style: {
+          background: '#09090b',
+          border: '1px solid rgba(99,102,241,0.3)',
+          color: '#fafafa'
+        }
+      })
+    } else {
+      toast(`Keep going to unlock the "${badge.name}" badge!`, {
+        icon: '🔒',
+        style: {
+          background: '#09090b',
+          border: '1px solid rgba(255,255,255,0.05)',
+          color: '#a1a1aa'
+        }
+      })
+    }
+  }
+
+  // Top 3 Podium Sorting
+  const topThree = leaderboard
+    .filter(u => u.rank <= 3)
+    .sort((a, b) => {
+      // Re-order for podium rendering: 2nd place, 1st place, 3rd place
+      if (a.rank === 1) return 0
+      if (a.rank === 2) return -1
+      return 1
+    })
+
+  // Fill in empty top 3 spaces if data is short
+  while (topThree.length < 3) {
+    topThree.push({
+      rank: topThree.length + 1,
+      name: 'Claim Spot',
+      branch: 'Join Connect',
+      points: 0,
+      badge: '🏆',
+      streak: 0,
+      isYou: false,
+      avatar_url: null
+    })
+  }
+
+  // Double check sorting to yield: [Second, First, Third]
+  const podiumOrder = [
+    topThree.find(u => u.rank === 2) || topThree[1],
+    topThree.find(u => u.rank === 1) || topThree[0],
+    topThree.find(u => u.rank === 3) || topThree[2]
+  ]
+
   return (
-    <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-on-surface">Rewards & Achievements</h1>
-        <p className="text-sm text-on-surface-variant mt-0.5">Earn points, collect badges, and climb the campus leaderboard</p>
+    <div className="animate-fade-in space-y-8 max-w-5xl mx-auto px-4 py-4">
+      {/* Title */}
+      <div className="glass-page-header space-y-2">
+        <p className="section-label text-indigo-400">Campus Leaderboard</p>
+        <h1 className="display-heading text-4xl flex items-center gap-3">
+          Rewards & Achievements
+          <Award className="text-indigo-400 shrink-0" size={32} />
+        </h1>
+        <p className="body-pro text-sm">Earn points, claim badges, and top the campus leaderboards.</p>
       </div>
 
-      {/* Hero card */}
-      <div className="glass-elevated rounded-2xl p-6 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,rgba(79,70,229,0.25),rgba(76,215,246,0.1))', border: '1px solid rgba(195,192,255,0.2)' }}>
-        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: '#4cd7f6', filter: 'blur(40px)' }} />
-        <div className="relative flex items-center gap-6">
-          <div className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-2"
-              style={{ background: 'linear-gradient(135deg,rgba(79,70,229,0.4),rgba(76,215,246,0.2))', border: '1px solid rgba(195,192,255,0.3)' }}>
-              <span className="font-display font-black text-3xl text-on-surface">{stats.level}</span>
-            </div>
-            <span className="text-xs font-mono text-on-surface-variant">Level</span>
-          </div>
-          <div className="flex-1">
-            <h2 className="font-display text-xl font-bold text-on-surface">{profile?.full_name}</h2>
-            <p className="text-sm font-mono text-on-surface-variant mb-3">{profile?.branch} · Campus Rank #{stats.rank}</p>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex-1 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#4f46e5,#4cd7f6)', boxShadow: '0 0 8px rgba(76,215,246,0.4)' }} />
+      {/* Premium Hero Card */}
+      <div 
+        ref={heroCardRef}
+        className="card-premium p-6 sm:p-8 relative overflow-hidden rounded-3xl"
+        style={{
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.03) 100%)',
+          borderColor: 'rgba(99,102,241,0.15)'
+        }}
+      >
+        {/* Glow Effects */}
+        <div className="absolute right-0 top-0 w-80 h-80 rounded-full opacity-10 bg-indigo-500 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 w-64 h-64 rounded-full opacity-10 bg-violet-500 blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
+          
+          {/* Level Circle Badge */}
+          <div className="flex items-center gap-5">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full" />
+              <div className="w-20 h-20 rounded-2xl flex flex-col items-center justify-center border border-indigo-500/20 bg-zinc-950 relative z-10">
+                <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider">LEVEL</span>
+                <span className="font-display font-black text-3xl text-zinc-100">{stats.level}</span>
               </div>
-              <span className="text-xs font-mono text-on-surface-variant whitespace-nowrap">{stats.points} / {stats.nextLevelPoints}</span>
             </div>
-            <p className="text-xs font-mono text-on-surface-variant">
-              {ptsToNext > 0 ? `${ptsToNext} pts to Level ${stats.level + 1}` : `Max level reached for current points tier`}
-            </p>
+
+            <div>
+              <h2 className="font-display font-bold text-xl text-zinc-100 flex items-center gap-2">
+                {profile?.full_name}
+                <span className="text-xs font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md border border-white/[0.04]">
+                  Rank #<CountUp value={stats.rank} />
+                </span>
+              </h2>
+              <p className="text-xs font-mono text-zinc-500 mt-1">{profile?.branch || 'General Science'} · Verified IILM Student</p>
+              
+              <div className="flex items-center gap-3 mt-4 w-72">
+                <div className="flex-grow h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500" 
+                  />
+                </div>
+                <span className="text-xs font-mono text-zinc-400 whitespace-nowrap"><CountUp value={stats.points} /> / <CountUp value={stats.nextLevelPoints} /> XP</span>
+              </div>
+              <p className="text-[10px] font-mono text-zinc-500 mt-1.5">
+                {ptsToNext > 0 ? `${ptsToNext} XP required to reach Level ${stats.level + 1}` : 'Maximum tier achieved.'}
+              </p>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-3">
-            <div className="text-right">
-              <p className="font-display font-black text-3xl text-on-surface">{stats.points.toLocaleString()}</p>
-              <p className="text-xs font-mono text-on-surface-variant">Total Points</p>
+
+          {/* Points Metrics & Streak */}
+          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4 border-t md:border-t-0 md:border-l border-white/[0.06] pt-4 md:pt-0 md:pl-8">
+            <div className="text-left md:text-right">
+              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest block">Total Balance</span>
+              <span className="font-display font-black text-4xl text-zinc-100"><CountUp value={stats.points} /></span>
+              <span className="text-xs font-mono text-indigo-400 ml-1">XP</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.25)' }}>
-              <Flame style={{ color: '#f97316', fontVariationSettings: "'FILL' 1" }} size={16} />
-              <span className="text-sm font-mono" style={{ color: '#f97316' }}>{stats.streak} day streak</span>
+
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.05)]">
+              <Flame size={15} className="fill-orange-500" />
+              <span className="text-xs font-mono font-bold"><CountUp value={stats.streak} /> Day Streak</span>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-        {([['overview', '📊 Overview'], ['badges', '🏅 Badges'], ['leaderboard', '🏆 Leaderboard'], ['earn', '💡 How to Earn']] as const).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)}
-            className="px-4 py-2 rounded-lg text-sm font-mono transition-all"
-            style={tab === t ? { background: 'rgba(79,70,229,0.4)', color: '#c3c0ff', border: '1px solid rgba(195,192,255,0.2)' } : { color: '#c7c4d8' }}>
+      {/* Tabs Menu Navigation */}
+      <div className="flex gap-1 p-1 rounded-xl bg-zinc-900 border border-white/[0.05] w-fit">
+        {([
+          ['overview', '📊 Overview'],
+          ['badges', '🏅 Badges'],
+          ['leaderboard', '🏆 Leaderboard'],
+          ['earn', '💡 How to Earn']
+        ] as const).map(([t, label]) => (
+          <button 
+            key={t} 
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 rounded-lg text-xs font-mono transition-all duration-150 ${
+              tab === t 
+                ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-bold' 
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
             {label}
           </button>
         ))}
       </div>
 
-      {tab === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Recent activity */}
-          <div>
-            <h3 className="font-display font-semibold text-on-surface mb-3">Recent Activity</h3>
-            {activities.length === 0 ? (
-              <div className="glass-card rounded-xl p-6 text-center text-on-surface-variant font-mono text-sm">
-                No recent points transactions. Start interacting to earn points!
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {activities.map((a, i) => (
-                  <div key={i} className="glass-card rounded-xl px-4 py-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${a.color}18`, border: `1px solid ${a.color}30` }}>
-                      <DynamicIcon name={a.icon} size={16} style={{ color: a.color }} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-on-surface">{a.label}</p>
-                      <p className="text-[10px] font-mono text-on-surface-variant">{a.time}</p>
-                    </div>
-                    <span className="text-xs font-mono" style={{ color: '#86efac' }}>{a.points}</span>
+      {/* Tab Area Content */}
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={tab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="space-y-6"
+        >
+          {/* TAB 1: OVERVIEW */}
+          {tab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Recent points logs */}
+              <div className="space-y-4">
+                <h3 className="font-display font-bold text-zinc-200 text-lg flex items-center gap-1.5">
+                  <Zap size={16} className="text-indigo-400" />
+                  Recent Activity Log
+                </h3>
+                
+                {activities.length === 0 ? (
+                  <div className="card-premium p-8 text-center text-zinc-500 font-mono text-xs">
+                    No recent reward transactions logged.
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Earned badges */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-display font-semibold text-on-surface">Earned Badges ({stats.badgesCount})</h3>
-              <span className="text-xs text-on-surface-variant font-mono">Progress: {Math.round((stats.badgesCount / Math.max(1, badges.length)) * 100)}%</span>
-            </div>
-            {badges.filter(b => b.earned).length === 0 ? (
-              <div className="glass-card rounded-xl p-6 text-center text-on-surface-variant font-mono text-sm">
-                {"No badges earned yet. Check the 'Badges' or 'How to Earn' tab!"}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {badges.filter(b => b.earned).map(badge => (
-                  <div key={badge.id} className="glass-card rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: `${badge.color}18`, border: `1px solid ${badge.color}30` }}>
-                      <DynamicIcon name={badge.icon} size={22} style={{ color: badge.color }} />
-                    </div>
-                    <div>
-                      <p className="font-display font-semibold text-on-surface text-xs">{badge.name}</p>
-                      <p className="text-[10px] text-on-surface-variant mt-0.5">{badge.desc}</p>
-                    </div>
+                ) : (
+                  <div className="space-y-2.5" ref={animateParentRef}>
+                    {activities.map((act, idx) => (
+                      <div 
+                        key={idx} 
+                        className="card-premium px-4 py-3.5 flex items-center justify-between border-white/[0.04] bg-zinc-900/30 hover:border-white/[0.08] transition-colors rounded-xl"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: `${act.color}15`, border: `1px solid ${act.color}25` }}
+                          >
+                            <DynamicIcon name={act.icon} size={16} style={{ color: act.color }} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-zinc-200 leading-tight">{act.label}</p>
+                            <p className="text-[10px] font-mono text-zinc-500 mt-0.5">{act.time}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                          {act.points}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {tab === 'badges' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {badges.map(badge => (
-            <div key={badge.id} className="glass-card rounded-xl p-5 flex flex-col items-center text-center gap-3"
-              style={!badge.earned ? { opacity: 0.45, filter: 'grayscale(0.6)' } : {}}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: `${badge.color}${badge.earned ? '25' : '10'}`, border: `2px solid ${badge.color}${badge.earned ? '45' : '20'}` }}>
-                <DynamicIcon name={badge.icon} size={32} style={{ color: badge.color }} />
-              </div>
-              <div>
-                <p className="font-display font-semibold text-on-surface text-sm">{badge.name}</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">{badge.desc}</p>
-                {badge.points && (
-                  <p className="text-[10px] font-mono text-primary mt-1">+{badge.points} Points Reward</p>
                 )}
               </div>
-              {badge.earned
-                ? <span className="chip chip-success text-[10px]">✓ Earned</span>
-                : <span className="chip text-[10px]" style={{ background: 'rgba(255,255,255,0.05)', color: '#c7c4d8', border: '1px solid rgba(255,255,255,0.08)' }}>Locked</span>
-              }
-            </div>
-          ))}
-        </div>
-      )}
 
-      {tab === 'leaderboard' && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            {leaderboard.slice(0, 3).map((e, i) => (
-              <div key={e.rank} className="glass-card rounded-xl p-5 text-center"
-                style={i === 0 ? { border: '1px solid rgba(251,191,36,0.35)' } : {}}>
-                <p className="text-3xl mb-2">{e.badge}</p>
-                <p className="font-display font-bold text-on-surface text-sm truncate">{e.name}</p>
-                <p className="text-xs font-mono text-on-surface-variant">{e.branch}</p>
-                <p className="font-display font-bold text-on-surface mt-2">{e.points.toLocaleString()} pts</p>
-                <p className="text-[10px] font-mono text-on-surface-variant">{e.streak}🔥 streak</p>
-              </div>
-            ))}
-          </div>
-          <div className="glass-card rounded-xl overflow-hidden">
-            {leaderboard.map(entry => (
-              <div key={entry.rank} className="flex items-center gap-4 px-5 py-3.5 border-b border-white/[0.04] last:border-0 transition-colors hover:bg-white/[0.02]"
-                style={entry.isYou ? { background: 'rgba(79,70,229,0.08)' } : {}}>
-                <span className="w-5 text-center font-mono text-xs text-on-surface-variant">#{entry.rank}</span>
-                <span className="text-base">{entry.badge}</span>
-                <p className="flex-1 font-display font-semibold text-on-surface text-sm truncate">
-                  {entry.name}{entry.isYou && <span className="text-xs font-mono text-primary ml-1.5">(you)</span>}
-                </p>
-                <span className="text-xs font-mono text-on-surface-variant truncate max-w-[80px]">{entry.branch}</span>
-                <span className="text-xs font-mono text-on-surface-variant">{entry.streak}🔥</span>
-                <span className="font-display font-bold text-on-surface text-sm w-24 text-right">{entry.points.toLocaleString()} pts</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              {/* Earned Badges Mini View */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-display font-bold text-zinc-200 text-lg flex items-center gap-1.5">
+                    <Award size={16} className="text-indigo-400" />
+                    Unlocked Achievements ({stats.badgesCount})
+                  </h3>
+                  <span className="text-[11px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-white/[0.04]">
+                    Progress: {Math.round((stats.badgesCount / Math.max(1, badges.length)) * 100)}%
+                  </span>
+                </div>
 
-      {tab === 'earn' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {HOW_TO_EARN.map(item => (
-            <div key={item.action} className="glass-card rounded-xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `${item.color}18`, border: `1px solid ${item.color}30` }}>
-                <DynamicIcon name={item.icon} size={20} style={{ color: item.color }} />
+                {badges.filter(b => b.earned).length === 0 ? (
+                  <div className="card-premium p-8 text-center text-zinc-500 font-mono text-xs">
+                    No achievements unlocked yet. Check the &apos;Badges&apos; tab!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" ref={animateParentRef}>
+                    {badges.filter(b => b.earned).map(badge => (
+                      <div 
+                        key={badge.id} 
+                        onClick={() => handleBadgeClick(badge)}
+                        className="card-premium p-3.5 flex items-center gap-3 bg-zinc-900/30 hover:bg-zinc-900/60 transition-all duration-200 cursor-pointer rounded-xl border-white/[0.04] hover:scale-[1.01]"
+                      >
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 relative"
+                          style={{ background: `${badge.color}15`, border: `1px solid ${badge.color}25` }}
+                        >
+                          <DynamicIcon name={badge.icon} size={20} style={{ color: badge.color }} />
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border border-zinc-950 flex items-center justify-center text-white text-[8px] font-bold">
+                            ✓
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-display font-bold text-zinc-200 text-xs truncate leading-tight">{badge.name}</p>
+                          <p className="text-[10px] text-zinc-500 truncate mt-0.5">{badge.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-display font-semibold text-on-surface">{item.action}</p>
-              </div>
-              <span className="text-sm font-mono" style={{ color: '#86efac' }}>{item.points}</span>
             </div>
-          ))}
-        </div>
-      )}
+          )}
+
+          {/* TAB 2: BADGES LIST */}
+          {tab === 'badges' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" ref={animateParentRef}>
+              {badges.map(badge => (
+                <div 
+                  key={badge.id} 
+                  onClick={() => handleBadgeClick(badge)}
+                  className={`card-premium p-5 flex flex-col items-center text-center gap-4 cursor-pointer transition-all duration-300 relative rounded-2xl hover:scale-[1.02] ${
+                    badge.earned 
+                      ? 'border-indigo-500/20 bg-[#0c0c0e]/80 shadow-md hover:shadow-indigo-500/5' 
+                      : 'opacity-40 grayscale-[0.6] hover:opacity-75 hover:grayscale-[0.2] border-white/[0.03] bg-zinc-900/10'
+                  }`}
+                >
+                  {/* Badge Icon Shield */}
+                  <div 
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center relative z-10"
+                    style={{ 
+                      background: `${badge.color}${badge.earned ? '20' : '05'}`, 
+                      border: `1.5px solid ${badge.color}${badge.earned ? '40' : '15'}`,
+                      boxShadow: badge.earned ? `0 0 20px ${badge.color}15` : 'none'
+                    }}
+                  >
+                    <DynamicIcon name={badge.icon} size={28} style={{ color: badge.color }} />
+                  </div>
+
+                  <div>
+                    <h4 className="font-display font-bold text-zinc-100 text-sm leading-tight">{badge.name}</h4>
+                    <p className="text-xs text-zinc-400 mt-1 leading-normal px-2">{badge.desc}</p>
+                    <p className="text-[10px] font-mono text-indigo-400 mt-2 font-bold uppercase tracking-wider">
+                      +{badge.points} XP Reward
+                    </p>
+                  </div>
+
+                  <div className="w-full pt-3 border-t border-white/[0.04]">
+                    {badge.earned ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-bold">
+                        <Check size={10} /> Unlocked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded-full border border-white/[0.05] font-bold">
+                        <Lock size={10} /> Locked
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* TAB 3: LEADERBOARD WITH 3D PODIUM */}
+          {tab === 'leaderboard' && (
+            <div className="space-y-8">
+              
+              {/* Premium 3D Podium Layout */}
+              <div className="flex flex-col sm:flex-row justify-center items-end gap-6 sm:gap-4 py-8 px-4 relative overflow-hidden rounded-3xl bg-zinc-900/10 border border-white/[0.02]">
+                
+                {/* 2nd Place Column (Left) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="flex flex-col items-center w-full sm:w-48 group cursor-pointer"
+                >
+                  <div className="flex flex-col items-center mb-4 relative z-10">
+                    <div className="relative">
+                      <GlobalAvatar 
+                        fullName={podiumOrder[0].name}
+                        avatarUrl={podiumOrder[0].avatar_url}
+                        size="lg" 
+                        className="ring-4 ring-zinc-400/50 shadow-2xl" 
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-zinc-400 rounded-full border-2 border-zinc-950 flex items-center justify-center text-zinc-950 font-mono text-xs font-bold shadow-md">
+                        2
+                      </div>
+                    </div>
+                    <span className="font-display font-bold text-sm text-zinc-200 mt-3 group-hover:text-zinc-50 transition-colors">
+                      {podiumOrder[0].name}
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500 mt-0.5">{podiumOrder[0].branch}</span>
+                  </div>
+
+                  {/* Silver Column Base */}
+                  <div 
+                    className="w-full h-24 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl border border-zinc-700/30 flex flex-col items-center justify-center p-4 relative overflow-hidden transition-all duration-300 group-hover:shadow-[0_10px_30px_rgba(255,255,255,0.02)] group-hover:border-zinc-500/20"
+                    style={{ transformStyle: 'preserve-3d', transform: 'perspective(500px) rotateX(10deg)' }}
+                  >
+                    <span className="font-display font-black text-2xl text-zinc-400">🥈</span>
+                    <span className="text-xs font-mono text-zinc-400 font-bold mt-1">{podiumOrder[0].points.toLocaleString()} XP</span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-0.5">{podiumOrder[0].streak}🔥 streak</span>
+                  </div>
+                </motion.div>
+
+                {/* 1st Place Column (Center - Highest) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 60 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="flex flex-col items-center w-full sm:w-56 group cursor-pointer relative -top-3"
+                >
+                  <div className="absolute -top-8 w-12 h-12 bg-amber-400/20 rounded-full filter blur-xl animate-pulse" />
+                  
+                  <div className="flex flex-col items-center mb-4 relative z-10">
+                    <div className="relative">
+                      <GlobalAvatar 
+                        fullName={podiumOrder[1].name}
+                        avatarUrl={podiumOrder[1].avatar_url}
+                        size="xl" 
+                        className="ring-4 ring-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.3)]" 
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-amber-400 rounded-full border-2 border-zinc-950 flex items-center justify-center text-zinc-950 font-mono text-sm font-bold shadow-md">
+                        1
+                      </div>
+                    </div>
+                    <span className="font-display font-black text-base text-zinc-100 mt-3 group-hover:text-amber-300 transition-colors flex items-center gap-1">
+                      {podiumOrder[1].name}
+                      <Sparkles size={12} className="text-amber-400" />
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5">{podiumOrder[1].branch}</span>
+                  </div>
+
+                  {/* Gold Column Base */}
+                  <div 
+                    className="w-full h-36 bg-gradient-to-b from-zinc-800/80 to-zinc-900 rounded-2xl border border-amber-400/20 flex flex-col items-center justify-center p-4 relative overflow-hidden transition-all duration-300 group-hover:shadow-[0_15px_40px_rgba(251,191,36,0.06)] group-hover:border-amber-400/40"
+                    style={{ transformStyle: 'preserve-3d', transform: 'perspective(500px) rotateX(10deg)' }}
+                  >
+                    <span className="font-display font-black text-3xl text-amber-400">🥇</span>
+                    <span className="text-sm font-mono text-amber-300 font-bold mt-1">{podiumOrder[1].points.toLocaleString()} XP</span>
+                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5">{podiumOrder[1].streak}🔥 streak</span>
+                  </div>
+                </motion.div>
+
+                {/* 3rd Place Column (Right) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="flex flex-col items-center w-full sm:w-48 group cursor-pointer"
+                >
+                  <div className="flex flex-col items-center mb-4 relative z-10">
+                    <div className="relative">
+                      <GlobalAvatar 
+                        fullName={podiumOrder[2].name}
+                        avatarUrl={podiumOrder[2].avatar_url}
+                        size="lg" 
+                        className="ring-4 ring-orange-500/50 shadow-2xl" 
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-orange-500 rounded-full border-2 border-zinc-950 flex items-center justify-center text-zinc-950 font-mono text-xs font-bold shadow-md">
+                        3
+                      </div>
+                    </div>
+                    <span className="font-display font-bold text-sm text-zinc-200 mt-3 group-hover:text-zinc-50 transition-colors">
+                      {podiumOrder[2].name}
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500 mt-0.5">{podiumOrder[2].branch}</span>
+                  </div>
+
+                  {/* Bronze Column Base */}
+                  <div 
+                    className="w-full h-20 bg-gradient-to-b from-zinc-800 to-zinc-900 rounded-2xl border border-orange-500/20 flex flex-col items-center justify-center p-4 relative overflow-hidden transition-all duration-300 group-hover:shadow-[0_10px_30px_rgba(249,115,22,0.02)] group-hover:border-orange-500/40"
+                    style={{ transformStyle: 'preserve-3d', transform: 'perspective(500px) rotateX(10deg)' }}
+                  >
+                    <span className="font-display font-black text-2xl text-orange-500">🥉</span>
+                    <span className="text-xs font-mono text-zinc-400 font-bold mt-1">{podiumOrder[2].points.toLocaleString()} XP</span>
+                    <span className="text-[9px] font-mono text-zinc-500 mt-0.5">{podiumOrder[2].streak}🔥 streak</span>
+                  </div>
+                </motion.div>
+
+              </div>
+
+              {/* Leaderboard Table List */}
+              <div className="card-premium rounded-2xl overflow-hidden border-white/[0.04]">
+                <div className="px-5 py-3 border-b border-white/[0.04] bg-zinc-900/40 flex items-center justify-between text-xs font-mono text-zinc-500 font-bold">
+                  <div className="flex items-center gap-4">
+                    <span className="w-5 text-center">RANK</span>
+                    <span>STUDENT</span>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <span>BRANCH</span>
+                    <span className="w-10 text-right">STREAK</span>
+                    <span className="w-24 text-right">BALANCE</span>
+                  </div>
+                </div>
+                
+                <div className="divide-y divide-white/[0.04]" ref={animateParentRef}>
+                  {leaderboard.map(entry => (
+                    <div 
+                      key={entry.rank} 
+                      className={`flex items-center justify-between px-5 py-4 transition-colors hover:bg-white/[0.02] ${
+                        entry.isYou ? 'bg-indigo-500/5' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <span className="w-5 text-center font-mono text-xs text-zinc-400 font-bold">
+                          #{entry.rank}
+                        </span>
+                        
+                        <div className="flex items-center gap-3 min-w-0">
+                          <GlobalAvatar 
+                            fullName={entry.name}
+                            avatarUrl={entry.avatar_url}
+                            size="sm" 
+                            className="ring-1 ring-white/10" 
+                          />
+                          <p className="font-display font-bold text-zinc-200 text-sm truncate flex items-center gap-1.5">
+                            {entry.name}
+                            {entry.isYou && (
+                              <span className="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                YOU
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        <span className="text-xs font-mono text-zinc-500 truncate max-w-[80px]">
+                          {entry.branch}
+                        </span>
+                        
+                        <span className="text-xs font-mono text-orange-400 flex items-center gap-0.5 w-10 justify-end">
+                          {entry.streak}🔥
+                        </span>
+
+                        <span className="font-display font-black text-zinc-200 text-sm w-24 text-right">
+                          {entry.points.toLocaleString()} <span className="text-[10px] font-mono text-zinc-500 font-normal">XP</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: HOW TO EARN */}
+          {tab === 'earn' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" ref={animateParentRef}>
+              {HOW_TO_EARN.map(item => (
+                <div 
+                  key={item.action} 
+                  className="card-premium p-4.5 flex items-center justify-between rounded-2xl border-white/[0.04] bg-zinc-900/20 hover:border-indigo-500/10 hover:bg-zinc-900/40 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${item.color}15`, border: `1px solid ${item.color}25` }}
+                    >
+                      <DynamicIcon name={item.icon} size={20} style={{ color: item.color }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-display font-bold text-zinc-200 leading-tight">{item.action}</p>
+                      <p className="text-[10px] font-mono text-zinc-500 mt-1 uppercase tracking-wide">
+                        Claim Once Completed
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full whitespace-nowrap">
+                    {item.points.split(' ')[0]} XP
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

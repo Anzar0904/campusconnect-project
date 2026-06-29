@@ -286,14 +286,13 @@ export default function PlacementsClient({ userId, profile, dbDrives, dbOffers, 
   return (
     <div className="animate-fade-in space-y-6 pb-20">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-zinc-100 flex items-center gap-2">
-            <Award className="text-cyan-400" />
-            Careers & Placements
-          </h1>
-          <p className="text-sm text-zinc-400 mt-0.5">Campus drives, preparation hubs, and verified corporate placement records</p>
-        </div>
+      <div className="glass-page-header space-y-2">
+        <p className="section-label text-cyan-400">Career Center</p>
+        <h1 className="display-heading text-4xl flex items-center gap-3">
+          <Award className="text-cyan-400 shrink-0" size={32} />
+          Careers & Placements
+        </h1>
+        <p className="body-pro text-sm">Campus drives, preparation hubs, and verified corporate placement records.</p>
       </div>
 
       {/* Stats Summary Panel */}

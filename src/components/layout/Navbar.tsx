@@ -1,46 +1,97 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { 
   Home, 
   Users, 
-  Compass, 
   MessageSquare, 
   User, 
   MessageCircle, 
-  Gamepad2, 
   Calendar, 
   BookOpen, 
-  FileText, 
   GraduationCap, 
   Store, 
   Briefcase, 
-  Award, 
-  Bot, 
-  Heart, 
-  Terminal, 
-  Rocket, 
   Sparkles, 
-  Trophy, 
   ShieldAlert,
-  LayoutGrid,
   Bell,
   ChevronDown,
   LogIn,
-  Search,
   Settings,
-  LogOut
+  LogOut,
+  Plus,
+  Clock,
+  PlusCircle,
+  FileUp,
+  Tags,
+  CalendarPlus,
+  FolderPlus,
+  Trash2,
+  Inbox,
+  CheckCheck,
+  LayoutGrid
 } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter, usePathname } from 'next/navigation'
+import LinkComponent from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { clsx } from 'clsx'
-import { NavbarSearch } from './NavbarSearch'
+
 import { useNotifications } from '@/hooks/useNotifications'
-import { Clock, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+import { useGSAP } from '@gsap/react'
+import { gsap } from 'gsap'
+import { Easing, getPrefersReducedMotion, useGsapMagnetic } from '@/hooks/useGsapMotion'
+import dynamic from 'next/dynamic'
+import { CampusConnectLogo } from '@/components/brand/CampusConnectLogo'
+import { useCollisionDetection } from '@/hooks/useCollisionDetection'
+
+// Lazy-load heavy components — not needed on initial render
+const AppLauncher = dynamic(() => import('./AppLauncher'), {
+  ssr: false,
+  loading: () => null,
+})
+const NavbarSearch = dynamic(() => import('./NavbarSearch').then(m => ({ default: m.NavbarSearch })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full max-w-[280px] md:max-w-[430px] h-9 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-pulse" />
+  ),
+})
+
+
+const NavbarTab = ({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) => {
+  const ref = useGsapMagnetic(0.18) as React.RefObject<HTMLAnchorElement>
+  return (
+    <LinkComponent
+      ref={ref}
+      href={href}
+      className={clsx(
+        "relative px-3.5 py-1.5 rounded-xl text-xs font-semibold font-display tracking-wide transition-all duration-300 select-none",
+        active ? "text-brand-400 font-semibold" : "text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.03]"
+      )}
+    >
+      {active && (
+        <motion.div
+          layoutId="navbar-active-pill"
+          className="absolute inset-0 bg-brand-500/10 border border-brand-500/20 rounded-xl"
+          transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+        />
+      )}
+      {active && (
+        <motion.div
+          layoutId="navbar-active-underline"
+          className="absolute bottom-[-1.5px] left-3 right-3 h-[2px] bg-brand-500 rounded-full"
+          transition={{ type: "spring", bounce: 0.15, duration: 0.55 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
+    </LinkComponent>
+  )
+}
 
 interface NavbarProps {
   profile?: {
@@ -54,71 +105,78 @@ interface NavbarProps {
   } | null
 }
 
-const NAV_SECTIONS = [
-  {
-    label: 'Social',
-    items: [
-      { label: 'Home Feed', href: '/dashboard', icon: Home, desc: 'Realtime campus feed' },
-      { label: 'Friends', href: '/friends', icon: Users, desc: 'Your connections' },
-      { label: 'Discover', href: '/discover', icon: Compass, desc: 'Find new peers' },
-      { label: 'Messages', href: '/messages', icon: MessageSquare, desc: 'Direct chat' },
-      { label: 'My Profile', href: '/profile', icon: User, desc: 'Manage your portfolio' },
-    ]
-  },
-  {
-    label: 'Campus Life',
-    items: [
-      { label: 'Communities', href: '/community', icon: MessageCircle, desc: 'Interest groups & chats' },
-      { label: 'Clubs', href: '/clubs', icon: Gamepad2, desc: 'Clubs & societies' },
-      { label: 'Events', href: '/events', icon: Calendar, desc: 'Events schedule' },
-    ]
-  },
-  {
-    label: 'Academics',
-    items: [
-      { label: 'Notes Library', href: '/notes', icon: BookOpen, desc: 'Shared notes library' },
-      { label: 'Past Papers', href: '/papers', icon: FileText, desc: 'Exam archives' },
-      { label: 'Study Hub', href: '/study', icon: GraduationCap, desc: 'Virtual study sessions' },
-      { label: 'Calendar', href: '/calendar', icon: Calendar, desc: 'Schedules & timetables' },
-    ]
-  },
-  {
-    label: 'Marketplace',
-    items: [
-      { label: 'Buy & Sell', href: '/marketplace', icon: Store, desc: 'Campus classifieds' },
-    ]
-  },
-  {
-    label: 'Career',
-    items: [
-      { label: 'Internships', href: '/internships', icon: Briefcase, desc: 'Exclusive internships' },
-      { label: 'Placements', href: '/placements', icon: Award, desc: 'Career opportunities' },
-    ]
-  },
-  {
-    label: 'Special',
-    items: [
-      { label: 'Dating', href: '/dating', icon: Heart, desc: 'Connect on campus' },
-      { label: 'AI Assistant', href: '/ai', icon: Sparkles, desc: 'AI queries' },
-    ]
-  },
-  {
-    label: 'Platform',
-    roleRequired: 'SUPER_ADMIN',
-    items: [
-      { label: 'Platform Admin', href: '/super-admin', icon: ShieldAlert, desc: 'System management' },
-    ]
-  }
+const PRIMARY_LINKS = [
+  { label: 'Feed', href: '/dashboard', icon: Home },
+  { label: 'Communities', href: '/community', icon: MessageCircle },
 ]
 
 export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
-  const [isOpen, setIsOpen] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false)
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
   const { profile: currentProfile } = useCurrentProfile()
   const profile = currentProfile || initialProfile
   const userRole = profile?.role?.toUpperCase() || 'STUDENT'
+  const pathname = usePathname()
+  const router = useRouter()
+  const navRef = useRef<HTMLDivElement>(null)
+  const profileRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const quickCreateRef = useCollisionDetection(showQuickCreate)
+
+  useEffect(() => {
+    const handleOpenNotifications = () => {
+      setShowNotifications(true)
+      setShowQuickCreate(false)
+      setShowProfileMenu(false)
+    }
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Toggle app launcher with Alt/Option + A or Ctrl + Space
+      if ((e.altKey && e.key === 'a') || (e.ctrlKey && e.code === 'Space')) {
+        e.preventDefault()
+        setIsAppLauncherOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('open-notifications', handleOpenNotifications)
+    window.addEventListener('keydown', handleGlobalKeyDown)
+
+    // Hide/show navbar and profile avatar on scroll of the custom container
+    const scrollContainer = document.getElementById('main-scroll-container')
+    let lastScrollY = 0
+    
+    const handleScroll = () => {
+      if (getPrefersReducedMotion() || !scrollContainer) return
+      const currentScrollY = scrollContainer.scrollTop
+      if (currentScrollY > 80 && currentScrollY > lastScrollY) {
+        gsap.to(headerRef.current, { y: -120, opacity: 0, duration: 0.3, ease: 'power2.out' })
+      } else {
+        gsap.to(headerRef.current, { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out' })
+      }
+      lastScrollY = currentScrollY
+    }
+    
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    }
+
+    return () => {
+      window.removeEventListener('open-notifications', handleOpenNotifications)
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [])
+
+  useGSAP(() => {
+    if (getPrefersReducedMotion()) return
+    gsap.fromTo(headerRef.current,
+      { y: -20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.6, ease: Easing.premium }
+    )
+  }, { scope: headerRef })
 
   const handleLogout = async () => {
     try {
@@ -132,216 +190,307 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
     }
   }
 
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
+
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/[0.04] bg-[#030712]/65 backdrop-blur-xl px-6 py-2.5 flex items-center justify-between transition-all duration-300">
-      <div className="flex items-center gap-2.5">
-        <Link href="/" className="flex items-center gap-2.5">
-          <svg className="w-8.5 h-8.5 shrink-0 drop-shadow-[0_0_10px_rgba(6,182,212,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
-              fill="url(#c-gradient-nav)"
-              strokeWidth="1"
-            />
-            <defs>
-              <linearGradient id="c-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#06b6d4" />
-                <stop offset="50%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className="text-white font-bold text-lg tracking-tight hidden sm:block">
-            Campus<span className="text-neutral-400 font-normal">Connect</span>
-          </span>
-        </Link>
+    <div ref={headerRef} className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 max-w-7xl mx-auto pointer-events-none flex items-center gap-4 justify-between">
+      <div ref={navRef} className="glass-navbar pointer-events-auto h-20 flex-1 rounded-2xl px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-all duration-300">
+        
+        {/* Left: Navigation (Logo + Nav Links) */}
+        <div className="flex items-center gap-4 lg:gap-6 flex-1 justify-start min-w-0">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <LinkComponent href="/" className="flex items-center">
+              {/* Icon only on small screens, icon + wordmark on lg+ */}
+              <span className="lg:hidden drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]">
+                <CampusConnectLogo size={32} id="nav-sm" />
+              </span>
+              <span className="hidden lg:flex drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]">
+                <CampusConnectLogo size={32} showWordmark id="nav-lg" />
+              </span>
+            </LinkComponent>
+          </div>
+
+          {/* Desktop Primary Nav Tabs */}
+          {profile && (
+            <div className="hidden lg:flex items-center gap-4 shrink-0">
+              {PRIMARY_LINKS.map((link) => {
+                const active = pathname === link.href || pathname?.startsWith(`${link.href}/`)
+                return (
+                  <NavbarTab key={link.href} href={link.href} active={active}>
+                    {link.label}
+                  </NavbarTab>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Center: Search Bar */}
+        {profile && (
+          <div className="flex items-center justify-center shrink-0 md:flex-1 md:max-w-[430px] w-auto">
+            <NavbarSearch />
+          </div>
+        )}
+
+        {/* Right: App Controls */}
+        <div className="flex items-center gap-3 sm:gap-4 justify-end flex-1 relative">
+          {profile ? (
+            <>
+              {/* App Launcher Button */}
+              <button
+                onClick={() => {
+                  setIsAppLauncherOpen(true)
+                  setShowQuickCreate(false)
+                  setShowNotifications(false)
+                  setShowProfileMenu(false)
+                }}
+                className={clsx(
+                  "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.04] transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                  isAppLauncherOpen && "text-white bg-white/[0.05]"
+                )}
+                aria-label="Apps Launcher"
+                title="Apps Launcher (Alt+A)"
+              >
+                <LayoutGrid size={18} />
+              </button>
+
+              {/* Quick Create Dropdown Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowQuickCreate(!showQuickCreate)
+                    setShowNotifications(false)
+                    setShowProfileMenu(false)
+                  }}
+                  className={clsx(
+                    "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.04] transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                    showQuickCreate && "text-white bg-white/[0.05]"
+                  )}
+                  aria-label="Quick Create"
+                >
+                  <Plus size={18} />
+                </button>
+
+                <AnimatePresence>
+                  {showQuickCreate && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowQuickCreate(false)} />
+                      <motion.div
+                        ref={quickCreateRef}
+                        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                        className="absolute right-0 mt-3 w-56 glass-dropdown rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
+                      >
+                        <p className="font-mono text-[9px] font-bold text-zinc-500 uppercase tracking-widest px-3 py-1.5 select-none">
+                          Quick Create
+                        </p>
+                        
+                        <LinkComponent
+                          href="/dashboard?create=true"
+                          onClick={() => setShowQuickCreate(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
+                        >
+                          <PlusCircle size={15} className="text-zinc-500" />
+                          <span>Create Post</span>
+                        </LinkComponent>
+
+                        <LinkComponent
+                          href="/community?create=true"
+                          onClick={() => setShowQuickCreate(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
+                        >
+                          <FolderPlus size={15} className="text-zinc-500" />
+                          <span>New Community</span>
+                        </LinkComponent>
+
+                        <LinkComponent
+                          href="/notes?upload=true"
+                          onClick={() => setShowQuickCreate(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
+                        >
+                          <FileUp size={15} className="text-zinc-500" />
+                          <span>Upload Notes</span>
+                        </LinkComponent>
+
+                        <LinkComponent
+                          href="/marketplace?create=true"
+                          onClick={() => setShowQuickCreate(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
+                        >
+                          <Tags size={15} className="text-zinc-500" />
+                          <span>Sell an Item</span>
+                        </LinkComponent>
+
+                        {isAdmin && (
+                          <LinkComponent
+                            href="/events?create=true"
+                            onClick={() => setShowQuickCreate(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all border-t border-white/[0.04] pt-2"
+                          >
+                            <CalendarPlus size={15} className="text-zinc-500" />
+                            <span>Create Event</span>
+                          </LinkComponent>
+                        )}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Dedicated Sparkly AI Shortcut */}
+              <LinkComponent
+                href="/ai"
+                className={clsx(
+                  "w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-brand-500/10 hover:border-brand-500/20 hover:text-brand-400 transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                  pathname === '/ai' && "text-brand-400 bg-brand-500/10 border-brand-500/20"
+                )}
+                aria-label="AI Assistant"
+              >
+                <Sparkles size={16} className="animate-pulse" />
+              </LinkComponent>
+
+              {/* Notifications Popover */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    setShowNotifications(!showNotifications)
+                    setShowQuickCreate(false)
+                    setShowProfileMenu(false)
+                  }}
+                  className={clsx(
+                    "relative w-9 h-9 sm:w-10 sm:h-10 text-zinc-400 hover:text-zinc-50 hover:bg-white/[0.04] transition-all rounded-xl flex items-center justify-center border border-white/[0.05]",
+                    showNotifications && "text-white bg-white/[0.05]"
+                  )}
+                  aria-label="Notifications"
+                >
+                  <Bell size={16} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-1 bg-cyan-400 text-[8px] text-zinc-950 rounded-full flex items-center justify-center font-bold">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {showNotifications && (
+                    <NotificationsDropdown 
+                      showNotifications={showNotifications} 
+                      setShowNotifications={setShowNotifications} 
+                      unreadCount={unreadCount} 
+                      notifications={notifications} 
+                      markAsRead={markAsRead} 
+                      markAllAsRead={markAllAsRead} 
+                      deleteNotification={deleteNotification}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            </>
+          ) : (
+            <LinkComponent
+              href="/auth/login"
+              className="btn-premium px-4 py-2 text-xs"
+            >
+              <LogIn size={14} className="mr-2" />
+              Sign In
+            </LinkComponent>
+          )}
+        </div>
       </div>
 
-      <NavbarSearch />
+      {/* Floating Profile Avatar Outside the Glass Nav Bar */}
+      {profile && (
+        <div ref={profileRef} className="pointer-events-auto relative shrink-0">
+          <button 
+            onClick={() => {
+              setShowProfileMenu(!showProfileMenu)
+              setShowQuickCreate(false)
+              setShowNotifications(false)
+            }}
+            className="flex items-center justify-center p-[1px] bg-zinc-900/50 hover:bg-zinc-800/80 border border-white/[0.08] hover:border-white/[0.15] rounded-full transition-all shadow-premium select-none focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+          >
+            <GlobalAvatar
+              avatarUrl={profile.avatar_url}
+              fullName={profile.full_name || undefined}
+              username={profile.username || undefined}
+              size="sm"
+              className="border border-white/15"
+            />
+          </button>
 
-      <div className="flex items-center gap-4 relative">
-        {profile ? (
-          <>
-            <button 
-              onClick={() => { setIsOpen(!isOpen); setShowNotifications(false) }}
-              className={clsx(
-                "p-2 text-neutral-400 hover:text-white transition-all rounded-xl hover:bg-white/[0.03] flex items-center justify-center hidden md:flex",
-                isOpen && "text-white bg-white/[0.05]"
-              )}
-              aria-label="Toggle Navigation Grid"
-            >
-              <LayoutGrid size={18} />
-            </button>
-
-              {/* Notification Bell with Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => { setShowNotifications(!showNotifications); setIsOpen(false) }}
-                className={clsx(
-                  "relative w-11 h-11 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center",
-                  showNotifications && "text-white bg-white/[0.05]"
-                )}
-                aria-label="Notifications"
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[15px] h-[15px] px-1 bg-cyan-500 text-[8px] text-zinc-950 rounded-full flex items-center justify-center font-black animate-pulse">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              <NotificationsDropdown 
-                showNotifications={showNotifications} 
-                setShowNotifications={setShowNotifications} 
-                unreadCount={unreadCount} 
-                notifications={notifications} 
-                markAsRead={markAsRead} 
-                markAllAsRead={markAllAsRead} 
-              />
-            </div>
-
-            <Link href="/messages" className="p-2 text-neutral-400 hover:text-white transition-colors rounded-xl hover:bg-white/[0.03] flex items-center justify-center hidden md:flex">
-              <MessageSquare size={18} />
-            </Link>
-            
-            <div className="h-5 w-px bg-white/[0.08] hidden md:block" />
-
-            <div className="relative">
-              <button 
-                onClick={() => {
-                  setShowProfileMenu(!showProfileMenu)
-                  setIsOpen(false)
-                  setShowNotifications(false)
-                }}
-                className="w-11 h-11 lg:w-auto lg:h-auto flex items-center justify-center lg:justify-start gap-3 pl-1 cursor-pointer group focus:outline-none"
-              >
-                <GlobalAvatar
-                  avatarUrl={profile.avatar_url}
-                  fullName={profile.full_name || undefined}
-                  username={profile.username || undefined}
-                  size="sm"
-                />
-                <div className="hidden lg:block text-left whitespace-nowrap">
-                  <p className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors tracking-tight">
-                    {profile.full_name || 'Student'}
-                  </p>
-                  <p className="text-[10px] text-neutral-400 font-medium tracking-normal mt-0.5">
-                    {profile.branch ? `${profile.branch}` : ''}
-                    {profile.year ? `, ${profile.year} Year` : ''}
-                  </p>
-                </div>
-                <ChevronDown size={12} className="text-neutral-500 group-hover:text-neutral-300 transition-colors hidden lg:block" />
-              </button>
-
+          <AnimatePresence>
+            {showProfileMenu && (
               <ProfileMenu 
                 showProfileMenu={showProfileMenu} 
                 setShowProfileMenu={setShowProfileMenu} 
                 handleLogout={handleLogout} 
+                isAdmin={isAdmin}
               />
-            </div>
-
-            <MegaMenu 
-              isOpen={isOpen} 
-              setIsOpen={setIsOpen} 
-              userRole={userRole} 
-            />
-          </>
-        ) : (
-          <Link href="/auth/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md">
-            <LogIn size={14} />
-            <span>Sign In</span>
-          </Link>
-        )}
-      </div>
-    </nav>
-  )
-}
-
-// Subcomponents extracted for rendering memoization and preventing cascade re-renders
-interface MegaMenuProps {
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-  userRole: string
-}
-
-const MegaMenu = React.memo(({ isOpen, setIsOpen, userRole }: MegaMenuProps) => {
-  if (!isOpen) return null
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)} />
-      <div className="absolute top-full right-0 mt-3.5 w-[560px] max-w-[calc(100vw-2rem)] bg-[#090d16]/95 border border-white/[0.08] rounded-2xl p-5 backdrop-blur-2xl shadow-2xl z-50 animate-fade-in max-h-[80vh] overflow-y-auto custom-scrollbar">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-          {NAV_SECTIONS.filter(section => {
-            if (!section.roleRequired) return true
-            const req = section.roleRequired.toUpperCase()
-            return userRole === req || (req === 'SUPER_ADMIN' && (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'))
-          }).map((section) => (
-            <div key={section.label} className="space-y-2.5">
-              <p className="font-mono text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-1">
-                {section.label}
-              </p>
-              <div className="flex flex-col gap-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white/[0.03] transition-all group"
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.02] border border-white/[0.04] text-neutral-400 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20 transition-all shrink-0">
-                        <Icon size={15} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-neutral-300 group-hover:text-white transition-colors leading-tight truncate">
-                          {item.label}
-                        </p>
-                        <p className="text-[8px] text-neutral-500 truncate mt-0.5 font-medium leading-none">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+            )}
+          </AnimatePresence>
         </div>
-      </div>
-    </>
-  )
-})
-MegaMenu.displayName = 'MegaMenu'
+      )}
 
+      {profile && (
+        <AppLauncher isOpen={isAppLauncherOpen} onClose={() => setIsAppLauncherOpen(false)} />
+      )}
+    </div>
+  )
+}
+
+// Subcomponents
 interface ProfileMenuProps {
   showProfileMenu: boolean
   setShowProfileMenu: (show: boolean) => void
   handleLogout: () => void
+  isAdmin: boolean
 }
 
-const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLogout }: ProfileMenuProps) => {
+const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLogout, isAdmin }: ProfileMenuProps) => {
+  const containerRef = useCollisionDetection(showProfileMenu)
   if (!showProfileMenu) return null
   return (
     <>
       <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowProfileMenu(false)} />
-      <div className="absolute top-full right-0 mt-3.5 w-56 bg-[#090d16]/95 border border-white/[0.08] rounded-2xl p-2 backdrop-blur-2xl shadow-2xl z-50 animate-fade-in flex flex-col gap-1">
-        <Link
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+        className="absolute right-0 mt-3 w-56 glass-dropdown rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 border border-white/[0.08]"
+      >
+        <LinkComponent
           href="/profile"
           onClick={() => setShowProfileMenu(false)}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/[0.03] transition-all"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
         >
-          <User size={14} className="text-neutral-400" />
+          <User size={14} className="text-zinc-500" />
           <span>View Profile</span>
-        </Link>
-        <Link
-          href="/profile?edit=true"
+        </LinkComponent>
+        <LinkComponent
+          href="/settings"
           onClick={() => setShowProfileMenu(false)}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/[0.03] transition-all"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
         >
-          <Settings size={14} className="text-neutral-400" />
-          <span>Settings</span>
-        </Link>
+          <Settings size={14} className="text-zinc-500" />
+          <span>Account Settings</span>
+        </LinkComponent>
+
+        {isAdmin && (
+          <LinkComponent
+            href="/super-admin"
+            onClick={() => setShowProfileMenu(false)}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/[0.03] transition-all"
+          >
+            <ShieldAlert size={14} className="text-zinc-500" />
+            <span>Platform Admin</span>
+          </LinkComponent>
+        )}
+
         <div className="h-px bg-white/[0.06] my-1" />
         <button
           onClick={() => {
@@ -353,7 +502,7 @@ const ProfileMenu = React.memo(({ showProfileMenu, setShowProfileMenu, handleLog
           <LogOut size={14} />
           <span>Logout</span>
         </button>
-      </div>
+      </motion.div>
     </>
   )
 })
@@ -366,6 +515,7 @@ interface NotificationsDropdownProps {
   notifications: any[]
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
+  deleteNotification: (id: string) => Promise<void>
 }
 
 const NotificationsDropdown = React.memo(({
@@ -374,77 +524,203 @@ const NotificationsDropdown = React.memo(({
   unreadCount,
   notifications,
   markAsRead,
-  markAllAsRead
+  markAllAsRead,
+  deleteNotification
 }: NotificationsDropdownProps) => {
+  const containerRef = useCollisionDetection(showNotifications)
   const [parent] = useAutoAnimate()
-  if (!showNotifications) return null
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
-      <div className="absolute top-full right-0 mt-3.5 w-80 bg-[#090d16]/95 border border-white/[0.08] rounded-2xl p-4 backdrop-blur-2xl shadow-2xl z-50 animate-fade-in max-h-[420px] overflow-y-auto custom-scrollbar flex flex-col gap-2">
-        <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-          <p className="text-[10px] font-bold font-mono uppercase text-zinc-400 tracking-wider">Notifications</p>
-          {unreadCount > 0 && (
-            <button 
-              onClick={markAllAsRead}
-              className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 font-bold uppercase transition-colors"
-            >
-              Mark all as read
-            </button>
-          )}
-        </div>
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
 
-        <div ref={parent} className="flex flex-col gap-1.5 overflow-y-auto max-h-[320px] custom-scrollbar pr-0.5">
-          {notifications.length === 0 ? (
-            <div className="py-8 text-center">
-              <Bell className="mx-auto text-zinc-700 mb-2" size={24} />
-              <p className="text-[11px] text-zinc-500 italic">No new notifications</p>
-            </div>
-          ) : (
-            notifications.map(notif => (
-              <Link 
-                key={notif.id}
+  if (!showNotifications) return null
+
+  // Memoize expensive filtering + date grouping — only recomputes when inputs change
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { filteredNotifications, todayNotifs, yesterdayNotifs, earlierNotifs } = useMemo(() => {
+    const filtered = notifications.filter(n => filter === 'all' || !n.read)
+    const now = Date.now()
+    const todayStart = new Date().setHours(0, 0, 0, 0)
+    const yesterdayStart = todayStart - 86400000
+
+    return {
+      filteredNotifications: filtered,
+      todayNotifs: filtered.filter(n => new Date(n.created_at).getTime() >= todayStart),
+      yesterdayNotifs: filtered.filter(n => {
+        const t = new Date(n.created_at).getTime()
+        return t >= yesterdayStart && t < todayStart
+      }),
+      earlierNotifs: filtered.filter(n => new Date(n.created_at).getTime() < yesterdayStart),
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications, filter])
+
+  const renderSection = (title: string, items: any[]) => {
+    if (items.length === 0) return null
+    return (
+      <div className="flex flex-col gap-1.5 mb-4">
+        <h4 className="text-[10px] font-bold font-mono text-zinc-500 uppercase tracking-wider pl-1">{title}</h4>
+        <div className="flex flex-col gap-1.5">
+          {items.map(notif => (
+            <div 
+              key={notif.id}
+              className={clsx(
+                "group relative flex gap-2.5 p-3 rounded-xl transition-all border text-left",
+                notif.read 
+                  ? "bg-white/[0.01] border-white/[0.03] hover:bg-white/[0.03] hover:border-white/[0.06]" 
+                  : "bg-cyan-500/[0.02] border-cyan-500/10 hover:bg-cyan-500/[0.05] hover:border-cyan-500/20"
+              )}
+            >
+              {/* Main Link Area */}
+              <LinkComponent 
                 href={notif.link || '#'}
                 onClick={() => {
-                  markAsRead(notif.id)
+                  if (!notif.read) {
+                    markAsRead(notif.id)
+                  }
                   setShowNotifications(false)
                 }}
-                className={clsx(
-                  "flex gap-2.5 p-2 rounded-xl transition-all border border-transparent text-left",
-                  notif.read 
-                    ? "bg-transparent hover:bg-white/[0.02]" 
-                    : "bg-cyan-500/[0.03] border-cyan-500/10 hover:bg-cyan-500/[0.06] hover:border-cyan-500/15"
-                )}
+                className="flex-1 flex gap-2.5 min-w-0"
               >
                 <div className="shrink-0 mt-1">
                   <span className={clsx(
-                    "w-1.5 h-1.5 rounded-full block",
-                    notif.read ? "bg-zinc-700" : "bg-cyan-400"
+                    "w-1.5 h-1.5 rounded-full block transition-transform group-hover:scale-125",
+                    notif.read ? "bg-zinc-700" : "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
                   )} />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-6">
                   <p className={clsx(
-                    "text-[11px] leading-snug truncate",
+                    "text-[11px] leading-snug",
                     notif.read ? "text-zinc-400 font-normal" : "text-zinc-100 font-bold"
                   )}>
                     {notif.title}
                   </p>
                   {notif.content && (
-                    <p className="text-[9px] text-zinc-500 mt-0.5 line-clamp-2 leading-normal">
+                    <p className="text-[10px] text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
                       {notif.content}
                     </p>
                   )}
-                  <p className="text-[8px] font-mono text-zinc-600 mt-1 flex items-center gap-1">
-                    <Clock size={8} />
+                  <p className="text-[8px] font-mono text-zinc-600 mt-1.5 flex items-center gap-1">
+                    <Clock size={9} />
                     {format(new Date(notif.created_at), 'd MMM, h:mm a')}
                   </p>
                 </div>
-              </Link>
-            ))
-          )}
+              </LinkComponent>
+
+              {/* Hover actions */}
+              <div className="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1 bg-zinc-900/80 backdrop-blur-sm rounded-lg p-0.5 border border-white/[0.05] z-10">
+                {!notif.read && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      markAsRead(notif.id)
+                    }}
+                    title="Mark as read"
+                    aria-label="Mark as read"
+                    className="p-1 text-zinc-400 hover:text-cyan-400 hover:bg-white/[0.05] rounded-md transition-colors"
+                  >
+                    <CheckCheck size={11} />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    deleteNotification(notif.id)
+                  }}
+                  title="Delete notification"
+                  aria-label="Delete notification"
+                  className="p-1 text-zinc-400 hover:text-red-400 hover:bg-white/[0.05] rounded-md transition-colors"
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
+      <motion.div
+        ref={containerRef}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+        className="absolute right-0 mt-3 w-96 max-w-[calc(100vw-32px)] glass-dropdown rounded-2xl p-4 shadow-2xl z-50 flex flex-col gap-3.5 border border-white/[0.08] max-h-[480px] overflow-hidden"
+      >
+        {/* Header section */}
+        <div className="flex items-center justify-between border-b border-white/[0.05] pb-2.5 select-none shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold font-mono uppercase text-zinc-400 tracking-wider">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="bg-cyan-500/10 text-cyan-400 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border border-cyan-500/15">
+                {unreadCount} new
+              </span>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <button 
+              onClick={markAllAsRead}
+              className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 font-bold uppercase transition-colors"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+
+        {/* Filters pills */}
+        <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.04] p-1 rounded-xl shrink-0 select-none">
+          <button
+            onClick={() => setFilter('all')}
+            className={clsx(
+              "flex-1 text-[10px] font-mono uppercase py-1 rounded-lg font-bold transition-all text-center",
+              filter === 'all' 
+                ? "bg-white/[0.06] text-white shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            All ({notifications.length})
+          </button>
+          <button
+            onClick={() => setFilter('unread')}
+            className={clsx(
+              "flex-1 text-[10px] font-mono uppercase py-1 rounded-lg font-bold transition-all text-center",
+              filter === 'unread' 
+                ? "bg-white/[0.06] text-white shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Unread ({unreadCount})
+          </button>
+        </div>
+
+        {/* List of notifications */}
+        <div ref={parent} className="flex-1 overflow-y-auto pr-0.5 custom-scrollbar pb-2">
+          {filteredNotifications.length === 0 ? (
+            <div className="py-12 text-center select-none flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/[0.02] border border-white/[0.04] flex items-center justify-center mb-3">
+                <Inbox className="text-zinc-500" size={20} />
+              </div>
+              <p className="text-[12px] font-medium text-zinc-300">All caught up!</p>
+              <p className="text-[10px] text-zinc-500 mt-1 max-w-[200px]">
+                {filter === 'unread' ? "You have no unread notifications." : "No notifications available."}
+              </p>
+            </div>
+          ) : (
+            <>
+              {renderSection("Today", todayNotifs)}
+              {renderSection("Yesterday", yesterdayNotifs)}
+              {renderSection("Earlier", earlierNotifs)}
+            </>
+          )}
+        </div>
+      </motion.div>
     </>
   )
 })
 NotificationsDropdown.displayName = 'NotificationsDropdown'
+
