@@ -7,9 +7,10 @@ import { BottomNav } from './BottomNav'
 
 import { NotificationProvider, useNotifications } from '@/hooks/useNotifications'
 import { ProfileProvider, useCurrentProfile } from '@/hooks/useCurrentProfile'
+import { UnreadMessagesProvider } from '@/hooks/useUnreadMessages'
 import { cn } from '@/lib/utils'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -27,10 +28,10 @@ export function AppShell({
   initialProfile
 }: AppShellProps) {
   const pathname = usePathname()
+  // Memoize supabase client to avoid creating a new instance on every render
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
-    const supabase = createClient()
-    
     const channel = supabase
       .channel(`achievement-unlocks-${userId}`)
       .on(
@@ -102,14 +103,16 @@ export function AppShell({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId])
+  }, [userId, supabase])
 
   return (
     <ProfileProvider initialProfile={initialProfile} userId={userId}>
       <NotificationProvider userId={userId}>
-        <AppShellInner collegeName={collegeName} pathname={pathname}>
-          {children}
-        </AppShellInner>
+        <UnreadMessagesProvider userId={userId}>
+          <AppShellInner collegeName={collegeName} pathname={pathname}>
+            {children}
+          </AppShellInner>
+        </UnreadMessagesProvider>
       </NotificationProvider>
     </ProfileProvider>
   )

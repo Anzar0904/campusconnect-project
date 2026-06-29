@@ -135,12 +135,12 @@ export default function NotesClient({ notes, userId }: any) {
   return (
     <div className="animate-fade-in space-y-8 pb-32">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
+        <div className="glass-page-header flex-1 space-y-2">
           <p className="section-label">Academic Resources</p>
           <h1 className="display-heading text-4xl">Notes Library</h1>
           <p className="body-pro text-sm">Access and share lecture notes, study guides, and campus resources.</p>
         </div>
-        <button onClick={() => setShowUpload(!showUpload)} className="btn-premium px-8">
+        <button onClick={() => setShowUpload(!showUpload)} className="btn-premium px-8 shrink-0">
           <Upload size={20} />
           Share Notes
         </button>

@@ -31,6 +31,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 
 const MOBILE_NAV_ITEMS = [
   { label: 'Home', href: '/dashboard', icon: Home },
@@ -92,6 +93,7 @@ const MODULE_SECTIONS = [
 export function BottomNav() {
   const pathname = usePathname()
   const [showModules, setShowModules] = useState(false)
+  const { totalUnread: unreadMsgCount } = useUnreadMessages()
 
   const handleLogout = async () => {
     try {
@@ -145,6 +147,11 @@ export function BottomNav() {
                     />
                   )}
                   <Icon size={18} className="relative z-10 animate-scale-up" />
+                  {item.href === '/messages' && unreadMsgCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-1 bg-cyan-400 text-[8px] text-zinc-950 rounded-full flex items-center justify-center font-bold z-20">
+                      {unreadMsgCount > 99 ? '99+' : unreadMsgCount}
+                    </span>
+                  )}
                   <span className="text-[9px] font-display font-bold uppercase tracking-wider relative z-10">
                     {item.label}
                   </span>

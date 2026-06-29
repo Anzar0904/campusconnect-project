@@ -5,11 +5,7 @@ import { usePathname } from 'next/navigation'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-  ;(window as any).gsap = gsap
-  ;(window as any).ScrollTrigger = ScrollTrigger
-}
+// NOTE: ScrollTrigger is already registered in MotionProvider — do not re-register here.
 
 const FRAME_COUNT = 192
 
@@ -34,15 +30,8 @@ export default function AnimatedBackground() {
   const renderRequested = useRef<boolean>(false)
   const lastKnownFrameIndex = useRef<number>(1)
 
-  // Direct DOM references for debugging UI to bypass React state updates (60 FPS support)
-  const debugFrameRef = useRef<HTMLSpanElement>(null)
-  const debugScrollRef = useRef<HTMLSpanElement>(null)
-  const debugFpsRef = useRef<HTMLSpanElement>(null)
-  const debugResolutionRef = useRef<HTMLSpanElement>(null)
-
   // Draw loop execution logic (Object-Fit: Cover)
   const renderFrame = useCallback((index: number) => {
-    console.log(`[drawFrame] executes for index: ${index}`)
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -52,10 +41,7 @@ export default function AnimatedBackground() {
     const targetIndex = Math.min(Math.max(1, index), FRAME_COUNT)
     const img = imagesRef.current[targetIndex - 1]
     
-    if (!img || !img.complete) {
-      console.log(`[drawFrame] Frame ${targetIndex} image not loaded/complete yet.`)
-      return
-    }
+    if (!img || !img.complete) return
 
     const cw = canvas.width
     const ch = canvas.height
@@ -71,9 +57,8 @@ export default function AnimatedBackground() {
 
     try {
       context.drawImage(img, 0, 0, iw, ih, cx, cy, iw * ratio, ih * ratio)
-      console.log(`[drawFrame] successfully drew frame ${targetIndex}`)
-    } catch (err) {
-      console.error(`[AnimatedBackground] Draw failed for frame ${targetIndex}:`, err)
+    } catch {
+      // Silently ignore draw errors (e.g. canvas detached during navigation)
     }
   }, [])
 
@@ -105,7 +90,8 @@ export default function AnimatedBackground() {
       const total = urls.length
       let count = 0
       
-      const concurrency = 8
+      // Use 4 concurrent workers — 8 was too aggressive and caused network contention
+      const concurrency = 4
       const queue = [...urls.entries()]
       
       const worker = async () => {
@@ -122,11 +108,10 @@ export default function AnimatedBackground() {
               image.onerror = () => reject(new Error(`Failed to load image: ${url}`))
             })
             imagesRef.current[index] = img
-          } catch (err) {
-            console.error(`[AnimatedBackground] Preloading failed for: ${url}`, err)
+          } catch {
+            // Frame failed to load — skip silently, sequence will have a gap
           } finally {
             count++
-            console.log(`Frames loaded: ${count}`)
             setLoadedProgress(Math.round((count / total) * 100))
             setLoadedFrames(count)
           }
@@ -162,18 +147,13 @@ export default function AnimatedBackground() {
 
       canvas.width = width
       canvas.height = height
-      
-      console.log(`Canvas initialized: ${width}x${height}`)
-      if (debugResolutionRef.current) {
-        debugResolutionRef.current.innerText = `${width} x ${height}`
-      }
 
       // Reset cache and redraw last known frame immediately
       lastRenderedFrame.current = -1
       requestRender(lastKnownFrameIndex.current)
     }
 
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize, { passive: true })
     handleResize()
 
     return () => window.removeEventListener('resize', handleResize)
@@ -184,122 +164,63 @@ export default function AnimatedBackground() {
     if (typeof window === 'undefined' || !isLoaded) return
 
     let triggerInstance: ScrollTrigger | null = null
-    const resizeObserver = new ResizeObserver(() => {
-  ScrollTrigger.refresh()
-})
 
-const scroller = document.getElementById("main-scroll-container")
-const content = document.getElementById("main-scroll-content")
+    // Kill any previous instance of this specific trigger before re-creating
+    ScrollTrigger.getAll().forEach(t => {
+      if (t.vars.id === 'global-background-scroll-trigger') {
+        t.kill()
+      }
+    })
 
-if (scroller) resizeObserver.observe(scroller)
-if (content) resizeObserver.observe(content)
+    triggerInstance = ScrollTrigger.create({
+      id: 'global-background-scroll-trigger',
+      trigger: '#main-scroll-container',
+      scroller: '#main-scroll-container',
+      start: 'top top',
+      end: () => {
+        const el = document.getElementById('main-scroll-container')
+        return el ? el.scrollHeight - el.clientHeight : 1
+      },
+      scrub: true,
+      onUpdate: (self) => {
+        const progress = self.progress
+        // Map scroll progress directly to frame index
+        const targetFrame = Math.min(
+          FRAME_COUNT,
+          Math.max(1, Math.round(progress * (FRAME_COUNT - 1)) + 1)
+        )
+        requestRender(targetFrame)
+      }
+    })
 
-    const initScrollTrigger = () => {
-      // Clean up previous triggers for this component to prevent double registering
-      ScrollTrigger.getAll().forEach(t => {
-        if (t.vars.id === 'global-background-scroll-trigger') {
-          t.kill()
-        }
-      })
-
-      triggerInstance = ScrollTrigger.create({
-        id: 'global-background-scroll-trigger',
-        trigger: '#main-scroll-container',
-        scroller: '#main-scroll-container',
-        start: 'top top',
-        end: () =>
-  document.getElementById("main-scroll-container")!.scrollHeight -
-  document.getElementById("main-scroll-container")!.clientHeight,
-        scrub: true,
-        onUpdate: (self) => {
-          const progress = self.progress
-          const docHeight = typeof document !== 'undefined' ? document.documentElement.scrollHeight : 0
-          const loadedCount = imagesRef.current.filter(Boolean).length
-          
-          // Map progress directly to frame index
-          const targetFrame = Math.min(
-            FRAME_COUNT,
-            Math.max(1, Math.round(progress * (FRAME_COUNT - 1)) + 1)
-          )
-
-          console.log(
-            `[ScrollTrigger Update] | ` +
-            `Document Height: ${docHeight}px | ` +
-            `ScrollTrigger Start: ${self.start} | ` +
-            `ScrollTrigger End: ${self.end} | ` +
-            `Scroll Progress: ${progress.toFixed(4)} | ` +
-            `Frame Index: ${targetFrame} | ` +
-            `Total Frames Loaded: ${loadedCount}`
-          )
-
-          requestRender(targetFrame)
-
-          // Direct DOM node updates for FPS/Frame counter debug panels
-          if (debugFrameRef.current) {
-            debugFrameRef.current.innerText = String(targetFrame)
-          }
-          if (debugScrollRef.current) {
-            debugScrollRef.current.innerText = `${Math.round(progress * 100)}%`
-          }
-        }
-      })
-      requestAnimationFrame(() => {
-    ScrollTrigger.refresh();
-});
-
-setTimeout(() => {
-    ScrollTrigger.refresh();
-}, 500);
-
-setTimeout(() => {
-    ScrollTrigger.refresh();
-}, 1500);
-
+    // Single deferred refresh after layout is stable
+    const refreshTimer = setTimeout(() => {
       ScrollTrigger.refresh()
-      requestAnimationFrame(() => {
-  ScrollTrigger.refresh()
-})
+    }, 300)
 
-setTimeout(() => {
-  ScrollTrigger.refresh()
-}, 1000)
+    return () => {
+      clearTimeout(refreshTimer)
+      if (triggerInstance) {
+        triggerInstance.kill()
+      }
     }
-
-    // Wrap in a short timeout to let NextJS finish hydration/rendering
-   initScrollTrigger()
-
-return () => {
-  if (triggerInstance) {
-    triggerInstance.kill()
-  }
-}
   }, [isLoaded, requestRender, pathname])
 
-  // Track and show performance metric FPS counter
+  // Pause canvas draws when the tab is hidden to save GPU/CPU resources
   useEffect(() => {
-    if (typeof window === 'undefined' || !isLoaded) return
+    if (typeof window === 'undefined') return
 
-    let lastTime = performance.now()
-    let count = 0
-    let animId: number
-
-    const tick = () => {
-      count++
-      const now = performance.now()
-      if (now - lastTime >= 1000) {
-        const fps = Math.round((count * 1000) / (now - lastTime))
-        count = 0
-        lastTime = now
-        if (debugFpsRef.current) {
-          debugFpsRef.current.innerText = `${fps} FPS`
-        }
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        // Redraw last known frame when tab becomes visible again
+        lastRenderedFrame.current = -1
+        requestRender(lastKnownFrameIndex.current)
       }
-      animId = requestAnimationFrame(tick)
     }
 
-    animId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(animId)
-  }, [isLoaded])
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [requestRender])
 
   return (
     <>

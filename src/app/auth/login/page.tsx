@@ -1,8 +1,9 @@
 'use client'
-import { MailCheck, Network, RefreshCw, Send, Shield, Sparkles } from 'lucide-react'
+import { MailCheck, RefreshCw, Send, Shield, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CampusConnectLogo } from '@/components/brand/CampusConnectLogo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -24,9 +25,9 @@ export default function LoginPage() {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('validate-otp', {
-        body: { 
+        body: {
           email: email.trim().toLowerCase(),
-          acceptedTerms: true 
+          acceptedTerms: true
         },
       })
 
@@ -41,7 +42,7 @@ export default function LoginPage() {
         options: {
           shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { 
+          data: {
             college_id: data.college_id,
             accepted_terms: true,
             policy_version: '1.0'
@@ -112,15 +113,12 @@ export default function LoginPage() {
         className="card-elevated rounded-2xl p-8 sm:p-10 max-w-sm w-full space-y-7"
       >
         {/* Logo + Brand */}
-        <div className="text-center space-y-4">
-          <div className="relative mx-auto w-16 h-16">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl"
-              style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', boxShadow: '0 0 40px rgba(99,102,241,0.4), 0 0 80px rgba(99,102,241,0.15)' }}>
-              <Network className="text-white" size={30} />
-            </div>
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-zinc-950 flex items-center justify-center">
-              <Shield size={10} className="text-white" />
-            </div>
+        <div className="text-center space-y-4 flex flex-col items-center">
+          <div
+            className="rounded-2xl p-2 flex items-center justify-center shadow-2xl"
+            style={{ boxShadow: '0 0 40px rgba(99,102,241,0.35), 0 0 80px rgba(99,102,241,0.12)' }}
+          >
+            <CampusConnectLogo size={64} id="login" />
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-white tracking-tight">

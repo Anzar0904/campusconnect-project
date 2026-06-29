@@ -341,12 +341,13 @@ export default function RewardsClient({ userId, profile }: any) {
   return (
     <div className="animate-fade-in space-y-8 max-w-5xl mx-auto px-4 py-4">
       {/* Title */}
-      <div>
-        <h1 className="display-heading text-3xl flex items-center gap-2">
+      <div className="glass-page-header space-y-2">
+        <p className="section-label text-indigo-400">Campus Leaderboard</p>
+        <h1 className="display-heading text-4xl flex items-center gap-3">
           Rewards & Achievements
-          <Award className="text-indigo-400" size={28} />
+          <Award className="text-indigo-400 shrink-0" size={32} />
         </h1>
-        <p className="body-pro text-sm text-zinc-400">Earn points, claim badges, and top the campus leaderboards.</p>
+        <p className="body-pro text-sm">Earn points, claim badges, and top the campus leaderboards.</p>
       </div>
 
       {/* Premium Hero Card */}

@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createClient, checkRateLimit } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { ModuleSection } from '@/components/home/ModuleSection'
 import { RightSidebar } from '@/components/dashboard/RightSidebar'
 import { SecondarySidebar } from '@/components/dashboard/SecondarySidebar'
@@ -83,7 +84,14 @@ interface Event {
   category: string
 }
 
-function PostCard({
+// Static config — defined outside component to avoid recreation on every render
+const POST_TYPE_CONFIG: Record<string, { label: string; icon: React.ComponentType<any>; color: string; border: string; bg: string }> = {
+  post: { label: 'Post', icon: MessageSquare, color: 'text-blue-400', border: 'border-blue-500/20', bg: 'bg-blue-500/5' },
+  confession: { label: 'Confession', icon: Lock, color: 'text-amber-400', border: 'border-amber-500/20', bg: 'bg-amber-500/5' },
+  announcement: { label: 'Announce', icon: Megaphone, color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/5' },
+}
+
+const PostCard = React.memo(function PostCard({
   post,
   currentUserId,
   onLike,
@@ -226,12 +234,7 @@ function PostCard({
     onLike(post.id)
   }
 
-  const typeConfig: Record<string, { label: string; icon: React.ComponentType<any>; color: string; border: string; bg: string }> = {
-    post: { label: 'Post', icon: MessageSquare, color: 'text-blue-400', border: 'border-blue-500/20', bg: 'bg-blue-500/5' },
-    confession: { label: 'Confession', icon: Lock, color: 'text-amber-400', border: 'border-amber-500/20', bg: 'bg-amber-500/5' },
-    announcement: { label: 'Announce', icon: Megaphone, color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/5' },
-  }
-  const config = typeConfig[post.post_type] || typeConfig.post
+  const config = POST_TYPE_CONFIG[post.post_type] || POST_TYPE_CONFIG.post
   const TypeIcon = config.icon
 
   const isOwner = post.author?.id === currentUserId
@@ -458,7 +461,8 @@ function PostCard({
       </AnimatePresence>
     </motion.article>
   )
-}
+})
+PostCard.displayName = 'PostCard'
 
 function CreatePost({ 
   profile, 
@@ -975,9 +979,10 @@ export default function DashboardClient({
   currentUserId: string
   initialLikedIds?: string[]
 }) {
-  const supabase = createClient()
+  const supabase = React.useMemo(() => createClient(), [])
   const router = useRouter()
   const { profile: currentProfile } = useCurrentProfile()
+  const { totalUnread } = useUnreadMessages()
   const profile = (currentProfile || initialProfile) as any
 
   // Card Tilt refs
@@ -1031,7 +1036,7 @@ export default function DashboardClient({
     return result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }, [posts, activeFeedTab, friends])
 
-  const getRelation = (peerId: string) => {
+  const getRelation = useCallback((peerId: string) => {
     const f = friendships.find(
       (x: any) => 
         (x.requester_id === peerId && x.addressee_id === currentUserId) ||
@@ -1041,7 +1046,7 @@ export default function DashboardClient({
     if (f.status === 'accepted') return 'friends'
     if (f.requester_id === currentUserId) return 'sent'
     return 'received'
-  }
+  }, [friendships, currentUserId])
 
   const handleAddFriend = async (e: React.MouseEvent, peerId: string) => {
     e.preventDefault()
@@ -1170,18 +1175,12 @@ export default function DashboardClient({
 
         // Fetch command center statistics
         const [
-          unreadMsgsRes,
           commsCountRes,
           ptsDataRes,
           friendsCountRes,
           upcomingEventsRes,
           internshipsRes
         ] = await Promise.all([
-          supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('receiver_id', currentUserId)
-            .eq('read', false),
           supabase
             .from('community_members')
             .select('community_id', { count: 'exact', head: true })
@@ -1214,7 +1213,6 @@ export default function DashboardClient({
           .gt('total', pts)
 
         setDashboardStats({
-          unreadMessagesCount: unreadMsgsRes.count || 0,
           communitiesCount: commsCountRes.count || 0,
           points: pts,
           level: lvl,
@@ -1222,6 +1220,8 @@ export default function DashboardClient({
           friendsCount: friendsCountRes.count || 0,
           upcomingEventsCount: upcomingEventsRes.count || 0,
           internshipsCount: internshipsRes.count || 0,
+          // totalUnread is handled by a separate reactive effect below
+          unreadMessagesCount: 0,
         })
 
       } catch (e) {
@@ -1231,7 +1231,14 @@ export default function DashboardClient({
       }
     }
     getCampusData()
+  // totalUnread intentionally excluded — has its own reactive effect below
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, profile?.college_id, supabase])
+
+  // Reactively sync totalUnread into dashboardStats WITHOUT triggering full refetch
+  useEffect(() => {
+    setDashboardStats(prev => ({ ...prev, unreadMessagesCount: totalUnread }))
+  }, [totalUnread])
 
   const handleNewPost = (post: Post) => setPosts(p => [post, ...p])
 
@@ -1302,28 +1309,29 @@ export default function DashboardClient({
         
         {/* Onboarding Banner */}
         {isProfileIncomplete && (
-          <div className="w-full mb-6">
+          <div className="w-full mb-2">
             <AnimatePresence>
               <motion.div
                 initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white/[0.01] border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.08]"
+                className="bg-zinc-900/[0.45] border border-white/[0.08] backdrop-blur-[32px] p-6 sm:p-8 rounded-3xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.12] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.08)]"
               >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/[0.02] blur-[80px] -mr-32 -mt-32 pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.02),transparent_60%)] pointer-events-none" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/[0.04] blur-[80px] -mr-32 -mt-32 pointer-events-none" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shrink-0 text-brand-400 shadow-sm">
-                      <User size={20} />
+                    <div className="w-14 h-14 rounded-2xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center shrink-0 text-brand-400 shadow-[0_0_24px_rgba(59,130,246,0.3)]">
+                      <User size={24} />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <h3 className="text-base font-semibold font-sans tracking-tight text-white">Complete your Campus ID</h3>
-                      <p className="text-zinc-400 text-xs font-medium leading-relaxed max-w-lg">
+                      <p className="text-zinc-300 text-xs font-medium leading-relaxed max-w-lg">
                         Welcome to CampusConnect! Add a username, bio, and branch to your profile so your classmates can find you.
                       </p>
                     </div>
                   </div>
-                  <Link href="/settings" className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95">
+                  <Link href="/settings" className="px-5 py-2.5 bg-brand-500 hover:bg-brand-400 border border-brand-400/50 text-white rounded-xl text-xs font-semibold tracking-wide transition-all select-none active:scale-95 shadow-[0_8px_20px_-4px_rgba(59,130,246,0.45)] shrink-0 text-center">
                     Finish Setup
                   </Link>
                 </div>
@@ -1335,7 +1343,7 @@ export default function DashboardClient({
         {/* Personalized Student Command Center Hero */}
         <DashboardHero 
           profile={profile} 
-          stats={dashboardStats} 
+            stats={dashboardStats} 
           onCreatePostClick={handleCreatePostClick} 
         />
 
@@ -1355,7 +1363,7 @@ export default function DashboardClient({
             />
             
             {/* Feed Sort Tabs */}
-            <div className="flex items-center gap-2 select-none border-b border-white/[0.04] pb-3">
+            <div className="bg-zinc-900/[0.45] backdrop-blur-[32px] border border-white/[0.08] p-2 rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.06)] flex items-center gap-1.5 select-none">
               {(['for-you', 'following', 'trending'] as const).map((tab) => {
                 const isActive = activeFeedTab === tab
                 return (
@@ -1363,16 +1371,16 @@ export default function DashboardClient({
                     key={tab}
                     onClick={() => setActiveFeedTab(tab)}
                     className={cn(
-                      "px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 border",
-                      isActive 
-                        ? "bg-[#3B82F6]/10 border-[#3B82F6]/20 text-[#3B82F6]"
-                        : "bg-transparent border-transparent text-zinc-500 hover:text-zinc-300"
+                      "px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 border",
+                      isActive
+                        ? "bg-gradient-to-b from-brand-500/25 to-brand-500/10 border-brand-400/40 text-white shadow-[0_4px_16px_-2px_rgba(99,102,241,0.4),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+                        : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] hover:border-white/[0.1]"
                     )}
                   >
                     {tab === 'for-you' && 'For You'}
                     {tab === 'following' && 'Following'}
                     {tab === 'trending' && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1.5">
                         <TrendingUp size={12} />
                         <span>Trending</span>
                       </span>

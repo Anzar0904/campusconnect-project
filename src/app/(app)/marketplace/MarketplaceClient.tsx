@@ -186,12 +186,12 @@ export default function MarketplaceClient({ items, userId }: any) {
   return (
     <div className="space-y-8 pb-24 text-zinc-50 reveal-marketplace">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.04] pb-6">
-        <div className="space-y-2">
-          <p className="section-label text-brand-400 font-mono tracking-widest text-[10px]">Campus Economy</p>
-          <h1 className="display-heading text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-50 via-zinc-100 to-zinc-300">
+        <div className="glass-page-header flex-1 space-y-2">
+          <p className="section-label text-brand-400">Campus Economy</p>
+          <h1 className="display-heading text-4xl">
             Marketplace
           </h1>
-          <p className="body-pro text-sm text-zinc-400 font-normal">Buy, sell, and trade items with other students securely.</p>
+          <p className="body-pro text-sm">Buy, sell, and trade items with other students securely.</p>
         </div>
         <motion.button 
           whileHover={{ scale: 1.02 }}

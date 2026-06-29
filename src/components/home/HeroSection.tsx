@@ -101,10 +101,13 @@ export const HeroSection: React.FC = () => {
 
   return (
     <section ref={containerRef} className="relative min-h-[90vh] lg:min-h-screen w-full overflow-hidden bg-[#09090B] pt-24 pb-16 lg:pt-36 lg:pb-24 px-4 sm:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center z-10">
-      {/* Background Gradients & Ambient Effects */}
-      <div className="bg-glow-1 absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.035),transparent_50%)] pointer-events-none" />
-      <div className="bg-glow-2 absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(34,197,94,0.02),transparent_50%)] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.025)_0%,transparent_70%)] pointer-events-none" />
+      {/* Full‑screen background wrapper to ignore section padding */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Background Gradients & Ambient Effects */}
+        <div className="bg-glow-1 absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.035),transparent_50%)] pointer-events-none" />
+        <div className="bg-glow-2 absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(34,197,94,0.02),transparent_50%)] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.025)_0%,transparent_70%)] pointer-events-none" />
+      </div>
 
       {/* Hero Content Left (45%) */}
       <div className="lg:col-span-5 flex flex-col justify-center space-y-6 z-10 text-center lg:text-left">
@@ -195,7 +198,7 @@ export const HeroSection: React.FC = () => {
           {/* Card 1: AI Assistant (Top-Left, Purple theme) */}
           <div 
             ref={card1Ref}
-            className="w-[calc(50%-8px)] sm:w-[220px] lg:w-52 lg:absolute lg:top-4 lg:left-[-20px] bg-[#18181B]/85 backdrop-blur-md border border-white/[0.04] hover:border-white/[0.08] hover:bg-[#232329]/95 rounded-2xl p-4 transition-colors duration-300 shadow-[0_12px_30px_rgba(0,0,0,0.4)] flex flex-col gap-1.5 cursor-pointer"
+            className="w-[calc(50%-8px)] sm:w-[220px] lg:w-52 lg:absolute lg:top-4 lg:left-4 bg-[#18181B]/85 backdrop-blur-md border border-white/[0.04] hover:border-white/[0.08] hover:bg-[#232329]/95 rounded-2xl p-4 transition-colors duration-300 shadow-[0_12px_30px_rgba(0,0,0,0.4)] flex flex-col gap-1.5 cursor-pointer"
           >
             <div className="flex items-center gap-2 mb-0.5">
               <div className="w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">

@@ -92,10 +92,12 @@ window.location.reload()
 
   return (
     <div className="animate-fade-in space-y-8 pb-24">
-      <header className="space-y-1">
-        <p className="section-label">Campus Directory</p>
-        <h1 className="display-heading text-4xl">Discover</h1>
-        <p className="body-pro text-sm">Find and connect with {students.length} verified students across the campus.</p>
+      <header className="space-y-0">
+        <div className="glass-page-header space-y-2">
+          <p className="section-label">Campus Directory</p>
+          <h1 className="display-heading text-4xl">Discover</h1>
+          <p className="body-pro text-sm">Find and connect with {students.length} verified students across the campus.</p>
+        </div>
       </header>
 
       <div className="flex flex-col md:flex-row gap-4">

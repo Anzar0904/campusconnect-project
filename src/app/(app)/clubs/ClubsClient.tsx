@@ -134,18 +134,18 @@ export default function ClubsClient({ clubs: dbClubs, currentUserId }: { clubs: 
   return (
     <div className="space-y-10 pb-32">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <span className="text-[11px] font-mono font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-1.5 mb-1.5">
-            <Compass size={12} className="text-brand-500" /> CAMPUS CLUBS
+        <div className="glass-page-header flex-1 space-y-2">
+          <span className="section-label flex items-center gap-1.5">
+            <Compass size={12} className="text-brand-500" /> Campus Clubs
           </span>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white">Clubs & Societies</h1>
-          <p className="text-zinc-400 text-sm mt-1">Join active student groups, professional bodies, and cultural societies.</p>
+          <h1 className="display-heading text-4xl">Clubs & Societies</h1>
+          <p className="body-pro text-sm">Join active student groups, professional bodies, and cultural societies.</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowRequestModal(true)}
-          className="btn-premium self-start md:self-auto"
+          className="btn-premium self-start md:self-auto shrink-0"
         >
           <Plus size={18} />
           <span>Request New Club</span>

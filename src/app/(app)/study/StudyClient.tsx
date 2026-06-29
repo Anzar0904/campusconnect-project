@@ -94,18 +94,18 @@ export default function StudyClient({ userId, profile, initialGroups }: any) {
     <div className="space-y-10 pb-24 reveal-study-hub">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <span className="text-[11px] font-mono font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-1.5 mb-1.5">
-            <Sparkles size={12} className="text-brand-500" /> VIRTUAL LIBRARIES
+        <div className="glass-page-header flex-1 space-y-2">
+          <span className="section-label flex items-center gap-1.5">
+            <Sparkles size={12} className="text-brand-500" /> Virtual Libraries
           </span>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white">Study Hub</h1>
-          <p className="text-zinc-400 text-sm mt-1">Collaborate in real-time, share resources, and track focus sessions.</p>
+          <h1 className="display-heading text-4xl">Study Hub</h1>
+          <p className="body-pro text-sm">Collaborate in real-time, share resources, and track focus sessions.</p>
         </div>
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowCreate(!showCreate)} 
-          className="btn-premium self-start md:self-auto"
+          className="btn-premium self-start md:self-auto shrink-0"
         >
           <UserPlus size={18} />
           <span>Create Study Group</span>

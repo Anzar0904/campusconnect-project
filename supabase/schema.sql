@@ -794,3 +794,5 @@ alter publication supabase_realtime add table public.dating_matches;
 alter publication supabase_realtime add table public.election_votes;
 alter publication supabase_realtime add table public.user_points;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+

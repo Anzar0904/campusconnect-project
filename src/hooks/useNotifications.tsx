@@ -164,19 +164,18 @@ export function NotificationProvider({ children, userId }: { children: React.Rea
 
       if (error) throw error
 
-      setNotifications(prev => prev.filter(n => n.id !== id))
-      // Re-calculate unread count
-      setUnreadCount(prev => {
-        const deletedNotif = notifications.find(n => n.id === id)
+      setNotifications(prev => {
+        const deletedNotif = prev.find(n => n.id === id)
+        // Adjust unread count inline before filtering
         if (deletedNotif && !deletedNotif.read) {
-          return Math.max(0, prev - 1)
+          setUnreadCount(c => Math.max(0, c - 1))
         }
-        return prev
+        return prev.filter(n => n.id !== id)
       })
     } catch (err) {
       console.error('Failed to delete notification:', err)
     }
-  }, [supabase, notifications])
+  }, [supabase])
 
   const contextValue = useMemo(() => ({
     notifications,

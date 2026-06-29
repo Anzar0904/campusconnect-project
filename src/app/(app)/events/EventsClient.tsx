@@ -325,12 +325,12 @@ export default function EventsClient({
   return (
     <div className="space-y-8 pb-24 text-zinc-50">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.04] pb-6">
-        <div className="space-y-2">
-          <p className="section-label text-brand-400 font-mono tracking-widest text-[10px]">Campus Calendar</p>
-          <h1 className="display-heading text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-50 via-zinc-100 to-zinc-300">
+        <div className="glass-page-header flex-1 space-y-2">
+          <p className="section-label text-brand-400">Campus Calendar</p>
+          <h1 className="display-heading text-4xl">
             Events Hub
           </h1>
-          <p className="body-pro text-sm text-zinc-400">Discover academic conferences, hackathons, and cultural activities happening around you.</p>
+          <p className="body-pro text-sm">Discover academic conferences, hackathons, and cultural activities happening around you.</p>
         </div>
         
         <div className="flex items-center gap-3">

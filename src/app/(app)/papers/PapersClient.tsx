@@ -205,17 +205,18 @@ export default function PapersClient({ userId, collegeId }: { userId: string; co
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-zinc-100 flex items-center gap-2">
-            <BookOpen className="text-cyan-400" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="glass-page-header flex-1 space-y-2">
+          <p className="section-label text-cyan-400">Academic Resources</p>
+          <h1 className="display-heading text-4xl flex items-center gap-3">
+            <BookOpen className="text-cyan-400 shrink-0" size={32} />
             Past Question Papers
           </h1>
-          <p className="text-sm text-zinc-400 mt-0.5">Previous year exam papers uploaded by student community</p>
+          <p className="body-pro text-sm">Previous year exam papers uploaded by the student community.</p>
         </div>
         <button 
           onClick={() => setShowUpload(true)} 
-          className="btn-primary text-xs px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300"
+          className="btn-primary text-xs px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300 self-start md:self-auto shrink-0"
         >
           <Upload size={14} />
           Upload Paper

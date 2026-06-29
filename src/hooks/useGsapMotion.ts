@@ -5,10 +5,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 
-// Register ScrollTrigger on client-side
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger)
-}
+// ScrollTrigger is registered once in MotionProvider — safe to use here without re-registering
 
 // Global premium easings
 export const Easing = {
@@ -31,7 +28,7 @@ export function getPrefersReducedMotion(): boolean {
 
 /**
  * Hook to stagger-reveal elements in a container.
- * Excellent for lists, dashboard cards, grid elements, feed posts, etc.
+ * Uses the Lenis custom scroller when available.
  */
 export function useGsapReveal({
   stagger = 0.08,
@@ -75,7 +72,11 @@ export function useGsapReveal({
     gsap.set(items, { opacity: 0, y, x, scale })
 
     if (scrollTrigger) {
+      // Use the Lenis scroller when available, fall back to window
+      const scroller =
+        (typeof window !== 'undefined' && document.getElementById('main-scroll-container')) || window
       ScrollTrigger.batch(items, {
+        scroller,
         onEnter: (batch) => {
           gsap.to(batch, animationConfig)
         },

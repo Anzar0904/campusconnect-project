@@ -13,6 +13,7 @@ import { clsx } from 'clsx'
 import { format } from 'date-fns'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 
 interface Profile {
   id: string
@@ -52,6 +53,7 @@ export default function MessagesClient({
 }) {
   const supabase = useMemo(() => createClient(), [])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { unreadByFriend, markConversationRead } = useUnreadMessages()
   
   // Real-time Presence State
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
@@ -66,13 +68,10 @@ export default function MessagesClient({
   useEffect(() => {
     selectedIdRef.current = selectedId
     if (selectedId) {
-      // Clear unread counts locally when conversation is opened
-      setUnreadCounts(prev => ({
-        ...prev,
-        [selectedId]: 0
-      }))
+      // Persist read state to DB and update global unread context
+      markConversationRead(selectedId, currentUserId)
     }
-  }, [selectedId])
+  }, [selectedId, currentUserId, markConversationRead])
 
   // Subscribing to Presence
   useEffect(() => {
@@ -151,7 +150,8 @@ export default function MessagesClient({
   
   // Lists preview info states
   const [lastMessages, setLastMessages] = useState<Record<string, { content: string; created_at: string; sender_id: string; read: boolean }>>({})
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+  // unreadCounts is now sourced from the global useUnreadMessages context
+  const unreadCounts = unreadByFriend
   const [pinnedIds, setPinnedIds] = useState<string[]>([])
 
   // Search/Filters states
@@ -221,7 +221,7 @@ export default function MessagesClient({
     ).filter(Boolean)
   }, [friendships, currentUserId])
 
-  // Fetch last messages & unreads map
+  // Fetch last messages preview map (last message content per conversation)
   useEffect(() => {
     if (!currentUserId) return
     
@@ -236,7 +236,6 @@ export default function MessagesClient({
         if (error) throw error
 
         const lastMsgMap: typeof lastMessages = {}
-        const unreadMap: Record<string, number> = {}
 
         if (msgs) {
           msgs.forEach((m: Message) => {
@@ -249,15 +248,10 @@ export default function MessagesClient({
                 read: m.read
               }
             }
-
-            if (m.receiver_id === currentUserId && !m.read) {
-              unreadMap[friendId] = (unreadMap[friendId] || 0) + 1
-            }
           })
         }
 
         setLastMessages(lastMsgMap)
-        setUnreadCounts(unreadMap)
       } catch (err) {
         console.error('Error fetching chat previews:', err)
       }
@@ -265,7 +259,7 @@ export default function MessagesClient({
 
     fetchPreviews()
 
-    // Realtime message previews sync
+    // Realtime message previews sync — only update lastMessages, unread counts managed by global hook
     const previewChannel = supabase
       .channel('chat-list-previews-realtime')
       .on('postgres_changes', {
@@ -286,17 +280,6 @@ export default function MessagesClient({
               read: m.read
             }
           }))
-
-          if (m.receiver_id === currentUserId) {
-            setUnreadCounts(prev => {
-              const isCurrentChat = selectedIdRef.current === friendId
-              if (isCurrentChat) return prev
-              return {
-                ...prev,
-                [friendId]: (prev[friendId] || 0) + 1
-              }
-            })
-          }
         }
       })
       .on('postgres_changes', {
@@ -307,12 +290,6 @@ export default function MessagesClient({
         const m = payload.new as Message
         if (m.sender_id === currentUserId || m.receiver_id === currentUserId) {
           const friendId = m.sender_id === currentUserId ? m.receiver_id : m.sender_id
-          if (m.receiver_id === currentUserId && m.read) {
-            setUnreadCounts(prev => ({
-              ...prev,
-              [friendId]: 0
-            }))
-          }
           setLastMessages(prev => {
             const current = prev[friendId]
             if (current && current.created_at === m.created_at) {
@@ -411,13 +388,8 @@ export default function MessagesClient({
         .limit(messagesLimit)
       setMessages((data || []).reverse())
 
-      // Mark unread messages as read
-      await supabase
-        .from('messages')
-        .update({ read: true })
-        .eq('sender_id', targetId)
-        .eq('receiver_id', currentUserId)
-        .eq('read', false)
+      // Mark unread messages as read via global hook (persists to DB + updates global state)
+      markConversationRead(targetId, currentUserId)
     }
     load()
 
@@ -449,7 +421,8 @@ export default function MessagesClient({
                 return [...m, msg]
               })
               if (msg.sender_id === targetId) {
-                supabase.from('messages').update({ read: true }).eq('id', msg.id).then()
+                // Mark incoming message as read immediately via global hook
+                markConversationRead(targetId, currentUserId)
               }
             } else if (payload.eventType === 'UPDATE') {
               setMessages(m => m.map(x => x.id === msg.id ? msg : x))
@@ -483,7 +456,7 @@ export default function MessagesClient({
       supabase.removeChannel(typingChannel)
       typingChannelRef.current = null
     }
-  }, [selectedId, currentUserId, supabase, messagesLimit])
+  }, [selectedId, currentUserId, supabase, messagesLimit, markConversationRead])
 
   const [friendIsTyping, setFriendIsTyping] = useState(false)
 
@@ -970,14 +943,22 @@ export default function MessagesClient({
                   </div>
 
                   {/* Pin overlay toggle */}
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => togglePin(f.id, e)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        togglePin(f.id, e as any);
+                      }
+                    }}
                     className="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded-md text-zinc-500 hover:text-white transition-all z-10"
                     title={isPinned ? "Unpin Chat" : "Pin Chat"}
                     aria-label={isPinned ? "Unpin Chat" : "Pin Chat"}
                   >
                     {isPinned ? <PinOff size={11} /> : <Pin size={11} />}
-                  </button>
+                  </div>
                 </button>
               )
             })

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { GlobalAvatar } from '@/components/ui/GlobalAvatar'
 import { 
   Home, 
@@ -36,7 +36,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import LinkComponent from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { clsx } from 'clsx'
-import { NavbarSearch } from './NavbarSearch'
+
 import { useNotifications } from '@/hooks/useNotifications'
 import { format } from 'date-fns'
 import { useCurrentProfile } from '@/hooks/useCurrentProfile'
@@ -46,8 +46,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { Easing, getPrefersReducedMotion, useGsapMagnetic } from '@/hooks/useGsapMotion'
-import AppLauncher from './AppLauncher'
+import dynamic from 'next/dynamic'
+import { CampusConnectLogo } from '@/components/brand/CampusConnectLogo'
 import { useCollisionDetection } from '@/hooks/useCollisionDetection'
+
+// Lazy-load heavy components — not needed on initial render
+const AppLauncher = dynamic(() => import('./AppLauncher'), {
+  ssr: false,
+  loading: () => null,
+})
+const NavbarSearch = dynamic(() => import('./NavbarSearch').then(m => ({ default: m.NavbarSearch })), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full max-w-[280px] md:max-w-[430px] h-9 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-pulse" />
+  ),
+})
 
 
 const NavbarTab = ({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) => {
@@ -145,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
     }
     
     if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll)
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
     }
 
     return () => {
@@ -187,23 +200,13 @@ export const Navbar: React.FC<NavbarProps> = ({ profile: initialProfile }) => {
         <div className="flex items-center gap-4 lg:gap-6 flex-1 justify-start min-w-0">
           {/* Brand Logo */}
           <div className="flex items-center gap-2 shrink-0">
-            <LinkComponent href="/" className="flex items-center gap-2.5">
-              <svg className="w-8 h-8 shrink-0 drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M75,28 C62,13 38,13 25,28 C12,43 12,63 25,78 C38,93 62,93 75,78 C82,71 85,62 84,53 C83,48 78,49 79,54 C80,60 78,66 73,71 C63,81 43,81 33,71 C23,61 23,45 33,35 C43,25 63,25 73,35 C77,39 79,45 79,51 C79,56 84,55 84,50 C84,41 81,34 75,28 Z"
-                  fill="url(#c-gradient-nav)"
-                  strokeWidth="1"
-                />
-                <defs>
-                  <linearGradient id="c-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#6366f1" />
-                    <stop offset="50%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#22d3ee" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <span className="text-white font-display font-bold text-base tracking-tight hidden lg:block">
-                Campus<span className="text-zinc-400 font-normal">Connect</span>
+            <LinkComponent href="/" className="flex items-center">
+              {/* Icon only on small screens, icon + wordmark on lg+ */}
+              <span className="lg:hidden drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]">
+                <CampusConnectLogo size={32} id="nav-sm" />
+              </span>
+              <span className="hidden lg:flex drop-shadow-[0_0_10px_rgba(99,102,241,0.45)]">
+                <CampusConnectLogo size={32} showWordmark id="nav-lg" />
               </span>
             </LinkComponent>
           </div>
@@ -530,20 +533,25 @@ const NotificationsDropdown = React.memo(({
 
   if (!showNotifications) return null
 
-  // Filter notifications
-  const filteredNotifications = notifications.filter(n => filter === 'all' || !n.read)
+  // Memoize expensive filtering + date grouping — only recomputes when inputs change
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { filteredNotifications, todayNotifs, yesterdayNotifs, earlierNotifs } = useMemo(() => {
+    const filtered = notifications.filter(n => filter === 'all' || !n.read)
+    const now = Date.now()
+    const todayStart = new Date().setHours(0, 0, 0, 0)
+    const yesterdayStart = todayStart - 86400000
 
-  // Group notifications
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-
-  const todayNotifs = filteredNotifications.filter(n => new Date(n.created_at).getTime() >= todayStart)
-  const yesterdayNotifs = filteredNotifications.filter(n => {
-    const t = new Date(n.created_at).getTime()
-    return t >= yesterdayStart && t < todayStart
-  })
-  const earlierNotifs = filteredNotifications.filter(n => new Date(n.created_at).getTime() < yesterdayStart)
+    return {
+      filteredNotifications: filtered,
+      todayNotifs: filtered.filter(n => new Date(n.created_at).getTime() >= todayStart),
+      yesterdayNotifs: filtered.filter(n => {
+        const t = new Date(n.created_at).getTime()
+        return t >= yesterdayStart && t < todayStart
+      }),
+      earlierNotifs: filtered.filter(n => new Date(n.created_at).getTime() < yesterdayStart),
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications, filter])
 
   const renderSection = (title: string, items: any[]) => {
     if (items.length === 0) return null

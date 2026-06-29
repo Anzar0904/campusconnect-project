@@ -103,22 +103,22 @@ export default function FriendsClient({
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-24 font-sans select-none text-left">
       {/* Premium Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.04] pb-6">
-        <div className="space-y-1">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6">
+        <div className="glass-page-header flex-1 space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-[10px] font-bold uppercase tracking-wider">
             Campus Network
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mt-2">
+          <h1 className="display-heading text-3xl sm:text-4xl mt-1">
             My Connections
           </h1>
-          <p className="text-zinc-400 text-xs sm:text-sm font-normal">
+          <p className="body-pro text-xs sm:text-sm">
             Manage your peer relationships, active classmates network, and incoming connection requests.
           </p>
         </div>
 
         <Link 
           href="/discover" 
-          className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 border border-blue-500/20 text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 select-none active:scale-95 cursor-pointer"
+          className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 border border-blue-500/20 text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 select-none active:scale-95 cursor-pointer shrink-0"
         >
           <UserPlus size={14} />
           Discover People

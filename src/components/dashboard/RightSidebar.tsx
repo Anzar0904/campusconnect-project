@@ -70,9 +70,9 @@ export const RightSidebar: React.FC = () => {
 
         <div className="space-y-3.5">
           {[
-            { name: 'Priya Sharma', text: 'Typing...', unread: 2, status: 'typing' as const, img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' },
-            { name: 'Tech Society', text: "Let's build something great!", unread: 12, status: 'online' as const, img: undefined },
-            { name: 'Arjun Verma', text: 'See you at SIH!', unread: 0, status: 'online' as const, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' },
+            { name: 'Priya Sharma', text: 'Typing...', status: 'typing' as const, img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' },
+            { name: 'Tech Society', text: "Let's build something great!", status: 'online' as const, img: undefined },
+            { name: 'Arjun Verma', text: 'See you at SIH!', status: 'online' as const, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' },
           ].map((msg, idx) => (
             <div key={idx} className="flex items-center justify-between group cursor-pointer p-1 rounded-xl hover:bg-white/[0.02] transition-colors">
               <div className="flex items-center gap-3 min-w-0">
@@ -82,11 +82,6 @@ export const RightSidebar: React.FC = () => {
                   <p className={`text-[10px] truncate max-w-[140px] mt-0.5 font-medium ${msg.status === 'typing' ? 'text-cyan-400 font-bold animate-pulse' : 'text-neutral-500'}`}>{msg.text}</p>
                 </div>
               </div>
-              {msg.unread > 0 && (
-                <span className="w-4 h-4 bg-blue-500 text-[9px] font-black text-white rounded-full flex items-center justify-center shadow-md shadow-blue-500/20">
-                  {msg.unread}
-                </span>
-              )}
             </div>
           ))}
         </div>

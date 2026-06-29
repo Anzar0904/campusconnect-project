@@ -8,12 +8,17 @@ const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  // Only load the weights actually used — avoids downloading unused font variations
+  weight: ['400', '500', '600', '700'],
+  preload: true,
 })
 
 const hanken = Hanken_Grotesk({
   subsets: ['latin'],
   variable: '--font-hanken',
   display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+  preload: true,
 })
 
 export const metadata: Metadata = {

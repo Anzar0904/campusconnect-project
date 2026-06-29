@@ -241,14 +241,14 @@ export default function CommunitiesClient({
     <div className="space-y-10 pb-24">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <span className="text-[11px] font-mono font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-1.5 mb-1.5">
-            <Sparkles size={12} className="text-brand-500" /> CAMPUS CLUSTERS
+        <div className="glass-page-header flex-1 space-y-2">
+          <span className="section-label flex items-center gap-1.5">
+            <Sparkles size={12} className="text-brand-500" /> Campus Clusters
           </span>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white">
+          <h1 className="display-heading text-4xl">
             Communities
           </h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-lg">
+          <p className="body-pro text-sm max-w-lg">
             Find and join official batch groups, study teams, or social circles at IILM.
           </p>
         </div>
@@ -256,7 +256,7 @@ export default function CommunitiesClient({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setCreating(true)}
-          className="btn-premium self-start md:self-auto"
+          className="btn-premium self-start md:self-auto shrink-0"
         >
           <Plus size={18} />
           <span>New Community</span>
